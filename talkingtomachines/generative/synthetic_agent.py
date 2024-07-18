@@ -10,6 +10,7 @@ class SyntheticAgent:
 
     Class Attributes:
         experiment_id (str): The ID of the experiment.
+        session_id (str): The ID of the session.
         experiment_context (str): The context of the experiment.
         demographic_info (DemographicInfo): The demographic information of the user.
         model_info (str): The information about the model used by the agent.
@@ -21,6 +22,7 @@ class SyntheticAgent:
     def __init__(
         self,
         experiment_id: str,
+        session_id: str,
         experiment_context: str,
         demographic_info: DemographicInfo,
         model_info: str,
@@ -39,6 +41,15 @@ class SyntheticAgent:
 
         Returns:
             str: The experiment ID of the synthetic agent.
+        """
+        return self.experiment_id
+
+    def get_session_id(self) -> str:
+        """
+        Return the session ID of the experiment.
+
+        Returns:
+            str: The session ID of the experiment.
         """
         return self.experiment_id
 
