@@ -13,7 +13,7 @@ Follow these steps to set up the project locally.
 
 ### Clone the Repository
 ```bash
-git clone https://github.com/talking-to-machines/talkingtomachines.git
+git clone https://github.com/talking-to-machines/talking-to-machines.git
 cd talkingtomachines
 ```
 
