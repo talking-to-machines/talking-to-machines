@@ -1,7 +1,8 @@
 from typing import List
 from openai import OpenAI
+from talkingtomachines.config import DevelopmentConfig
 
-openai_client = OpenAI()
+openai_client = OpenAI(api_key=DevelopmentConfig.OPENAI_API_KEY)
 
 
 def query_llm(model_info: str, message_history: List[dict]) -> str:
@@ -19,7 +20,7 @@ def query_llm(model_info: str, message_history: List[dict]) -> str:
     else:
         # Log the exception
         print(f"Model type {model_info} is not supported.")
-        return None
+        return ""
 
 
 def query_open_ai(model_info: str, messsage_history: List[dict]) -> str:

@@ -1,8 +1,11 @@
 from typing import Any, List, Dict, Callable
-from prompt import generate_conversational_system_message, generate_demographic_prompt
-from llm import query_llm
+from talkingtomachines.generative.prompt import (
+    generate_conversational_system_message,
+    generate_demographic_prompt,
+)
+from talkingtomachines.generative.llm import query_llm
 
-DemographicInfo = Dict[str, Any]
+DemographicInfo = dict[str, Any]
 
 
 class SyntheticAgent:
