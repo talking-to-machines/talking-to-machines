@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.management package &mdash; talking-to-machines 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="talkingtomachines.storage package" href="talkingtomachines.storage.html" />
+    <link rel="prev" title="talkingtomachines.interface.auth package" href="talkingtomachines.interface.auth.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">talkingtomachines</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.management package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/talkingtomachines.management.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="talkingtomachines-management-package">
+<h1>talkingtomachines.management package<a class="headerlink" href="#talkingtomachines-management-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-talkingtomachines.management.experiment">
+<span id="talkingtomachines-management-experiment-module"></span><h2>talkingtomachines.management.experiment module<a class="headerlink" href="#module-talkingtomachines.management.experiment" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.run_experiment">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.experiment.</span></span><span class="sig-name descname"><span class="pre">run_experiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#run_experiment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.run_experiment" title="Permalink to this definition"></a></dt>
+<dd><p>Run an experiment of the specified type.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.setup_experiment">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.experiment.</span></span><span class="sig-name descname"><span class="pre">setup_experiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">configuration</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">treatment_arms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subjects</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#setup_experiment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.setup_experiment" title="Permalink to this definition"></a></dt>
+<dd><p>Setup an experiment with the provided configuration.</p>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.management.integration">
+<span id="talkingtomachines-management-integration-module"></span><h2>talkingtomachines.management.integration module<a class="headerlink" href="#module-talkingtomachines.management.integration" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.integration.otree_integration">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.integration.</span></span><span class="sig-name descname"><span class="pre">otree_integration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/integration.html#otree_integration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.integration.otree_integration" title="Permalink to this definition"></a></dt>
+<dd><p>Perform integration with oTree for the specified experiment.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.integration.qualtrics_integration">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.integration.</span></span><span class="sig-name descname"><span class="pre">qualtrics_integration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/integration.html#qualtrics_integration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.integration.qualtrics_integration" title="Permalink to this definition"></a></dt>
+<dd><p>Perform integration with Qualtrics for the specified experiment.</p>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.management.monitoring">
+<span id="talkingtomachines-management-monitoring-module"></span><h2>talkingtomachines.management.monitoring module<a class="headerlink" href="#module-talkingtomachines.management.monitoring" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.monitoring.generate_report">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.monitoring.</span></span><span class="sig-name descname"><span class="pre">generate_report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/monitoring.html#generate_report"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.monitoring.generate_report" title="Permalink to this definition"></a></dt>
+<dd><p>Generate a report for the specified experiment.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.monitoring.monitor_experiment">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.monitoring.</span></span><span class="sig-name descname"><span class="pre">monitor_experiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/monitoring.html#monitor_experiment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.monitoring.monitor_experiment" title="Permalink to this definition"></a></dt>
+<dd><p>Monitor the specified experiment.</p>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.management.participant">
+<span id="talkingtomachines-management-participant-module"></span><h2>talkingtomachines.management.participant module<a class="headerlink" href="#module-talkingtomachines.management.participant" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.participant.recruit_participants">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.participant.</span></span><span class="sig-name descname"><span class="pre">recruit_participants</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">criteria</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/participant.html#recruit_participants"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.participant.recruit_participants" title="Permalink to this definition"></a></dt>
+<dd><p>Recruit participants based on the provided criteria.</p>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.management.treatment">
+<span id="talkingtomachines-management-treatment-module"></span><h2>talkingtomachines.management.treatment module<a class="headerlink" href="#module-talkingtomachines.management.treatment" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.treatment.assign_treatment">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.treatment.</span></span><span class="sig-name descname"><span class="pre">assign_treatment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">participant_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/treatment.html#assign_treatment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.treatment.assign_treatment" title="Permalink to this definition"></a></dt>
+<dd><p>Assign treatment based on participant data.</p>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.management">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-talkingtomachines.management" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="talkingtomachines.interface.auth.html" class="btn btn-neutral float-left" title="talkingtomachines.interface.auth package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="talkingtomachines.storage.html" class="btn btn-neutral float-right" title="talkingtomachines.storage package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
