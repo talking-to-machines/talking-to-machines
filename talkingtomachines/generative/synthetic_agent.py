@@ -6,25 +6,31 @@ DemographicInfo = Dict[str, Any]
 
 
 class SyntheticAgent:
-    """
-    A class representing a synthetic agent.
+    """A class for constructing the base synthetic agent.
 
-    Class Attributes:
+    Args:
         experiment_id (str): The ID of the experiment.
-        session_id (str): The ID of the session.
         experiment_context (str): The context of the experiment.
+        session_id (str): The ID of the session.
         demographic_info (DemographicInfo): The demographic information of the user.
         model_info (str): The information about the model used by the agent.
         demographic_prompt_generator (Callable[[DemographicInfo], str], optional):
             A function that generates a demographic prompt based on the demographic information.
             Defaults to generate_demographic_prompt.
+
+    Attributes:
+        experiment_id (str): The ID of the experiment.
+        experiment_context (str): The context of the experiment.
+        session_id (str): The ID of the session.
+        demographic_info (DemographicInfo): The demographic information of the user.
+        model_info (str): The information about the model used by the agent.
     """
 
     def __init__(
         self,
         experiment_id: str,
-        session_id: str,
         experiment_context: str,
+        session_id: str,
         demographic_info: DemographicInfo,
         model_info: str,
         demographic_prompt_generator: Callable[
@@ -33,30 +39,28 @@ class SyntheticAgent:
     ):
         self.experiment_id = experiment_id
         self.experiment_context = experiment_context
+        self.session_id = session_id
         self.demographic_info = demographic_prompt_generator(demographic_info)
         self.model_info = model_info
 
     def get_experiment_id(self) -> str:
-        """
-        Return the experiment ID of the synthetic agent.
+        """Return the experiment ID of the synthetic agent.
 
         Returns:
             str: The experiment ID of the synthetic agent.
-        """
+        """        
         return self.experiment_id
 
     def get_session_id(self) -> str:
-        """
-        Return the session ID of the experiment.
+        """Return the session ID of the experiment.
 
         Returns:
             str: The session ID of the experiment.
-        """
+        """ 
         return self.experiment_id
 
     def get_experiment_context(self) -> str:
-        """
-        Return the experiment context of the synthetic agent.
+        """Return the experiment context of the synthetic agent.
 
         Returns:
             str: The experiment context of the synthetic agent.
@@ -64,8 +68,7 @@ class SyntheticAgent:
         return self.experiment_context
 
     def get_demographic_info(self) -> str:
-        """
-        Return the demographic information of the synthetic agent.
+        """Return the demographic information of the synthetic agent.
 
         Returns:
             str: The demographic information of the synthetic agent
@@ -73,8 +76,7 @@ class SyntheticAgent:
         return self.demographic_info
 
     def get_model_info(self) -> str:
-        """
-        Return the model information of the synthetic agent.
+        """Return the model information of the synthetic agent.
 
         Returns:
             str: The model information of the synthetic agent
@@ -82,10 +84,9 @@ class SyntheticAgent:
         return self.model_info
 
     def respond(self, question: str) -> str:
-        """
-        Generate a response based on the synthetic agent's model.
+        """Generate a response based on the synthetic agent's model.
 
-        Parameters:
+        Args:
             question (str): A question or prompt to which the agent should respond.
 
         Returns:
@@ -100,13 +101,12 @@ class SyntheticAgent:
 
 
 class ConversationalSyntheticAgent(SyntheticAgent):
-    """
-    A synthetic agent that interacts with users in a conversational system. Inherits from the
-    SyntheticAgent base class.
+    """A synthetic agent that interacts with users in a conversational system. Inherits from the SyntheticAgent base class.
 
-    Base Attributes:
+    Args:
         experiment_id (str): The ID of the experiment.
         experiment_context (str): The context of the experiment.
+        session_id (str): The ID of the session.
         demographic_info (DemographicInfo): The demographic information of the user.
         model_info (str): The information about the model used by the agent.
         assigned_treatment (str): The assigned treatment for the user.
@@ -114,16 +114,17 @@ class ConversationalSyntheticAgent(SyntheticAgent):
             A function that generates a demographic prompt based on the demographic information.
             Defaults to generate_demographic_prompt.
 
-    Class Attributes:
+    Attributes:
         assigned_treatment (str): The assigned treatment for the synthetic agent.
-        message_history (List[dict]): The history of the conversation with the synthetic agent.
         system_message (str): The system message generated for the conversation.
+        message_history (List[dict]): The history of the conversation with the synthetic agent.
     """
 
     def __init__(
         self,
         experiment_id: str,
         experiment_context: str,
+        session_id: str,
         demographic_info: DemographicInfo,
         model_info: str,
         assigned_treatment: str,
@@ -134,6 +135,7 @@ class ConversationalSyntheticAgent(SyntheticAgent):
         super().__init__(
             experiment_id,
             experiment_context,
+            session_id,
             demographic_info,
             model_info,
             demographic_prompt_generator,
@@ -147,26 +149,23 @@ class ConversationalSyntheticAgent(SyntheticAgent):
         ]
 
     def get_assigned_treatment(self) -> str:
-        """
-        Return the assigned treatment of the synthetic agent.
+        """Return the assigned treatment of the synthetic agent.
 
         Returns:
-            str: The assigned treatment of the synthetic agent
+            str: The assigned treatment of the synthetic agent.
         """
         return self.assigned_treatment
 
     def get_system_message(self) -> str:
-        """
-        Return the system message of the synthetic agent.
+        """Return the system message of the synthetic agent.
 
         Returns:
-            str: The system message of the synthetic agent
+            str: The system message of the synthetic agent.
         """
         return self.system_message
 
     def get_message_history(self) -> List[dict]:
-        """
-        Return the message history of the synthetic agent.
+        """Return the message history of the synthetic agent.
 
         Returns:
             List[dict]: The conversation history of the synthetic agent
@@ -174,10 +173,9 @@ class ConversationalSyntheticAgent(SyntheticAgent):
         return self.message_history
 
     def update_message_history(self, message: str, message_type: str) -> None:
-        """
-        Update the message history of the synthetic agent with a new message.
+        """Update the message history of the synthetic agent with a new message.
 
-        Parameters:
+        Args:
             message (str): A message to add to the conversation history.
             message_type (str): Either user or assistant.
 
@@ -196,14 +194,13 @@ class ConversationalSyntheticAgent(SyntheticAgent):
             return None
 
     def respond(self, question: str) -> str:
-        """
-        Generate a response to a question posed to the synthetic agent.
+        """Generate a response to a question posed to the synthetic agent.
 
-        Parameters:
+        Args:
             question (str): A question or prompt to which the agent should respond.
 
         Returns:
-            str: The response generated by the synthetic agent
+            str: The response generated by the synthetic agent.
         """
         try:
             self.update_message_history(message=question, message_type="user")
