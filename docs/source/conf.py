@@ -38,7 +38,7 @@ napoleon_type_aliases = None
 napoleon_attr_annotations = True
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", ".DS_Store"]
+exclude_patterns = ["build", ".DS_Store"]
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

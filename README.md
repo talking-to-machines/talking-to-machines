@@ -14,11 +14,7 @@ Follow these steps to set up the project locally.
 ### Clone the Repository
 ```bash
 git clone https://github.com/talking-to-machines/talking-to-machines.git
-<<<<<<< HEAD
 cd talking-to-machines
-=======
-cd talkingtomachines
->>>>>>> main
 ```
 
 ### Create a Virtual Environment
