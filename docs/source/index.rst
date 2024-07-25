@@ -10,7 +10,7 @@ Welcome to talking-to-machines's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-talkingtomachines
+   modules
 
 Indices and tables
 ==================
