@@ -48,7 +48,7 @@ class SyntheticAgent:
 
         Returns:
             str: The experiment ID of the synthetic agent.
-        """        
+        """
         return self.experiment_id
 
     def get_session_id(self) -> str:
@@ -56,7 +56,7 @@ class SyntheticAgent:
 
         Returns:
             str: The session ID of the experiment.
-        """ 
+        """
         return self.experiment_id
 
     def get_experiment_context(self) -> str:

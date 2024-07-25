@@ -6,7 +6,7 @@ def generate_demographic_prompt(demographic_info: dict) -> str:
 
     Returns:
         str: The formatted demographic information as a prompt.
-    """    
+    """
     try:
         demographic_prompt = ""
         for question, response in demographic_info.items():
@@ -31,7 +31,7 @@ def generate_conversational_system_message(
 
     Returns:
         str: The constructed conversational system message.
-    """    
+    """
     try:
         return f"{experiment_context}\n\n{demographic_info}\n\n{assigned_treatment}"
 
