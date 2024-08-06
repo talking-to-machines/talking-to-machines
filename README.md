@@ -8,13 +8,13 @@ Follow these steps to set up the project locally.
 
 ### Prerequisites
 
-- Python 3.9
+- Python 3.10
 - Git
 
 ### Clone the Repository
 ```bash
-git clone https://github.com/talking-to-machines/talkingtomachines.git
-cd talkingtomachines
+git clone https://github.com/talking-to-machines/talking-to-machines.git
+cd talking-to-machines
 ```
 
 ### Create a Virtual Environment
