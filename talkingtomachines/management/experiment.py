@@ -5,11 +5,9 @@ import base64
 from typing import List, Dict
 from talkingtomachines.generative.synthetic_agent import ConversationalSyntheticAgent
 from talkingtomachines.management.treatment import (
-    simple_random_assignment,
-    complete_random_assignment,
-    full_factorial_assignment,
-    block_random_assignment,
-    cluster_random_assignment,
+    simple_random_assignment_session,
+    complete_random_assignment_session,
+    full_factorial_assignment_session,
 )
 
 SUPPORTED_MODELS = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"]
@@ -97,12 +95,8 @@ class AIConversationalExperiment(Experiment):
             treatment_assignment_strategy
         )
         self.agent_demographics = self.check_agent_demographics(agent_demographics)
+        self.treatments = self.check_treatments(treatments)
         self.experiment_context = experiment_context
-        self.treatments = treatments
-
-        # agent_demographics_with_treatment, treatment_assignment = self.assign_treatment()
-        # self.agent_demographics_with_treatment = agent_demographics_with_treatment
-        # self.treatment_assignment = treatment_assignment
 
     def check_model_info(self, model_info: str) -> str:
         """Checks if the provided model_info is supported.
@@ -142,12 +136,12 @@ class AIConversationalExperiment(Experiment):
             raise ValueError(
                 f"Unsupported treatment_assignment_strategy: {treatment_assignment_strategy}. Supported strategies are: {SUPPORTED_ASSIGNMENT_STRATEGIES}."
             )
-        # if treatment_assignment_stratey == "manual" and "treatment" not in self.agent_demographics.columns:
-        #     raise ValueError("Column 'treatment' not found in agent_demographics for manual treatment assignment.")
         else:
             return treatment_assignment_strategy
 
-    def check_agent_demographics(self, agent_demographics: str) -> str:
+    def check_agent_demographics(
+        self, agent_demographics: pd.DataFrame
+    ) -> pd.DataFrame:
         """Checks if the provided agent_demographics is empty.
 
         Args:
@@ -163,6 +157,27 @@ class AIConversationalExperiment(Experiment):
             raise ValueError("agent_demographics DataFrame cannot be empty.")
         else:
             return agent_demographics
+
+    def check_treatments(self, treatments: dict[str, Any]) -> dict[str, Any]:
+        """Checks if the provided treatments is valid.
+
+        Args:
+            treatments (dict[str, Any]): The treatments to be checked.
+
+        Returns:
+            dict[str, Any]: The validated treatments.
+
+        Raises:
+            ValueError: If the provided treatments is not in the correct format.
+        """
+        if self.check_treatment_assignment_strategy == "full_factorial":
+            for _, subtreatments in treatments.items():
+                if not isinstance(subtreatments, dict):
+                    raise ValueError(
+                        "Invalid treatment format for full factorial assignment strategy. Please store the treatments in a nested dictionary structure."
+                    )
+
+        return treatments
 
     def get_model_info(self) -> str:
         """Return the model used in this experiment.
@@ -204,24 +219,150 @@ class AIConversationalExperiment(Experiment):
         """
         return self.treatment_assignment_strategy
 
-    # def assign_treatment(self) -> Dict[str, List[ConversationalSyntheticAgent]]:
-    #     """Assign treatments to agents based on the specified treatment assignment strategy.
 
-    #     Returns:
-    #         dict: A dictionary where keys are treatment names and values are lists of agents assigned to those treatments.
-    #     """
-    #     if self.treatment_assignment_strategy == "simple_random":
-    #         return simple_random_assignment()
-    #     elif self.treatment_assignment_strategy == "complete_random":
-    #         return complete_random_assignment()
-    #     elif self.treatment_assignment_strategy == "full_factorial":
-    #         return full_factorial_assignment()
-    #     elif self.treatment_assignment_strategy == "block_randomisation":
-    #         return block_random_assignment()
-    #     elif self.treatment_assignment_strategy == "cluster_randomisation":
-    #         return cluster_random_assignment()
-    #     else:
-    #         raise ValueError(f"Unsupported treatment_assignment_strategy: {self.treatment_assignment_strategy}. Supported strategies are: {self.SUPPORTED_ASSIGNMENT_STRATEGIES}.")
+class AItoAIConversationalExperiment(AIConversationalExperiment):
+    """A class representing an AI-to-AI conversational experiment. Inherits from the AIConversationalExperiment class."""
+
+    def __init__(
+        self,
+        model_info: str,
+        experiment_context: str,
+        agent_demographics: pd.DataFrame,
+        agent_roles: dict[str, str],
+        num_agents_per_session: int = 2,
+        num_sessions: int = 10,
+        treatments: dict[str, Any] = {},
+        treatment_assignment_strategy: str = "simple_random",
+    ):
+        super().__init__(
+            model_info,
+            experiment_context,
+            agent_demographics,
+            treatments,
+            treatment_assignment_strategy,
+        )
+
+        self.num_sessions = self.check_num_sessions(num_sessions)
+        self.num_agents_per_session = self.check_num_agents_per_session(
+            num_agents_per_session
+        )
+        self.agent_roles = self.check_agent_roles(agent_roles)
+        self.treatment_assignment = self.assign_treatment()
+
+    def check_num_sessions(self, num_sessions: int) -> int:
+        """Checks if the provided num_sessions is valid.
+
+        Args:
+            num_sessions (int): The num_sessions to be checked.
+
+        Returns:
+            int: The validated num_sessions.
+
+        Raises:
+            ValueError: If the provided check_num_sessions is not valid.
+        """
+        if num_sessions < 1:
+            raise ValueError(
+                f"Unsupported valid for num_sessions: {num_sessions}. num_sessions should be an integer that is equal to or greater than 1."
+            )
+        else:
+            return num_sessions
+
+    def check_num_agents_per_session(self, num_agents_per_session: int) -> int:
+        """Checks if the provided num_agents_per_session is valid.
+
+        Args:
+            num_agents_per_session (int): The num_agents_per_session to be checked.
+
+        Returns:
+            int: The validated num_agents_per_session.
+
+        Raises:
+            ValueError: If the provided num_agents_per_session is not valid.
+        """
+        if num_agents_per_session < 2:
+            raise ValueError(
+                f"Unsupported num_agents_per_session: {num_agents_per_session}. For AI-AI conversation-based experiments, num_agents_per_session should be an integer that is equal to or greater than 2."
+            )
+        elif self.num_sessions * num_agents_per_session > len(self.agent_demographics):
+            raise ValueError(
+                f"Total number of agents required for experiment ({self.num_sessions * num_agents_per_session}) exceed the number of profiles provided in agent_demographics ({len(self.agent_demographics)})."
+            )
+        else:
+            return num_agents_per_session
+
+    def check_agent_roles(self, agent_roles: dict[str, str]) -> dict[str, str]:
+        """Checks if the provided agent_roles is valid.
+
+        Args:
+            agent_roles (dict[str, str]): The agent_roles to be checked.
+
+        Returns:
+            dict[str, str]: The validated agent_roles.
+
+        Raises:
+            ValueError: If the provided agent_roles is not valid.
+        """
+        if len(agent_roles) != self.num_agents_per_session:
+            raise ValueError(
+                f"Number of roles defined ({len(agent_roles)}) does not match the number of agents assigned to each session ({self.num_agents_per_session})."
+            )
+        else:
+            return agent_roles
+
+    def get_num_sessions(self) -> int:
+        """Return the num_sessions defined this experiment.
+
+        Returns:
+            int: The num_sessions information.
+        """
+        return self.num_sessions
+
+    def get_num_agents_per_session(self) -> int:
+        """Return the num_agents_per_session defined this experiment.
+
+        Returns:
+            int: The num_agents_per_session information.
+        """
+        return self.num_agents_per_session
+
+    def get_agent_roles(self) -> dict[str, str]:
+        """Return the agent_roles defined this experiment.
+
+        Returns:
+            dict[str, str]: The agent_roles information.
+        """
+        return self.agent_roles
+
+    def assign_treatment(self) -> Dict[str, List[ConversationalSyntheticAgent]]:
+        """Assign treatments to agents based on the specified treatment assignment strategy.
+
+        Returns:
+            dict: A dictionary where keys are treatment names and values are lists of agents assigned to those treatments.
+        """
+        if self.treatment_assignment_strategy == "simple_random":
+            treatment_labels = list(self.treatment.keys())
+            return simple_random_assignment_session(treatment_labels, self.num_sessions)
+
+        elif self.treatment_assignment_strategy == "complete_random":
+            treatment_labels = list(self.treatment.keys())
+            return complete_random_assignment_session(
+                treatment_labels, self.num_sessions
+            )
+
+        elif self.treatment_assignment_strategy == "full_factorial":
+            treatment_labels = []
+            for _, inner_treatment_dict in self.treatment.items():
+                inner_treatment_labels = list(inner_treatment_dict.keys())
+                treatment_labels.append(inner_treatment_labels)
+            return full_factorial_assignment_session(
+                treatment_labels, self.num_sessions
+            )
+
+        else:
+            raise ValueError(
+                f"Unsupported treatment_assignment_strategy: {self.treatment_assignment_strategy}. Supported strategies are: {self.SUPPORTED_ASSIGNMENT_STRATEGIES}."
+            )
 
     # def generate_agent(self, session_id) -> ConversationalSyntheticAgent:
     #     """Generates a synthetic conversational agent based on the demographic information provided.

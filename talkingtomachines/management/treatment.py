@@ -5,10 +5,71 @@ from typing import List, Any, Tuple
 from itertools import product
 
 
-def simple_random_assignment(
+def simple_random_assignment_session(
+    treatment_labels: List[str], num_sessions: int
+) -> dict[int, str]:
+    """Assigns treatment labels randomly to each session using a simepl random assignment strategy.
+
+    Args:
+        treatment_labels (List[str]): A list of treatment labels.
+        num_sessions (int): The number of sessions to assign treatment labels to.
+
+    Returns:
+        dict[int, str]: A dictionary where the keys represent session numbers and the values represent the assigned treatment labels.
+    """
+    treatment_assignment = {}
+    for i in range(num_sessions):
+        treatment_assignment[i] = random.choice(treatment_labels)
+
+    return treatment_assignment
+
+
+def complete_random_assignment_session(
+    treatment_labels: List[Any], num_sessions: int
+) -> dict[int, str]:
+    """Assigns treatment labels randomly to a specified number of sessions using a complete random assignment strategy.
+
+    Args:
+        treatment_labels (List[str]): A list of treatment labels.
+        num_sessions (int): The number of sessions to assign treatment labels to.
+
+    Returns:
+        dict[int, str]: A dictionary where the keys represent session numbers and the values represent the assigned treatment labels.
+    """
+    num_treatments = len(treatment_labels)
+
+    treatment_assignment = {}
+    for i in range(num_sessions):
+        treatment_assignment[i] = treatment_labels[i % num_treatments]
+
+    return treatment_assignment
+
+
+def full_factorial_assignment_session(
+    treatment_labels: List[List[str]], num_sessions: int
+) -> dict[int, str]:
+    """Assigns treatment labels to sessions using a full factorial design assignment strategy.
+
+    Args:
+        treatment_labels (List[List[str]]): A list of lists containing the treatment labels.
+            Each inner list represents the possible labels for a specific treatment factor.
+        num_sessions (int): The number of sessions to assign treatment labels to.
+
+    Returns:
+        dict[int, str]: A dictionary where the keys represent the session numbers and the values
+            represent the assigned treatment labels.
+    """
+    treatment_label_combinations = list(product(*treatment_labels))
+
+    return complete_random_assignment_session(
+        treatment_label_combinations, num_sessions
+    )
+
+
+def simple_random_assignment_individual(
     treatment_labels: List[str], agent_demographics: pd.DataFrame
 ) -> Tuple[pd.DataFrame, dict[str, List]]:
-    """Randomly assigns agents to different treatments based on their demographics.
+    """Randomly assigns agents to different treatments based on their demographics using a simple random assignment strategy.
 
     Args:
         treatment_labels (List[str]): A list containing the treatment labels.
@@ -32,11 +93,11 @@ def simple_random_assignment(
     return agent_demographics, treatment_assignment
 
 
-def complete_random_assignment(
+def complete_random_assignment_individual(
     treatment_labels: List[Any],
     agent_demographics: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, dict[Any, List]]:
-    """Randomly assigns agents to different treatments in a round robin fashion to ensure equal distribution of subjects across all treatments.
+    """Randomly assigns agents to different treatments using a complete random assignment strategy.
 
     Args:
         treatment_labels (List[Any]): A list of treatment labels.
@@ -61,11 +122,11 @@ def complete_random_assignment(
     return agent_demographics, treatment_assignment
 
 
-def full_factorial_assignment(
+def full_factorial_assignment_individual(
     treatment_labels: List[List[str]],
     agent_demographics: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, dict[str, List]]:
-    """Assigns treatments to agents using a full factorial design.
+    """Assigns treatments to agents using a full factorial design assignment strategy.
 
     This function takes a list of treatment labels and a DataFrame containing agent demographics,
     and assigns treatments to agents using a full factorial design. It generates all possible combinations
@@ -82,13 +143,15 @@ def full_factorial_assignment(
     """
     treatment_label_combinations = list(product(*treatment_labels))
 
-    return complete_random_assignment(treatment_label_combinations, agent_demographics)
+    return complete_random_assignment_individual(
+        treatment_label_combinations, agent_demographics
+    )
 
 
-def block_random_assignment(
+def block_random_assignment_individual(
     treatment_labels: List[str], agent_demographics: pd.DataFrame, block_size: int
 ) -> Tuple[pd.DataFrame, dict[str, List]]:
-    """Assigns treatments randomly to agents using block random assignment.
+    """Assigns treatments randomly to agents using block random assignment strategy.
 
     Args:
         treatment_labels (List[str]): A list of treatment labels.
@@ -127,10 +190,10 @@ def block_random_assignment(
     return agent_demographics, block_treatment_assignment
 
 
-def cluster_random_assignment(
+def cluster_random_assignment_individual(
     treatment_labels: List[str], agent_demographics: pd.DataFrame, cluster_criteria: str
 ) -> Tuple[pd.DataFrame, dict[str, List]]:
-    """Assigns treatments randomly in a round robin fashion to clusters based on specified cluster criteria.
+    """Assigns treatments randomly using a cluster random assignment strategy.
 
     Args:
         treatment_labels (List[str]): A list of treatment labels.
