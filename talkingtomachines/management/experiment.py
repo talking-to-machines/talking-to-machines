@@ -12,6 +12,7 @@ from talkingtomachines.management.treatment import (
     complete_random_assignment_session,
     full_factorial_assignment_session,
 )
+from talkingtomachines.storage.experiment import store_experiment
 
 SUPPORTED_MODELS = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"]
 SUPPORTED_ASSIGNMENT_STRATEGIES = [
@@ -389,14 +390,15 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
 
         return agent_to_session_assignment
 
-    def run_experiment(self, test_mode: bool = True) -> None:
+    def run_experiment(self, test_mode: bool = True) -> dict[int, Any]:
         """Runs an experiment based on the experimental settings defined during class initialisation. If test_mode is set to True, one of the predefined sessions will be randomly selected and run.
 
         Args:
-            test_mode (bool): Indicates whether the experiment is in test mode or not. Default is True.
+            test_mode (bool, optional): Indicates whether the experiment is in test mode or not.
+                Defaults to True.
 
         Returns:
-            None
+            dict[int, Any]: A dictionary containing the session IDs as keys and the session information as values.
         """
 
         if test_mode:
@@ -404,7 +406,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         else:
             session_id_list = self.session_id_list
 
-        experiment = {}
+        experiment = {"experiment_id": self.experiment_id, "sessions": {}}
         for session_id in session_id_list:
             session_info = {}
             session_info["session_id"] = session_id
@@ -412,10 +414,12 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             session_info["treatment"] = self.treatments[treatment_label]
             session_info["agents_demographic"] = self.agent_assignment[session_id]
             session_info["agents"] = self.initialize_agents(session_info)
-            session_info["conversation_history"] = self.run_session(session_info)
-            experiment[session_id] = session_info
+            session_info = self.run_session(session_info)
+            experiment["sessions"][session_id] = session_info
 
         self.save_experiment(experiment)
+
+        return experiment
 
     def initialize_agents(
         self, session_info: dict[str, Any]
@@ -453,5 +457,13 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
     def run_session(self):
         return None
 
-    def save_experiment(self):
-        return None
+    def save_experiment(self, experiment: dict[int, Any]):
+        """Save the experiment data.
+
+        Args:
+            experiment (dict[int, Any]): The experiment data to be saved.
+
+        Returns:
+            None
+        """
+        store_experiment(experiment)
