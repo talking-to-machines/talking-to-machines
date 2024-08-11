@@ -146,7 +146,7 @@ class AIConversationalExperiment(Experiment):
     def check_agent_demographics(
         self, agent_demographics: pd.DataFrame
     ) -> pd.DataFrame:
-        """Checks if the provided agent_demographics is empty.
+        """Checks to ensure that provided agent_demographics is not empty and contains a ID column.
 
         Args:
             agent_demographics (str): The agent_demographics to be checked.
@@ -155,10 +155,14 @@ class AIConversationalExperiment(Experiment):
             str: The validated agent_demographics.
 
         Raises:
-            ValueError: If the provided agent_demographics is an empty dataframe.
+            ValueError: If the provided agent_demographics is an empty dataframe or if it does not contain an ID column.
         """
         if agent_demographics.empty:
             raise ValueError("agent_demographics DataFrame cannot be empty.")
+        elif "ID" not in agent_demographics.columns:
+            raise ValueError(
+                "agent_demographics DataFrame should contain an 'ID' column."
+            )
         else:
             return agent_demographics
 
@@ -390,7 +394,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
 
         return agent_to_session_assignment
 
-    def run_experiment(self, test_mode: bool = True) -> dict[int, Any]:
+    def run_experiment(self, test_mode: bool = True) -> dict[str, Any]:
         """Runs an experiment based on the experimental settings defined during class initialisation. If test_mode is set to True, one of the predefined sessions will be randomly selected and run.
 
         Args:
@@ -398,7 +402,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
                 Defaults to True.
 
         Returns:
-            dict[int, Any]: A dictionary containing the session IDs as keys and the session information as values.
+            dict[str, Any]: A dictionary containing the experiment ID and session information.
         """
 
         if test_mode:
@@ -440,12 +444,14 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         ), "Number of agents' demographics does not match the number of agent roles when initialising agents."
         agent_list = []
         for i in range(len(session_info["agents_demographic"])):
+            agent_demographic = session_info["agents_demographic"][i]
             agent_list.append(
                 ConversationalSyntheticAgent(
                     experiment_id=self.experiment_id,
                     experiment_context=self.experiment_context,
                     session_id=session_info["session_id"],
-                    demographic_info=session_info["agents_demographic"][i],
+                    agent_id=agent_demographic["ID"],
+                    demographic_info=agent_demographic,
                     role=list(self.agent_roles.values())[i],
                     model_info=self.model_info,
                     treatment=session_info["treatment"],

@@ -14,7 +14,8 @@ class SyntheticAgent:
     Args:
         experiment_id (str): The ID of the experiment.
         experiment_context (str): The context of the experiment.
-        session_id (str): The ID of the session.
+        session_id (int): The ID of the session.
+        agent_id (int): The ID for the agent.
         demographic_info (DemographicInfo): The demographic information of the user.
         model_info (str): The information about the model used by the agent.
         demographic_prompt_generator (Callable[[DemographicInfo], str], optional):
@@ -24,7 +25,7 @@ class SyntheticAgent:
     Attributes:
         experiment_id (str): The ID of the experiment.
         experiment_context (str): The context of the experiment.
-        session_id (str): The ID of the session.
+        session_id (int): The ID of the session.
         demographic_info (DemographicInfo): The demographic information of the user.
         model_info (str): The information about the model used by the agent.
     """
@@ -33,7 +34,8 @@ class SyntheticAgent:
         self,
         experiment_id: str,
         experiment_context: str,
-        session_id: str,
+        session_id: int,
+        agent_id: int,
         demographic_info: DemographicInfo,
         model_info: str,
         demographic_prompt_generator: Callable[
@@ -43,6 +45,7 @@ class SyntheticAgent:
         self.experiment_id = experiment_id
         self.experiment_context = experiment_context
         self.session_id = session_id
+        self.agent_id = self.generate_agent_id(agent_id)
         self.demographic_info = demographic_prompt_generator(demographic_info)
         self.model_info = model_info
 
@@ -54,13 +57,21 @@ class SyntheticAgent:
         """
         return self.experiment_id
 
-    def get_session_id(self) -> str:
+    def get_session_id(self) -> int:
         """Return the session ID of the experiment.
 
         Returns:
-            str: The session ID of the experiment.
+            int: The session ID of the experiment.
         """
-        return self.experiment_id
+        return self.session_id
+
+    def get_agent_id(self) -> str:
+        """Return the unique ID of the agent.
+
+        Returns:
+            int: The unique ID of the agent.
+        """
+        return self.agent_id
 
     def get_experiment_context(self) -> str:
         """Return the experiment context of the synthetic agent.
@@ -86,6 +97,17 @@ class SyntheticAgent:
         """
         return self.model_info
 
+    def generate_agent_id(self, agent_id: int) -> str:
+        """Generates an unique agent ID based on the experiment ID, session ID, and agent ID.
+
+        Args:
+            agent_id (int): The ID of the agent.
+
+        Returns:
+            str: The generated agent ID.
+        """
+        return f"{self.experiment_id}_{self.session_id}_{agent_id}"
+
     def respond(self, question: str) -> str:
         """Generate a response based on the synthetic agent's model.
 
@@ -109,7 +131,7 @@ class ConversationalSyntheticAgent(SyntheticAgent):
     Args:
         experiment_id (str): The ID of the experiment.
         experiment_context (str): The context of the experiment.
-        session_id (str): The ID of the session.
+        session_id (int): The ID of the session.
         demographic_info (DemographicInfo): The demographic information of the user.
         model_info (str): The information about the model used by the agent.
         assigned_treatment (str): The assigned treatment for the user.
@@ -127,7 +149,7 @@ class ConversationalSyntheticAgent(SyntheticAgent):
         self,
         experiment_id: str,
         experiment_context: str,
-        session_id: str,
+        session_id: int,
         demographic_info: DemographicInfo,
         role: str,
         model_info: str,
@@ -180,42 +202,34 @@ class ConversationalSyntheticAgent(SyntheticAgent):
         """
         return self.message_history
 
-    def update_message_history(self, message: str, message_type: str) -> None:
+    def update_message_history(self, message: str, role: str) -> None:
         """Update the message history of the synthetic agent with a new message.
 
         Args:
             message (str): A message to add to the conversation history.
-            message_type (str): Either user or assistant.
+            role (str): The identifier of the party that generated the message.
 
         Returns:
             None
         """
-        if message_type == "user":
-            self.message_history.append({"role": "user", "content": message})
-        elif message_type == "assistant":
-            self.message_history.append({"role": "assistant", "content": message})
-        else:
-            # Log the exception
-            print(
-                f"Message type {message_type} is not supported. Need to use either user or assistant."
-            )
-            return None
+        self.message_history.append({"role": role, "content": message})
 
-    def respond(self, question: str) -> str:
+    def respond(self, question: str, role: str) -> str:
         """Generate a response to a question posed to the synthetic agent.
 
         Args:
             question (str): A question or prompt to which the agent should respond.
+            role (str): The role of the other party in the conversation.
 
         Returns:
             str: The response generated by the synthetic agent.
         """
         try:
-            self.update_message_history(message=question, message_type="user")
+            self.update_message_history(message=question, role=role)
             response = query_llm(
                 model_info=self.get_model_info, message_history=self.get_message_history
             )
-            self.update_message_history(message=response, message_type="assistant")
+            self.update_message_history(message=response, role=self.agent_id)
             return response
 
         except Exception as e:
