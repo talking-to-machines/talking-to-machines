@@ -129,8 +129,9 @@ class ConversationalSyntheticAgent(SyntheticAgent):
         experiment_context: str,
         session_id: str,
         demographic_info: DemographicInfo,
+        role: str,
         model_info: str,
-        assigned_treatment: str,
+        treatment: str,
         demographic_prompt_generator: Callable[
             [DemographicInfo], str
         ] = generate_demographic_prompt,
@@ -143,9 +144,13 @@ class ConversationalSyntheticAgent(SyntheticAgent):
             model_info,
             demographic_prompt_generator,
         )
-        self.assigned_treatment = assigned_treatment
+        self.role = role
+        self.treatment = treatment
         self.system_message = generate_conversational_system_message(
-            self.experiment_context, self.demographic_info, self.assigned_treatment
+            experiment_context=self.experiment_context,
+            role=self.role,
+            treatment=self.treatment,
+            demographic_info=self.demographic_info,
         )
         self.message_history = [
             {"role": "system", "content": self.get_system_message()},

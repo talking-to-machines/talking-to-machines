@@ -20,20 +20,21 @@ def generate_demographic_prompt(demographic_info: dict) -> str:
 
 
 def generate_conversational_system_message(
-    experiment_context: str, demographic_info: str, assigned_treatment: str
+    experiment_context: str, role: str, treatment: str, demographic_info: str
 ) -> str:
-    """Constructs system message for conversational-based experiment by combining experiment_context, demographic_info and assigned_treatment.
+    """Constructs system message for conversational-based experiment by combining experiment_context, role, demographic_info and treatment.
 
     Args:
         experiment_context (str): The context of the experiment.
+        role (str): The agent's role.
+        treatment (str): The treatment assigned to the synthetic subject.
         demographic_info (str): The demographic information of the synthetic subject.
-        assigned_treatment (str): The treatment assigned to the synthetic subject.
 
     Returns:
         str: The constructed conversational system message.
     """
     try:
-        return f"{experiment_context}\n\n{demographic_info}\n\n{assigned_treatment}"
+        return f"{experiment_context}\n\n{role}\n\n{treatment}\n\n{demographic_info}"
 
     except Exception as e:
         # Log the exception

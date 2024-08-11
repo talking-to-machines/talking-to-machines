@@ -2,8 +2,11 @@ from typing import Any
 import pandas as pd
 import datetime
 import base64
-from typing import List, Dict
-from talkingtomachines.generative.synthetic_agent import ConversationalSyntheticAgent
+import random
+from talkingtomachines.generative.synthetic_agent import (
+    ConversationalSyntheticAgent,
+    DemographicInfo,
+)
 from talkingtomachines.management.treatment import (
     simple_random_assignment_session,
     complete_random_assignment_session,
@@ -248,6 +251,8 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         )
         self.agent_roles = self.check_agent_roles(agent_roles)
         self.treatment_assignment = self.assign_treatment()
+        self.session_id_list = list(self.treatment_assignment.keys())
+        self.agent_assignment = self.assign_agents_to_session()
 
     def check_num_sessions(self, num_sessions: int) -> int:
         """Checks if the provided num_sessions is valid.
@@ -334,7 +339,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         """
         return self.agent_roles
 
-    def assign_treatment(self) -> Dict[str, List[ConversationalSyntheticAgent]]:
+    def assign_treatment(self) -> dict[int, str]:
         """Assign treatments to agents based on the specified treatment assignment strategy.
 
         Returns:
@@ -364,34 +369,89 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
                 f"Unsupported treatment_assignment_strategy: {self.treatment_assignment_strategy}. Supported strategies are: {self.SUPPORTED_ASSIGNMENT_STRATEGIES}."
             )
 
-    # def generate_agent(self, session_id) -> ConversationalSyntheticAgent:
-    #     """Generates a synthetic conversational agent based on the demographic information provided.
+    def assign_agents_to_session(self) -> dict[int, list[DemographicInfo]]:
+        """Randomly assigns agents' demographics to each session based on the given number of agents per session.
 
-    #     Returns:
-    #         ConversationalSyntheticAgent: A ConversationalSyntheticAgent object generated for this experiment.
-    #     """
-    #     if self.get_treatment_assignment == "random":
-    #         treatment = self.random_treatment_assignment()
-    #     else:
-    #         treatment = ""
+        Returns:
+            dict[int, list[DemographicInfo]]: A dictionary mapping session IDs to a list of agent demographic information.
+        """
+        randomised_agent_demographics = self.agent_demographics.sample(
+            frac=1
+        ).reset_index(drop=True)
 
-    #     agent = ConversationalSyntheticAgent(
-    #         experiment_id=self.get_experiment_id(),
-    #         experiment_context=self.get_experiment_context(),
-    #         session_id=self.generate_session_id(),
-    #         demographic_info=self.sample_agent_demographic(),
-    #         model_info=self.get_model_info(),
-    #         assigned_treatment=treatment,
-    #     )
+        agent_to_session_assignment = {}
+        for i, session_id in enumerate(self.session_id_list):
+            agent_to_session_assignment[session_id] = (
+                randomised_agent_demographics.iloc[
+                    i : i + self.num_agents_per_session + 1
+                ].to_dict(orient="records")
+            )
 
-    #     return agent
+        return agent_to_session_assignment
 
-    # def run_experiment(experiment_type: str, experiment_data: dict) -> dict:
-    #     """Run an experiment of the specified type."""
-    #     try:
-    #         # Implement experiment module functionality
-    #         pass
-    #     except Exception as e:
-    #         # Log the exception
-    #         print(f"Error during experiment execution: {e}")
-    #         return {}
+    def run_experiment(self, test_mode: bool = True) -> None:
+        """Runs an experiment based on the experimental settings defined during class initialisation. If test_mode is set to True, one of the predefined sessions will be randomly selected and run.
+
+        Args:
+            test_mode (bool): Indicates whether the experiment is in test mode or not. Default is True.
+
+        Returns:
+            None
+        """
+
+        if test_mode:
+            session_id_list = random.choice(self.session_id_list)
+        else:
+            session_id_list = self.session_id_list
+
+        experiment = {}
+        for session_id in session_id_list:
+            session_info = {}
+            session_info["session_id"] = session_id
+            treatment_label = self.treatment_assignment[session_id]
+            session_info["treatment"] = self.treatments[treatment_label]
+            session_info["agents_demographic"] = self.agent_assignment[session_id]
+            session_info["agents"] = self.initialize_agents(session_info)
+            session_info["conversation_history"] = self.run_session(session_info)
+            experiment[session_id] = session_info
+
+        self.save_experiment(experiment)
+
+    def initialize_agents(
+        self, session_info: dict[str, Any]
+    ) -> list[ConversationalSyntheticAgent]:
+        """Initializes and returns a list of ConversationalSyntheticAgent objects based on the provided session information.
+
+        Args:
+            session_info (dict[str, Any]): A dictionary containing session information, including agents' demographics, session ID, treatment, etc.
+
+        Returns:
+            list[ConversationalSyntheticAgent]: A list of initialized ConversationalSyntheticAgent objects.
+
+        Raises:
+            AssertionError: If the number of agents' demographics does not match the number of agent roles when initializing agents.
+        """
+        assert len(session_info["agents_demographic"]) == len(
+            self.agent_roles
+        ), "Number of agents' demographics does not match the number of agent roles when initialising agents."
+        agent_list = []
+        for i in range(len(session_info["agents_demographic"])):
+            agent_list.append(
+                ConversationalSyntheticAgent(
+                    experiment_id=self.experiment_id,
+                    experiment_context=self.experiment_context,
+                    session_id=session_info["session_id"],
+                    demographic_info=session_info["agents_demographic"][i],
+                    role=list(self.agent_roles.values())[i],
+                    model_info=self.model_info,
+                    treatment=session_info["treatment"],
+                )
+            )
+
+        return agent_list
+
+    def run_session(self):
+        return None
+
+    def save_experiment(self):
+        return None
