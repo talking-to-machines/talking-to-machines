@@ -1,8 +1,6 @@
 from typing import Any
 import pandas as pd
 import datetime
-import base64
-import random
 from talkingtomachines.generative.synthetic_agent import (
     ConversationalSyntheticAgent,
     DemographicInfo,
@@ -39,15 +37,13 @@ class Experiment:
         self.experiment_id = self.generate_experiment_id()
 
     def generate_experiment_id(self) -> str:
-        """Generates a unique ID for the experiment by concatenating the date and time information and perform UTF-8 encoding.
+        """Generates a unique ID for the experiment by concatenating the date and time information.
 
         Returns:
             str: Unique ID for the experiment as a base64 encoded string.
         """
         current_datetime = datetime.datetime.now()
-        current_datetime_str = current_datetime.strftime("%Y%m%d%H%M%S%f")
-        encoded_bytes = base64.urlsafe_b64encode(current_datetime_str.encode("utf-8"))
-        experiment_id = encoded_bytes.decode("utf-8")
+        experiment_id = current_datetime.strftime("%Y%m%d_%H%M%S")
 
         return experiment_id
 
@@ -447,18 +443,18 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             dict[int, str]: A dictionary where the keys represent session numbers and the values represent the assigned treatment labels.
         """
         if self.treatment_assignment_strategy == "simple_random":
-            treatment_labels = list(self.treatment.keys())
+            treatment_labels = list(self.treatments.keys())
             return simple_random_assignment_session(treatment_labels, self.num_sessions)
 
         elif self.treatment_assignment_strategy == "complete_random":
-            treatment_labels = list(self.treatment.keys())
+            treatment_labels = list(self.treatments.keys())
             return complete_random_assignment_session(
                 treatment_labels, self.num_sessions
             )
 
         elif self.treatment_assignment_strategy == "full_factorial":
             treatment_labels = []
-            for _, inner_treatment_dict in self.treatment.items():
+            for _, inner_treatment_dict in self.treatments.items():
                 inner_treatment_labels = list(inner_treatment_dict.keys())
                 treatment_labels.append(inner_treatment_labels)
             return full_factorial_assignment_session(
@@ -484,14 +480,16 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         for i, session_id in enumerate(self.session_id_list):
             agent_to_session_assignment[session_id] = (
                 randomised_agent_demographics.iloc[
-                    i : i + self.num_agents_per_session + 1
+                    i
+                    * self.num_agents_per_session : (i + 1)
+                    * self.num_agents_per_session
                 ].to_dict(orient="records")
             )
 
         return agent_to_session_assignment
 
     def run_experiment(self, test_mode: bool = True) -> dict[str, Any]:
-        """Runs an experiment based on the experimental settings defined during class initialisation. If test_mode is set to True, one of the predefined sessions will be randomly selected and run.
+        """Runs an experiment based on the experimental settings defined during class initialisation. If test_mode is set to True, the first session will be selected and run.
 
         Args:
             test_mode (bool, optional): Indicates whether the experiment is in test mode or not.
@@ -502,7 +500,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         """
 
         if test_mode:
-            session_id_list = random.choice(self.session_id_list)
+            session_id_list = [self.session_id_list[0]]
         else:
             session_id_list = self.session_id_list
 
@@ -521,6 +519,9 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             session_info["agents_demographic"] = self.agent_assignment[session_id]
             session_info["agents"] = self.initialize_agents(session_info)
             session_info = self.run_session(session_info)
+            session_info["agents"] = [
+                agent.to_dict() for agent in session_info["agents"]
+            ]
             experiment["sessions"][session_id] = session_info
 
         self.save_experiment(experiment)
@@ -577,20 +578,25 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         response = session_info["session_system_message"]
         agent_role = "system"
         while (
-            response != "Thank you for the conversation."
+            "Thank you for the conversation." not in response
             and conversation_length < self.max_conversation_length
         ):
             message_history.append({agent_role: response})
+            print({agent_role: response})
+            print()
             agent = session_info["agents"][conversation_length % num_agents]
 
             if conversation_length == 0:
-                response = agent.response(question="Start")
+                response = agent.respond(question="Start")
             else:
-                response = agent.response(question=response)
+                response = agent.respond(question=response)
             agent_role = agent.get_role()
             conversation_length += 1
         message_history.append({agent_role: response})
         message_history.append({"system": "End"})
+        print({agent_role: response})
+        print()
+        print({"system": "End"})
 
         session_info["message_history"] = message_history
         return session_info

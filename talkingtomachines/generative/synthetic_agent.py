@@ -86,6 +86,20 @@ class SyntheticAgent:
         """
         return self.model_info
 
+    def to_dict(self) -> dict[str, Any]:
+        """Converts the SyntheticAgent object to a dictionary.
+
+        Returns:
+            dict[str, Any]: A dictionary representation of the SyntheticAgent object.
+        """
+        return {
+            "experiment_id": self.experiment_id,
+            "experiment_context": self.experiment_context,
+            "session_id": self.session_id,
+            "demographic_info": self.demographic_info,
+            "model_info": self.model_info,
+        }
+
     def respond(self) -> str:
         """Generate a response based on the synthetic agent's model.
 
@@ -198,6 +212,25 @@ class ConversationalSyntheticAgent(SyntheticAgent):
             List[dict]: The conversation history of the synthetic agent
         """
         return self.message_history
+
+    def to_dict(self) -> dict[str, Any]:
+        """Converts the ConversationalSyntheticAgent object to a dictionary.
+
+        Returns:
+            dict[str, Any]: A dictionary representation of the ConversationalSyntheticAgent object.
+        """
+        return {
+            "experiment_id": self.experiment_id,
+            "experiment_context": self.experiment_context,
+            "session_id": self.session_id,
+            "demographic_info": self.demographic_info,
+            "model_info": self.model_info,
+            "role": self.role,
+            "role_description": self.role_description,
+            "treatment": self.treatment,
+            "system_message": self.system_message,
+            "message_history": self.message_history,
+        }
 
     def update_message_history(self, message: str, role: str) -> None:
         """Update the message history of the synthetic agent with a new message.

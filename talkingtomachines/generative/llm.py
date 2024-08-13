@@ -23,19 +23,19 @@ def query_llm(model_info: str, message_history: List[dict]) -> str:
         return ""
 
 
-def query_open_ai(model_info: str, messsage_history: List[dict]) -> str:
+def query_open_ai(model_info: str, message_history: List[dict]) -> str:
     """Query OpenAI API with the provided prompt.
 
     Args:
         model_info (str): Information about the model.
-        messsage_history (List[dict]): Contains the history of message exchanged between user and assistant.
+        message_history (List[dict]): Contains the history of message exchanged between user and assistant.
 
     Returns:
         str: Response from the LLM.
     """
     try:
         response = openai_client.chat.completions.create(
-            model=model_info, messages=messsage_history
+            model=model_info, messages=message_history
         )
         return response.choices[0].message.content
 
