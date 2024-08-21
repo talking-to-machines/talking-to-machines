@@ -17,7 +17,7 @@ def generate_demographic_prompt(demographic_info: dict) -> str:
 
     except Exception as e:
         # Log the exception
-        print(f"Error encountered when generating demographic prompt: {e}")
+        print(f"Error encountered when generating demographic prompt: {e}. Returning empty string.")
         return ""
 
 
@@ -38,13 +38,7 @@ def generate_conversational_agent_system_message(
     Returns:
         str: The constructed conversational system message.
     """
-    try:
-        return f"{experiment_context}\n\n{treatment}\n\n{role_description}\n\n{demographic_info}"
-
-    except Exception as e:
-        # Log the exception
-        print(f"Error encountered when generating conversational system message: {e}")
-        return ""
+    return f"{experiment_context}\n\n{treatment}\n\n{role_description}\n\n{demographic_info}"
 
 
 def generate_conversational_session_system_message(
@@ -59,10 +53,4 @@ def generate_conversational_session_system_message(
     Returns:
         str: The constructed conversational system message.
     """
-    try:
-        return f"{experiment_context}\n\n{treatment}"
-
-    except Exception as e:
-        # Log the exception
-        print(f"Error encountered when generating conversational system message: {e}")
-        return ""
+    return f"{experiment_context}\n\n{treatment}"
