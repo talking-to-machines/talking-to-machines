@@ -1,6 +1,7 @@
 from typing import Any
 import pandas as pd
 import datetime
+from tqdm import tqdm
 from talkingtomachines.generative.synthetic_agent import (
     ConversationalSyntheticAgent,
     DemographicInfo,
@@ -505,7 +506,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             session_id_list = self.session_id_list
 
         experiment = {"experiment_id": self.experiment_id, "sessions": {}}
-        for session_id in session_id_list:
+        for session_id in tqdm(session_id_list):
             session_info = {}
             session_info["session_id"] = session_id
             treatment_label = self.treatment_assignment[session_id]
@@ -518,7 +519,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             )
             session_info["agents_demographic"] = self.agent_assignment[session_id]
             session_info["agents"] = self.initialize_agents(session_info)
-            session_info = self.run_session(session_info)
+            session_info = self.run_session(session_info, test_mode=test_mode)
             session_info["agents"] = [
                 agent.to_dict() for agent in session_info["agents"]
             ]
@@ -563,7 +564,9 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
 
         return agent_list
 
-    def run_session(self, session_info: dict[str, Any]) -> dict[str, Any]:
+    def run_session(
+        self, session_info: dict[str, Any], test_mode: bool = False
+    ) -> dict[str, Any]:
         """Runs a session involving a conversation between multiple AI agents.
 
         Args:
@@ -582,8 +585,9 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             and conversation_length < self.max_conversation_length
         ):
             message_history.append({agent_role: response})
-            print({agent_role: response})
-            print()
+            if test_mode:
+                print({agent_role: response})
+                print()
             agent = session_info["agents"][conversation_length % num_agents]
 
             if conversation_length == 0:
@@ -594,9 +598,10 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             conversation_length += 1
         message_history.append({agent_role: response})
         message_history.append({"system": "End"})
-        print({agent_role: response})
-        print()
-        print({"system": "End"})
+        if test_mode:
+            print({agent_role: response})
+            print()
+            print({"system": "End"})
 
         session_info["message_history"] = message_history
         return session_info
@@ -611,3 +616,178 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             None
         """
         save_experiment(experiment)
+
+
+class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
+    """A class representing an AI-to-AI interview experiment. Inherits from the AItoAIConversationalExperiment class.
+
+    This class extends the `AItoAIConversationalExperiment` class and provides additional functionality
+    specific to AI-to-AI interview experiments. More specifically, one of the agents in the session will serve
+    as the interviewer and will not be given a demographic profile.
+
+    Args:
+        model_info (str): The information about the AI model used in the experiment.
+        experiment_context (str): The context or purpose of the experiment.
+        agent_demographics (pd.DataFrame): The demographic information of the agents participating in the experiment.
+        agent_roles (dict[str, str]): Dictionary mapping agent roles to their descriptions.
+        num_agents_per_session (int, optional): Number of agents per session. Defaults to 2.
+        num_sessions (int, optional): Number of sessions. Defaults to 10.
+        max_conversation_length (int, optional): Maximum length of a conversation. Defaults to 10.
+        treatments (dict[str, Any], optional): The treatments for the experiment. Defaults to an empty dictionary.
+        treatment_assignment_strategy (str, optional): The strategy used for assigning treatments to agents.
+            Defaults to "simple_random".
+
+    Raises:
+        ValueError: If the provided num_sessions is not valid.
+        ValueError: If the provided num_agents_per_session is less than 2 or will exceed the total number of demographic information.
+        ValueError: If the provided number of agent_roles is not equal to num_agents_per_session or if the first role is not Interviewer.
+        ValueError: If the number of roles defined does not match the number of agents assigned to each session. Also if the first role is not Interviewer.
+
+    Attributes:
+        num_sessions (int): The number of sessions in the experiment.
+        num_agents_per_session (int): The number of agents per session.
+        agent_roles (dict[str, str]): The roles assigned to agents.
+        treatment_assignment (dict[int, str]): The assignment of treatments to agents.
+        session_id_list (list[int]): List of session IDs.
+        agent_assignment (dict[int, list[DemographicInfo]]): The assignment of agents to sessions.
+    """
+
+    def __init__(
+        self,
+        model_info: str,
+        experiment_context: str,
+        agent_demographics: pd.DataFrame,
+        agent_roles: dict[str, str],
+        num_agents_per_session: int = 2,
+        num_sessions: int = 10,
+        max_conversation_length: int = 10,
+        treatments: dict[str, Any] = {},
+        treatment_assignment_strategy: str = "simple_random",
+    ):
+        super().__init__(
+            model_info,
+            experiment_context,
+            agent_demographics,
+            agent_roles,
+            num_agents_per_session,
+            num_sessions,
+            max_conversation_length,
+            treatments,
+            treatment_assignment_strategy,
+        )
+
+        self.num_agents_per_session = self.check_num_agents_per_session(
+            num_agents_per_session
+        )
+        self.agent_roles = self.check_agent_roles(agent_roles)
+        self.agent_assignment = self.assign_agents_to_session()
+
+    def check_num_agents_per_session(self, num_agents_per_session: int) -> int:
+        """Checks if the provided num_agents_per_session is valid.
+
+        Args:
+            num_agents_per_session (int): The num_agents_per_session to be checked.
+
+        Returns:
+            int: The validated num_agents_per_session.
+
+        Raises:
+            ValueError: If the provided num_agents_per_session is not valid.
+        """
+        if num_agents_per_session < 2:
+            raise ValueError(
+                f"Unsupported num_agents_per_session: {num_agents_per_session}. For AI-AI conversation-based experiments, num_agents_per_session should be an integer that is equal to or greater than 2."
+            )
+
+        if self.num_sessions * (num_agents_per_session - 1) > len(
+            self.agent_demographics
+        ):
+            raise ValueError(
+                f"Total number of agents required for experiment ({self.num_sessions * (num_agents_per_session-1)}) exceed the number of profiles provided in agent_demographics ({len(self.agent_demographics)})."
+            )
+
+        return num_agents_per_session
+
+    def check_agent_roles(self, agent_roles: dict[str, str]) -> dict[str, str]:
+        """Checks if the provided agent_roles is valid.
+
+        Args:
+            agent_roles (dict[str, str]): The agent_roles to be checked.
+
+        Returns:
+            dict[str, str]: The validated agent_roles.
+
+        Raises:
+            ValueError: If the provided agent_roles is not valid.
+        """
+        if len(agent_roles) != self.num_agents_per_session:
+            raise ValueError(
+                f"Number of roles defined ({len(agent_roles)}) does not match the number of agents assigned to each session ({self.num_agents_per_session})."
+            )
+
+        if list(agent_roles.keys())[0] != "Interviewer":
+            raise ValueError("The first role in agent_roles should be 'Interviewer'.")
+
+        return agent_roles
+
+    def assign_agents_to_session(self) -> dict[int, list[DemographicInfo]]:
+        """Randomly assigns agents' demographics to each session based on the given number of agents per session minus the Interviewer agent.
+
+        Returns:
+            dict[int, list[DemographicInfo]]: A dictionary mapping session IDs to a list of agent demographic information.
+        """
+        randomised_agent_demographics = self.agent_demographics.sample(
+            frac=1
+        ).reset_index(drop=True)
+
+        num_interview_subjects_per_session = self.num_agents_per_session - 1
+        interview_subject_to_session_assignment = {}
+        for i, session_id in enumerate(self.session_id_list):
+            interview_subject_to_session_assignment[session_id] = (
+                randomised_agent_demographics.iloc[
+                    i
+                    * num_interview_subjects_per_session : (i + 1)
+                    * num_interview_subjects_per_session
+                ].to_dict(orient="records")
+            )
+
+        return interview_subject_to_session_assignment
+
+    def initialize_agents(
+        self, session_info: dict[str, Any]
+    ) -> list[ConversationalSyntheticAgent]:
+        """Initializes and returns a list of ConversationalSyntheticAgent objects based on the provided session information.
+
+        Args:
+            session_info (dict[str, Any]): A dictionary containing session information, including agents' demographics, session ID, treatment, etc.
+
+        Returns:
+            list[ConversationalSyntheticAgent]: A list of initialized ConversationalSyntheticAgent objects.
+
+        Raises:
+            AssertionError: If the number of agents' demographics does not match the number of agent roles (minus Interviewer role) when initializing agents.
+        """
+        assert len(session_info["agents_demographic"]) + 1 == len(
+            self.agent_roles
+        ), "Number of agents' demographics does not match the number of agent roles when initialising agents."
+        agent_list = []
+        for i in range(len(session_info["agents_demographic"]) + 1):
+            if i == 0:
+                agent_demographic = {}  # No demographic profile for Interviewer role
+            else:
+                agent_demographic = session_info["agents_demographic"][i - 1]
+
+            agent_list.append(
+                ConversationalSyntheticAgent(
+                    experiment_id=self.experiment_id,
+                    experiment_context=self.experiment_context,
+                    session_id=session_info["session_id"],
+                    demographic_info=agent_demographic,
+                    role=list(self.agent_roles.keys())[i],
+                    role_description=list(self.agent_roles.values())[i],
+                    model_info=self.model_info,
+                    treatment=session_info["treatment"],
+                )
+            )
+
+        return agent_list
