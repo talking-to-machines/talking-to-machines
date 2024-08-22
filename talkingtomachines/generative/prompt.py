@@ -17,7 +17,9 @@ def generate_demographic_prompt(demographic_info: dict) -> str:
 
     except Exception as e:
         # Log the exception
-        print(f"Error encountered when generating demographic prompt: {e}. Returning empty string.")
+        print(
+            f"Error encountered when generating demographic prompt: {e}. Returning empty string."
+        )
         return ""
 
 

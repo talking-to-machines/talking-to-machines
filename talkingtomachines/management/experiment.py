@@ -767,9 +767,10 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         Raises:
             AssertionError: If the number of agents' demographics does not match the number of agent roles (minus Interviewer role) when initializing agents.
         """
-        assert len(session_info["agents_demographic"]) + 1 == len(
-            self.agent_roles
-        ), "Number of agents' demographics does not match the number of agent roles when initialising agents."
+        assert (
+            len(session_info["agents_demographic"]) == len(self.agent_roles) - 1
+        ), f"Number of agents' demographics ({len(session_info['agents_demographic'])}) does not match the number of agent roles ({len(self.agent_roles)-1}) when initialising agents. The number of agent demographics should be one less than the number of roles (minus the Interviewer)."
+
         agent_list = []
         for i in range(len(session_info["agents_demographic"]) + 1):
             if i == 0:
