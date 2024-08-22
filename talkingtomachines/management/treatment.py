@@ -19,7 +19,10 @@ def simple_random_assignment_session(
     """
     treatment_assignment = {}
     for i in range(num_sessions):
-        treatment_assignment[i] = random.choice(treatment_labels)
+        if not treatment_labels:
+            treatment_assignment[i] = ""
+        else:
+            treatment_assignment[i] = random.choice(treatment_labels)
 
     return treatment_assignment
 
@@ -40,7 +43,10 @@ def complete_random_assignment_session(
 
     treatment_assignment = {}
     for i in range(num_sessions):
-        treatment_assignment[i] = treatment_labels[i % num_treatments]
+        if not treatment_labels:
+            treatment_assignment[i] = ""
+        else:
+            treatment_assignment[i] = treatment_labels[i % num_treatments]
 
     return treatment_assignment
 
@@ -59,7 +65,10 @@ def full_factorial_assignment_session(
         dict[int, str]: A dictionary where the keys represent the session numbers and the values
             represent the assigned treatment labels.
     """
-    treatment_label_combinations = list(product(*treatment_labels))
+    if not treatment_labels:
+        treatment_label_combinations = []
+    else:
+        treatment_label_combinations = list(product(*treatment_labels))
 
     return complete_random_assignment_session(
         treatment_label_combinations, num_sessions
