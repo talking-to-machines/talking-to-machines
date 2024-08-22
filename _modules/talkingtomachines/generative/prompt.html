@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.generative.prompt &mdash; talking-to-machines 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.generative.prompt</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.generative.prompt</h1><div class="highlight"><pre>
+<div class="viewcode-block" id="generate_demographic_prompt"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.prompt.generate_demographic_prompt">[docs]</a><span></span><span class="k">def</span> <span class="nf">generate_demographic_prompt</span><span class="p">(</span><span class="n">demographic_info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Formats the demographic information of a synthetic subject into a prompt.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        demographic_info (dict): A dictionary containing the demographic information of the synthetic subject.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: The formatted demographic information as a prompt.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">demographic_prompt</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">counter</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">question</span><span class="p">,</span> <span class="n">response</span> <span class="ow">in</span> <span class="n">demographic_info</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">demographic_prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">counter</span><span class="si">}</span><span class="s2">) Interviewer: </span><span class="si">{</span><span class="n">question</span><span class="si">}</span><span class="s2"> Me: </span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">demographic_prompt</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># Log the exception</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Error encountered when generating demographic prompt: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Returning empty string.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="generate_conversational_agent_system_message"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.prompt.generate_conversational_agent_system_message">[docs]</a><span class="k">def</span> <span class="nf">generate_conversational_agent_system_message</span><span class="p">(</span>
+    <span class="n">experiment_context</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">treatment</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">role_description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">demographic_info</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Constructs system message for conversational agents by combining experiment_context, treatment, role description, and demographic_info.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        experiment_context (str): The context of the experiment.</span>
+<span class="sd">        treatment (str): The treatment that is assigned to the session.</span>
+<span class="sd">        role_description (str): A description of the agent&#39;s role.</span>
+<span class="sd">        demographic_info (str): The demographic information of the synthetic subject.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: The constructed conversational system message.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">experiment_context</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">treatment</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">role_description</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">demographic_info</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="generate_conversational_session_system_message"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.prompt.generate_conversational_session_system_message">[docs]</a><span class="k">def</span> <span class="nf">generate_conversational_session_system_message</span><span class="p">(</span>
+    <span class="n">experiment_context</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">treatment</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Constructs system message for conversational sessions by combining experiment_context and treatment.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        experiment_context (str): The context of the experiment.</span>
+<span class="sd">        treatment (str): The treatment that is assigned to the session.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: The constructed conversational system message.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">experiment_context</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">treatment</span><span class="si">}</span><span class="s2">&quot;</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

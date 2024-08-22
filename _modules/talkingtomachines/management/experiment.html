@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.management.experiment &mdash; talking-to-machines 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.management.experiment</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.management.experiment</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span> <span class="nn">talkingtomachines.generative.synthetic_agent</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ConversationalSyntheticAgent</span><span class="p">,</span>
+    <span class="n">DemographicInfo</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">talkingtomachines.management.treatment</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">simple_random_assignment_session</span><span class="p">,</span>
+    <span class="n">complete_random_assignment_session</span><span class="p">,</span>
+    <span class="n">full_factorial_assignment_session</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">talkingtomachines.generative.prompt</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">generate_conversational_session_system_message</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">talkingtomachines.storage.experiment</span> <span class="kn">import</span> <span class="n">save_experiment</span>
+
+<span class="n">SUPPORTED_MODELS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span> <span class="s2">&quot;gpt-4o-mini&quot;</span><span class="p">,</span> <span class="s2">&quot;gpt-4-turbo&quot;</span><span class="p">,</span> <span class="s2">&quot;gpt-4&quot;</span><span class="p">,</span> <span class="s2">&quot;gpt-3.5-turbo&quot;</span><span class="p">]</span>
+<span class="n">SUPPORTED_ASSIGNMENT_STRATEGIES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;simple_random&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;complete_random&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;full_factorial&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;block_randomisation&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cluster_randomisation&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;manual&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="Experiment"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.Experiment">[docs]</a><span class="k">class</span> <span class="nc">Experiment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class for constructing the base experiment class.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        experiment_id (str): The unique ID of the experiment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_experiment_id</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Experiment.generate_experiment_id"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.Experiment.generate_experiment_id">[docs]</a>    <span class="k">def</span> <span class="nf">generate_experiment_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates a unique ID for the experiment by concatenating the date and time information.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: Unique ID for the experiment as a base64 encoded string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">current_datetime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">current_datetime</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">_%H%M%S&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">experiment_id</span></div>
+
+<div class="viewcode-block" id="Experiment.get_experiment_id"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.Experiment.get_experiment_id">[docs]</a>    <span class="k">def</span> <span class="nf">get_experiment_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the experiment ID of the synthetic agent.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The experiment ID of the synthetic agent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment_id</span></div></div>
+
+
+<div class="viewcode-block" id="AIConversationalExperiment"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AIConversationalExperiment">[docs]</a><span class="k">class</span> <span class="nc">AIConversationalExperiment</span><span class="p">(</span><span class="n">Experiment</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class representing an AI conversational experiment. Inherits from the Experiment base class.</span>
+
+<span class="sd">    This class extends the base `Experiment` class and provides additional functionality</span>
+<span class="sd">    specific to AI conversational experiments.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model_info (str): The information about the AI model used in the experiment.</span>
+<span class="sd">        experiment_context (str): The context or purpose of the experiment.</span>
+<span class="sd">        agent_demographics (pd.DataFrame): The demographic information of the agents participating in the experiment.</span>
+<span class="sd">        max_conversation_length (int, optional): The maximum length of a conversation. Defaults to 10.</span>
+<span class="sd">        treatments (dict[str, Any], optional): The treatments for the experiment. Defaults to an empty dictionary.</span>
+<span class="sd">        treatment_assignment_strategy (str, optional): The strategy used for assigning treatments to agents.</span>
+<span class="sd">            Defaults to &quot;simple_random&quot;.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the provided model_info is not supported.</span>
+<span class="sd">        ValueError: If the provided treatment_assignment_strategy is not supported.</span>
+<span class="sd">        ValueError: If the provided agent_demographics is an empty DataFrame or does not contain a &#39;ID&#39; column.</span>
+<span class="sd">        ValueError: If the provided max_conversation_length is lesser than 5.</span>
+<span class="sd">        ValueError: If the provided treatment is not in the nested dictionary structure when treatment_assignment_strategy is &#39;full_factorial&#39;.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        model_info (str): The information about the AI model used in the experiment.</span>
+<span class="sd">        agent_demographics (pd.DataFrame): The demographic information of the agents participating in the experiment.</span>
+<span class="sd">        max_conversation_length (int): The maximum length of a conversation.</span>
+<span class="sd">        treatments (dict[str, Any]): The treatments for the experiment.</span>
+<span class="sd">        treatment_assignment_strategy (str): The strategy used for assigning treatments to agents.</span>
+<span class="sd">        experiment_context (str): The context or purpose of the experiment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_info</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">experiment_context</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">agent_demographics</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">max_conversation_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="n">treatments</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">treatment_assignment_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;simple_random&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_model_info</span><span class="p">(</span><span class="n">model_info</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">treatment_assignment_strategy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_treatment_assignment_strategy</span><span class="p">(</span>
+            <span class="n">treatment_assignment_strategy</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">agent_demographics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_agent_demographics</span><span class="p">(</span><span class="n">agent_demographics</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_conversation_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_max_conversation_length</span><span class="p">(</span>
+            <span class="n">max_conversation_length</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">treatments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_treatments</span><span class="p">(</span><span class="n">treatments</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span> <span class="o">=</span> <span class="n">experiment_context</span>
+
+<div class="viewcode-block" id="AIConversationalExperiment.check_model_info"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AIConversationalExperiment.check_model_info">[docs]</a>    <span class="k">def</span> <span class="nf">check_model_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_info</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the provided model_info is supported.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model_info (str): The model_info to be checked.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The validated model_info.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the provided model_info is not supported.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">model_info</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SUPPORTED_MODELS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unsupported model_info: </span><span class="si">{</span><span class="n">model_info</span><span class="si">}</span><span class="s2">. Supported models are: </span><span class="si">{</span><span class="n">SUPPORTED_MODELS</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">model_info</span></div>
+
+<div class="viewcode-block" id="AIConversationalExperiment.check_treatment_assignment_strategy"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AIConversationalExperiment.check_treatment_assignment_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">check_treatment_assignment_strategy</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">treatment_assignment_strategy</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the provided treatment_assignment_strategy is supported.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            treatment_assignment_strategy (str): The treatment_assignment_strategy to be checked.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The validated treatment_assignment_strategy.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the provided treatment_assignment_strategy is not supported.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">treatment_assignment_strategy</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SUPPORTED_ASSIGNMENT_STRATEGIES</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unsupported treatment_assignment_strategy: </span><span class="si">{</span><span class="n">treatment_assignment_strategy</span><span class="si">}</span><span class="s2">. Supported strategies are: </span><span class="si">{</span><span class="n">SUPPORTED_ASSIGNMENT_STRATEGIES</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">treatment_assignment_strategy</span></div>
+
+<div class="viewcode-block" id="AIConversationalExperiment.check_agent_demographics"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AIConversationalExperiment.check_agent_demographics">[docs]</a>    <span class="k">def</span> <span class="nf">check_agent_demographics</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">agent_demographics</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks to ensure that provided agent_demographics is not empty and contains a ID column.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_demographics (str): The agent_demographics to be checked.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The validated agent_demographics.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the provided agent_demographics is an empty dataframe or if it does not contain an ID column.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">agent_demographics</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;agent_demographics DataFrame cannot be empty.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;ID&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">agent_demographics</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;agent_demographics DataFrame should contain an &#39;ID&#39; column.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">agent_demographics</span></div>
+
+<div class="viewcode-block" id="AIConversationalExperiment.check_max_conversation_length"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AIConversationalExperiment.check_max_conversation_length">[docs]</a>    <span class="k">def</span> <span class="nf">check_max_conversation_length</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_conversation_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the provided max_conversation is an integer greater than or equal to 5.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            max_conversation_length (int): The max_conversation_length to be checked.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: The validated max_conversation_length.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the provided treatments is less than 5.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">max_conversation_length</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Invalid value for max_conversation_length. Please ensure that max_conversation_length is an integer greater than or equal to 5.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">max_conversation_length</span></div>
+
+<div class="viewcode-block" id="AIConversationalExperiment.check_treatments"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AIConversationalExperiment.check_treatments">[docs]</a>    <span class="k">def</span> <span class="nf">check_treatments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">treatments</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the provided treatments is valid.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            treatments (dict[str, Any]): The treatments to be checked.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, Any]: The validated treatments.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the provided treatments is not in the correct format.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_treatment_assignment_strategy</span> <span class="o">==</span> <span class="s2">&quot;full_factorial&quot;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">subtreatments</span> <span class="ow">in</span> <span class="n">treatments</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subtreatments</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;Invalid treatment format for full factorial assignment strategy. Please store the treatments in a nested dictionary structure.&quot;</span>
+                    <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">treatments</span></div>
+
+<div class="viewcode-block" id="AIConversationalExperiment.get_model_info"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AIConversationalExperiment.get_model_info">[docs]</a>    <span class="k">def</span> <span class="nf">get_model_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the model used in this experiment.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The model information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_info</span></div>
+
+<div class="viewcode-block" id="AIConversationalExperiment.get_experiment_context"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AIConversationalExperiment.get_experiment_context">[docs]</a>    <span class="k">def</span> <span class="nf">get_experiment_context</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the experiment context.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The experiment context.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span></div>
+
+<div class="viewcode-block" id="AIConversationalExperiment.get_agent_demographics"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AIConversationalExperiment.get_agent_demographics">[docs]</a>    <span class="k">def</span> <span class="nf">get_agent_demographics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the agents&#39; demographic information for this experiment.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            pd.DataFrame: The agents&#39; demographic information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent_demographics</span></div>
+
+<div class="viewcode-block" id="AIConversationalExperiment.get_max_conversation_length"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AIConversationalExperiment.get_max_conversation_length">[docs]</a>    <span class="k">def</span> <span class="nf">get_max_conversation_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the maximum length of a conversation for this experiment.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: The maximum length of a conversation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_conversation_length</span></div>
+
+<div class="viewcode-block" id="AIConversationalExperiment.get_treatments"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AIConversationalExperiment.get_treatments">[docs]</a>    <span class="k">def</span> <span class="nf">get_treatments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the treatments for this experiment.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, Any]: The treatments for this experiment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">treatments</span></div>
+
+<div class="viewcode-block" id="AIConversationalExperiment.get_treatment_assignment_strategy"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AIConversationalExperiment.get_treatment_assignment_strategy">[docs]</a>    <span class="k">def</span> <span class="nf">get_treatment_assignment_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the treatment assignment strategy for this experiment.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The treatments assignment strategy.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">treatment_assignment_strategy</span></div></div>
+
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment">[docs]</a><span class="k">class</span> <span class="nc">AItoAIConversationalExperiment</span><span class="p">(</span><span class="n">AIConversationalExperiment</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class representing an AI-to-AI conversational experiment. Inherits from the AIConversationalExperiment class.</span>
+
+<span class="sd">    This class extends the `AIConversationalExperiment` class and provides additional functionality</span>
+<span class="sd">    specific to AI-to-AI conversational experiments.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model_info (str): The information about the AI model used in the experiment.</span>
+<span class="sd">        experiment_context (str): The context or purpose of the experiment.</span>
+<span class="sd">        agent_demographics (pd.DataFrame): The demographic information of the agents participating in the experiment.</span>
+<span class="sd">        agent_roles (dict[str, str]): Dictionary mapping agent roles to their descriptions.</span>
+<span class="sd">        num_agents_per_session (int, optional): Number of agents per session. Defaults to 2.</span>
+<span class="sd">        num_sessions (int, optional): Number of sessions. Defaults to 10.</span>
+<span class="sd">        max_conversation_length (int, optional): Maximum length of a conversation. Defaults to 10.</span>
+<span class="sd">        treatments (dict[str, Any], optional): The treatments for the experiment. Defaults to an empty dictionary.</span>
+<span class="sd">        treatment_assignment_strategy (str, optional): The strategy used for assigning treatments to agents.</span>
+<span class="sd">            Defaults to &quot;simple_random&quot;.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the provided num_sessions is not valid.</span>
+<span class="sd">        ValueError: If the provided num_agents_per_session is less than 2 or will exceed the total number of demographic information.</span>
+<span class="sd">        ValueError: If the provided number of agent_roles is not equal to num_agents_per_session.</span>
+<span class="sd">        ValueError: If the number of roles defined does not match the number of agents assigned to each session.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        num_sessions (int): The number of sessions in the experiment.</span>
+<span class="sd">        num_agents_per_session (int): The number of agents per session.</span>
+<span class="sd">        agent_roles (dict[str, str]): The roles assigned to agents.</span>
+<span class="sd">        treatment_assignment (dict[int, str]): The assignment of treatments to agents.</span>
+<span class="sd">        session_id_list (list[int]): List of session IDs.</span>
+<span class="sd">        agent_assignment (dict[int, list[DemographicInfo]]): The assignment of agents to sessions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_info</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">experiment_context</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">agent_demographics</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">agent_roles</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+        <span class="n">num_agents_per_session</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">num_sessions</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="n">max_conversation_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="n">treatments</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">treatment_assignment_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;simple_random&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">model_info</span><span class="p">,</span>
+            <span class="n">experiment_context</span><span class="p">,</span>
+            <span class="n">agent_demographics</span><span class="p">,</span>
+            <span class="n">max_conversation_length</span><span class="p">,</span>
+            <span class="n">treatments</span><span class="p">,</span>
+            <span class="n">treatment_assignment_strategy</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_sessions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_num_sessions</span><span class="p">(</span><span class="n">num_sessions</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_agents_per_session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_num_agents_per_session</span><span class="p">(</span>
+            <span class="n">num_agents_per_session</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">agent_roles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_agent_roles</span><span class="p">(</span><span class="n">agent_roles</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">treatment_assignment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">assign_treatment</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session_id_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">treatment_assignment</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">agent_assignment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">assign_agents_to_session</span><span class="p">()</span>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.check_num_sessions"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.check_num_sessions">[docs]</a>    <span class="k">def</span> <span class="nf">check_num_sessions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_sessions</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the provided num_sessions is valid.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            num_sessions (int): The num_sessions to be checked.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: The validated num_sessions.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the provided check_num_sessions is not valid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">num_sessions</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unsupported valid for num_sessions: </span><span class="si">{</span><span class="n">num_sessions</span><span class="si">}</span><span class="s2">. num_sessions should be an integer that is equal to or greater than 1.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">num_sessions</span></div>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.check_num_agents_per_session"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.check_num_agents_per_session">[docs]</a>    <span class="k">def</span> <span class="nf">check_num_agents_per_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_agents_per_session</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the provided num_agents_per_session is valid.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            num_agents_per_session (int): The num_agents_per_session to be checked.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: The validated num_agents_per_session.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the provided num_agents_per_session is not valid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">num_agents_per_session</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unsupported num_agents_per_session: </span><span class="si">{</span><span class="n">num_agents_per_session</span><span class="si">}</span><span class="s2">. For AI-AI conversation-based experiments, num_agents_per_session should be an integer that is equal to or greater than 2.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_sessions</span> <span class="o">*</span> <span class="n">num_agents_per_session</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_demographics</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Total number of agents required for experiment (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_sessions</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">num_agents_per_session</span><span class="si">}</span><span class="s2">) exceed the number of profiles provided in agent_demographics (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_demographics</span><span class="p">)</span><span class="si">}</span><span class="s2">).&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">num_agents_per_session</span></div>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.check_agent_roles"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.check_agent_roles">[docs]</a>    <span class="k">def</span> <span class="nf">check_agent_roles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_roles</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the provided agent_roles is valid.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_roles (dict[str, str]): The agent_roles to be checked.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, str]: The validated agent_roles.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the provided agent_roles is not valid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">agent_roles</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_agents_per_session</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Number of roles defined (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">agent_roles</span><span class="p">)</span><span class="si">}</span><span class="s2">) does not match the number of agents assigned to each session (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_agents_per_session</span><span class="si">}</span><span class="s2">).&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">agent_roles</span></div>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.get_num_sessions"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_num_sessions">[docs]</a>    <span class="k">def</span> <span class="nf">get_num_sessions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the num_sessions defined this experiment.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: The num_sessions information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_sessions</span></div>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.get_num_agents_per_session"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_num_agents_per_session">[docs]</a>    <span class="k">def</span> <span class="nf">get_num_agents_per_session</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the num_agents_per_session defined this experiment.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: The num_agents_per_session information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_agents_per_session</span></div>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.get_agent_roles"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_agent_roles">[docs]</a>    <span class="k">def</span> <span class="nf">get_agent_roles</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the agent_roles defined this experiment.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, str]: The agent_roles information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent_roles</span></div>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.get_treatment_assignment"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_treatment_assignment">[docs]</a>    <span class="k">def</span> <span class="nf">get_treatment_assignment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the treatment_assignment defined this experiment.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[int, str]: The treatment_assignment information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">treatment_assignment</span></div>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.get_session_id_list"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_session_id_list">[docs]</a>    <span class="k">def</span> <span class="nf">get_session_id_list</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the session_id_list of this experiment.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list[int]: The session_id_list information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_id_list</span></div>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.get_agent_assignment"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_agent_assignment">[docs]</a>    <span class="k">def</span> <span class="nf">get_agent_assignment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">DemographicInfo</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the agent_assignment for this experiment.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[int, list[DemographicInfo]]: The agent_assignment information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent_assignment</span></div>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.assign_treatment"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.assign_treatment">[docs]</a>    <span class="k">def</span> <span class="nf">assign_treatment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Assign treatments to sessions based on the specified treatment assignment strategy.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[int, str]: A dictionary where the keys represent session numbers and the values represent the assigned treatment labels.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">treatment_assignment_strategy</span> <span class="o">==</span> <span class="s2">&quot;simple_random&quot;</span><span class="p">:</span>
+            <span class="n">treatment_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">treatments</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="k">return</span> <span class="n">simple_random_assignment_session</span><span class="p">(</span><span class="n">treatment_labels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_sessions</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">treatment_assignment_strategy</span> <span class="o">==</span> <span class="s2">&quot;complete_random&quot;</span><span class="p">:</span>
+            <span class="n">treatment_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">treatments</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="k">return</span> <span class="n">complete_random_assignment_session</span><span class="p">(</span>
+                <span class="n">treatment_labels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_sessions</span>
+            <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">treatment_assignment_strategy</span> <span class="o">==</span> <span class="s2">&quot;full_factorial&quot;</span><span class="p">:</span>
+            <span class="n">treatment_labels</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">inner_treatment_dict</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">treatments</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">inner_treatment_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">inner_treatment_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="n">treatment_labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inner_treatment_labels</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">full_factorial_assignment_session</span><span class="p">(</span>
+                <span class="n">treatment_labels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_sessions</span>
+            <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unsupported treatment_assignment_strategy: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">treatment_assignment_strategy</span><span class="si">}</span><span class="s2">. Supported strategies are: </span><span class="si">{</span><span class="n">SUPPORTED_ASSIGNMENT_STRATEGIES</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.assign_agents_to_session"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.assign_agents_to_session">[docs]</a>    <span class="k">def</span> <span class="nf">assign_agents_to_session</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">DemographicInfo</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Randomly assigns agents&#39; demographics to each session based on the given number of agents per session.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[int, list[DemographicInfo]]: A dictionary mapping session IDs to a list of agent demographic information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">randomised_agent_demographics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent_demographics</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+            <span class="n">frac</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">agent_to_session_assignment</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session_id_list</span><span class="p">):</span>
+            <span class="n">agent_to_session_assignment</span><span class="p">[</span><span class="n">session_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">randomised_agent_demographics</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span>
+                    <span class="n">i</span>
+                    <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_agents_per_session</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_agents_per_session</span>
+                <span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s2">&quot;records&quot;</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">agent_to_session_assignment</span></div>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.run_experiment"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.run_experiment">[docs]</a>    <span class="k">def</span> <span class="nf">run_experiment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs an experiment based on the experimental settings defined during class initialisation. If test_mode is set to True, the first session will be selected and run.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            test_mode (bool, optional): Indicates whether the experiment is in test mode or not.</span>
+<span class="sd">                Defaults to True.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, Any]: A dictionary containing the experiment ID and session information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">test_mode</span><span class="p">:</span>
+            <span class="n">session_id_list</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">session_id_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">session_id_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_id_list</span>
+
+        <span class="n">experiment</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span> <span class="s2">&quot;sessions&quot;</span><span class="p">:</span> <span class="p">{}}</span>
+        <span class="k">for</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">session_id_list</span><span class="p">):</span>
+            <span class="n">session_info</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;session_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">session_id</span>
+            <span class="n">treatment_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">treatment_assignment</span><span class="p">[</span><span class="n">session_id</span><span class="p">]</span>
+            <span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;treatment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">treatments</span><span class="p">[</span><span class="n">treatment_label</span><span class="p">]</span>
+            <span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;session_system_message&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">generate_conversational_session_system_message</span><span class="p">(</span>
+                    <span class="n">experiment_context</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span><span class="p">,</span>
+                    <span class="n">treatment</span><span class="o">=</span><span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;treatment&quot;</span><span class="p">],</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;agents_demographic&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent_assignment</span><span class="p">[</span><span class="n">session_id</span><span class="p">]</span>
+            <span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;agents&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialize_agents</span><span class="p">(</span><span class="n">session_info</span><span class="p">)</span>
+            <span class="n">session_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_session</span><span class="p">(</span><span class="n">session_info</span><span class="p">,</span> <span class="n">test_mode</span><span class="o">=</span><span class="n">test_mode</span><span class="p">)</span>
+            <span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;agents&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">agent</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">agent</span> <span class="ow">in</span> <span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;agents&quot;</span><span class="p">]</span>
+            <span class="p">]</span>
+            <span class="n">experiment</span><span class="p">[</span><span class="s2">&quot;sessions&quot;</span><span class="p">][</span><span class="n">session_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">session_info</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_experiment</span><span class="p">(</span><span class="n">experiment</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">experiment</span></div>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.initialize_agents"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.initialize_agents">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_agents</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">session_info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ConversationalSyntheticAgent</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes and returns a list of ConversationalSyntheticAgent objects based on the provided session information.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            session_info (dict[str, Any]): A dictionary containing session information, including agents&#39; demographics, session ID, treatment, etc.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list[ConversationalSyntheticAgent]: A list of initialized ConversationalSyntheticAgent objects.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: If the number of agents&#39; demographics does not match the number of agent roles when initializing agents.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;agents_demographic&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">agent_roles</span>
+        <span class="p">),</span> <span class="s2">&quot;Number of agents&#39; demographics does not match the number of agent roles when initialising agents.&quot;</span>
+        <span class="n">agent_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;agents_demographic&quot;</span><span class="p">])):</span>
+            <span class="n">agent_demographic</span> <span class="o">=</span> <span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;agents_demographic&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">agent_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">ConversationalSyntheticAgent</span><span class="p">(</span>
+                    <span class="n">experiment_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span>
+                    <span class="n">experiment_context</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span><span class="p">,</span>
+                    <span class="n">session_id</span><span class="o">=</span><span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;session_id&quot;</span><span class="p">],</span>
+                    <span class="n">demographic_info</span><span class="o">=</span><span class="n">agent_demographic</span><span class="p">,</span>
+                    <span class="n">role</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_roles</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="n">i</span><span class="p">],</span>
+                    <span class="n">role_description</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_roles</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="n">i</span><span class="p">],</span>
+                    <span class="n">model_info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_info</span><span class="p">,</span>
+                    <span class="n">treatment</span><span class="o">=</span><span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;treatment&quot;</span><span class="p">],</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">agent_list</span></div>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.run_session"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.run_session">[docs]</a>    <span class="k">def</span> <span class="nf">run_session</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">session_info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">test_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs a session involving a conversation between multiple AI agents.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            session_info (dict[str, Any]): A dictionary containing session information.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, Any]: A dictionary containing the updated session information at the end of the session.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">message_history</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">conversation_length</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">num_agents</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;agents&quot;</span><span class="p">])</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;session_system_message&quot;</span><span class="p">]</span>
+        <span class="n">agent_role</span> <span class="o">=</span> <span class="s2">&quot;system&quot;</span>
+        <span class="k">while</span> <span class="p">(</span>
+            <span class="s2">&quot;Thank you for the conversation.&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">response</span>
+            <span class="ow">and</span> <span class="n">conversation_length</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_conversation_length</span>
+        <span class="p">):</span>
+            <span class="n">message_history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="n">agent_role</span><span class="p">:</span> <span class="n">response</span><span class="p">})</span>
+            <span class="k">if</span> <span class="n">test_mode</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">({</span><span class="n">agent_role</span><span class="p">:</span> <span class="n">response</span><span class="p">})</span>
+                <span class="nb">print</span><span class="p">()</span>
+            <span class="n">agent</span> <span class="o">=</span> <span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;agents&quot;</span><span class="p">][</span><span class="n">conversation_length</span> <span class="o">%</span> <span class="n">num_agents</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">conversation_length</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">question</span><span class="o">=</span><span class="s2">&quot;Start&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">question</span><span class="o">=</span><span class="n">response</span><span class="p">)</span>
+            <span class="n">agent_role</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">get_role</span><span class="p">()</span>
+            <span class="n">conversation_length</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">message_history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="n">agent_role</span><span class="p">:</span> <span class="n">response</span><span class="p">})</span>
+        <span class="n">message_history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="s2">&quot;End&quot;</span><span class="p">})</span>
+        <span class="k">if</span> <span class="n">test_mode</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">({</span><span class="n">agent_role</span><span class="p">:</span> <span class="n">response</span><span class="p">})</span>
+            <span class="nb">print</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">({</span><span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="s2">&quot;End&quot;</span><span class="p">})</span>
+
+        <span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;message_history&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">message_history</span>
+        <span class="k">return</span> <span class="n">session_info</span></div>
+
+<div class="viewcode-block" id="AItoAIConversationalExperiment.save_experiment"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIConversationalExperiment.save_experiment">[docs]</a>    <span class="k">def</span> <span class="nf">save_experiment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">experiment</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the experimental data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            experiment (dict[int, Any]): The experiment data to be saved.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">save_experiment</span><span class="p">(</span><span class="n">experiment</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="AItoAIInterviewExperiment"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIInterviewExperiment">[docs]</a><span class="k">class</span> <span class="nc">AItoAIInterviewExperiment</span><span class="p">(</span><span class="n">AItoAIConversationalExperiment</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class representing an AI-to-AI interview experiment. Inherits from the AItoAIConversationalExperiment class.</span>
+
+<span class="sd">    This class extends the `AItoAIConversationalExperiment` class and provides additional functionality</span>
+<span class="sd">    specific to AI-to-AI interview experiments. More specifically, one of the agents in the session will serve</span>
+<span class="sd">    as the interviewer and will not be given a demographic profile.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model_info (str): The information about the AI model used in the experiment.</span>
+<span class="sd">        experiment_context (str): The context or purpose of the experiment.</span>
+<span class="sd">        agent_demographics (pd.DataFrame): The demographic information of the agents participating in the experiment.</span>
+<span class="sd">        agent_roles (dict[str, str]): Dictionary mapping agent roles to their descriptions.</span>
+<span class="sd">        num_agents_per_session (int, optional): Number of agents per session. Defaults to 2.</span>
+<span class="sd">        num_sessions (int, optional): Number of sessions. Defaults to 10.</span>
+<span class="sd">        max_conversation_length (int, optional): Maximum length of a conversation. Defaults to 10.</span>
+<span class="sd">        treatments (dict[str, Any], optional): The treatments for the experiment. Defaults to an empty dictionary.</span>
+<span class="sd">        treatment_assignment_strategy (str, optional): The strategy used for assigning treatments to agents.</span>
+<span class="sd">            Defaults to &quot;simple_random&quot;.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the provided num_sessions is not valid.</span>
+<span class="sd">        ValueError: If the provided num_agents_per_session is less than 2 or will exceed the total number of demographic information.</span>
+<span class="sd">        ValueError: If the provided number of agent_roles is not equal to num_agents_per_session or if the first role is not Interviewer.</span>
+<span class="sd">        ValueError: If the number of roles defined does not match the number of agents assigned to each session. Also if the first role is not Interviewer.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        num_sessions (int): The number of sessions in the experiment.</span>
+<span class="sd">        num_agents_per_session (int): The number of agents per session.</span>
+<span class="sd">        agent_roles (dict[str, str]): The roles assigned to agents.</span>
+<span class="sd">        treatment_assignment (dict[int, str]): The assignment of treatments to agents.</span>
+<span class="sd">        session_id_list (list[int]): List of session IDs.</span>
+<span class="sd">        agent_assignment (dict[int, list[DemographicInfo]]): The assignment of agents to sessions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_info</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">experiment_context</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">agent_demographics</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">agent_roles</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+        <span class="n">num_agents_per_session</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">num_sessions</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="n">max_conversation_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="n">treatments</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">treatment_assignment_strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;simple_random&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">model_info</span><span class="p">,</span>
+            <span class="n">experiment_context</span><span class="p">,</span>
+            <span class="n">agent_demographics</span><span class="p">,</span>
+            <span class="n">agent_roles</span><span class="p">,</span>
+            <span class="n">num_agents_per_session</span><span class="p">,</span>
+            <span class="n">num_sessions</span><span class="p">,</span>
+            <span class="n">max_conversation_length</span><span class="p">,</span>
+            <span class="n">treatments</span><span class="p">,</span>
+            <span class="n">treatment_assignment_strategy</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_agents_per_session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_num_agents_per_session</span><span class="p">(</span>
+            <span class="n">num_agents_per_session</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">agent_roles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_agent_roles</span><span class="p">(</span><span class="n">agent_roles</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">agent_assignment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">assign_agents_to_session</span><span class="p">()</span>
+
+<div class="viewcode-block" id="AItoAIInterviewExperiment.check_num_agents_per_session"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIInterviewExperiment.check_num_agents_per_session">[docs]</a>    <span class="k">def</span> <span class="nf">check_num_agents_per_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_agents_per_session</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the provided num_agents_per_session is valid.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            num_agents_per_session (int): The num_agents_per_session to be checked.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: The validated num_agents_per_session.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the provided num_agents_per_session is not valid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">num_agents_per_session</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unsupported num_agents_per_session: </span><span class="si">{</span><span class="n">num_agents_per_session</span><span class="si">}</span><span class="s2">. For AI-AI conversation-based experiments, num_agents_per_session should be an integer that is equal to or greater than 2.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_sessions</span> <span class="o">*</span> <span class="p">(</span><span class="n">num_agents_per_session</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">agent_demographics</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Total number of agents required for experiment (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_sessions</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">num_agents_per_session</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2">) exceed the number of profiles provided in agent_demographics (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_demographics</span><span class="p">)</span><span class="si">}</span><span class="s2">).&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">num_agents_per_session</span></div>
+
+<div class="viewcode-block" id="AItoAIInterviewExperiment.check_agent_roles"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIInterviewExperiment.check_agent_roles">[docs]</a>    <span class="k">def</span> <span class="nf">check_agent_roles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_roles</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the provided agent_roles is valid.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_roles (dict[str, str]): The agent_roles to be checked.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, str]: The validated agent_roles.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the provided agent_roles is not valid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">agent_roles</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_agents_per_session</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Number of roles defined (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">agent_roles</span><span class="p">)</span><span class="si">}</span><span class="s2">) does not match the number of agents assigned to each session (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_agents_per_session</span><span class="si">}</span><span class="s2">).&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">list</span><span class="p">(</span><span class="n">agent_roles</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;Interviewer&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The first role in agent_roles should be &#39;Interviewer&#39;.&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">agent_roles</span></div>
+
+<div class="viewcode-block" id="AItoAIInterviewExperiment.assign_agents_to_session"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIInterviewExperiment.assign_agents_to_session">[docs]</a>    <span class="k">def</span> <span class="nf">assign_agents_to_session</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">DemographicInfo</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Randomly assigns agents&#39; demographics to each session based on the given number of agents per session minus the Interviewer agent.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[int, list[DemographicInfo]]: A dictionary mapping session IDs to a list of agent demographic information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">randomised_agent_demographics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent_demographics</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+            <span class="n">frac</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">num_interview_subjects_per_session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_agents_per_session</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">interview_subject_to_session_assignment</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session_id_list</span><span class="p">):</span>
+            <span class="n">interview_subject_to_session_assignment</span><span class="p">[</span><span class="n">session_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">randomised_agent_demographics</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span>
+                    <span class="n">i</span>
+                    <span class="o">*</span> <span class="n">num_interview_subjects_per_session</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="o">*</span> <span class="n">num_interview_subjects_per_session</span>
+                <span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s2">&quot;records&quot;</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">interview_subject_to_session_assignment</span></div>
+
+<div class="viewcode-block" id="AItoAIInterviewExperiment.initialize_agents"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIInterviewExperiment.initialize_agents">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_agents</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">session_info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ConversationalSyntheticAgent</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes and returns a list of ConversationalSyntheticAgent objects based on the provided session information.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            session_info (dict[str, Any]): A dictionary containing session information, including agents&#39; demographics, session ID, treatment, etc.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list[ConversationalSyntheticAgent]: A list of initialized ConversationalSyntheticAgent objects.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AssertionError: If the number of agents&#39; demographics does not match the number of agent roles (minus Interviewer role) when initializing agents.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;agents_demographic&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_roles</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Number of agents&#39; demographics (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">session_info</span><span class="p">[</span><span class="s1">&#39;agents_demographic&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">) does not match the number of agent roles (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_roles</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="si">}</span><span class="s2">) when initialising agents. The number of agent demographics should be one less than the number of roles (minus the Interviewer).&quot;</span>
+
+        <span class="n">agent_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;agents_demographic&quot;</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">agent_demographic</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># No demographic profile for Interviewer role</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">agent_demographic</span> <span class="o">=</span> <span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;agents_demographic&quot;</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">agent_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">ConversationalSyntheticAgent</span><span class="p">(</span>
+                    <span class="n">experiment_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span>
+                    <span class="n">experiment_context</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span><span class="p">,</span>
+                    <span class="n">session_id</span><span class="o">=</span><span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;session_id&quot;</span><span class="p">],</span>
+                    <span class="n">demographic_info</span><span class="o">=</span><span class="n">agent_demographic</span><span class="p">,</span>
+                    <span class="n">role</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_roles</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="n">i</span><span class="p">],</span>
+                    <span class="n">role_description</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_roles</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="n">i</span><span class="p">],</span>
+                    <span class="n">model_info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_info</span><span class="p">,</span>
+                    <span class="n">treatment</span><span class="o">=</span><span class="n">session_info</span><span class="p">[</span><span class="s2">&quot;treatment&quot;</span><span class="p">],</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">agent_list</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

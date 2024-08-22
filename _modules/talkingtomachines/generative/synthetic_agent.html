@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.generative.synthetic_agent &mdash; talking-to-machines 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.generative.synthetic_agent</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.generative.synthetic_agent</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">from</span> <span class="nn">talkingtomachines.generative.prompt</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">generate_conversational_agent_system_message</span><span class="p">,</span>
+    <span class="n">generate_demographic_prompt</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">talkingtomachines.generative.llm</span> <span class="kn">import</span> <span class="n">query_llm</span>
+
+<span class="n">DemographicInfo</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="SyntheticAgent"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.SyntheticAgent">[docs]</a><span class="k">class</span> <span class="nc">SyntheticAgent</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class for constructing the base synthetic agent.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        experiment_id (str): The ID of the experiment.</span>
+<span class="sd">        experiment_context (str): The context of the experiment.</span>
+<span class="sd">        session_id (int): The ID of the session.</span>
+<span class="sd">        demographic_info (DemographicInfo): The demographic information of the user.</span>
+<span class="sd">        model_info (str): The information about the model used by the agent.</span>
+<span class="sd">        demographic_prompt_generator (Callable[[DemographicInfo], str], optional):</span>
+<span class="sd">            A function that generates a demographic prompt based on the demographic information.</span>
+<span class="sd">            Defaults to generate_demographic_prompt.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        experiment_id (str): The ID of the experiment.</span>
+<span class="sd">        experiment_context (str): The context of the experiment.</span>
+<span class="sd">        session_id (int): The ID of the session.</span>
+<span class="sd">        demographic_info (DemographicInfo): The demographic information of the user.</span>
+<span class="sd">        model_info (str): The information about the model used by the agent.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">experiment_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">experiment_context</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">demographic_info</span><span class="p">:</span> <span class="n">DemographicInfo</span><span class="p">,</span>
+        <span class="n">model_info</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">demographic_prompt_generator</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span>
+            <span class="p">[</span><span class="n">DemographicInfo</span><span class="p">],</span> <span class="nb">str</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">generate_demographic_prompt</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">=</span> <span class="n">experiment_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span> <span class="o">=</span> <span class="n">experiment_context</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session_id</span> <span class="o">=</span> <span class="n">session_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">demographic_info</span> <span class="o">=</span> <span class="n">demographic_prompt_generator</span><span class="p">(</span><span class="n">demographic_info</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_info</span> <span class="o">=</span> <span class="n">model_info</span>
+
+<div class="viewcode-block" id="SyntheticAgent.get_experiment_id"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_experiment_id">[docs]</a>    <span class="k">def</span> <span class="nf">get_experiment_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the experiment ID of the synthetic agent.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The experiment ID of the synthetic agent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment_id</span></div>
+
+<div class="viewcode-block" id="SyntheticAgent.get_experiment_context"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_experiment_context">[docs]</a>    <span class="k">def</span> <span class="nf">get_experiment_context</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the experiment context of the synthetic agent.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The experiment context of the synthetic agent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span></div>
+
+<div class="viewcode-block" id="SyntheticAgent.get_session_id"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_session_id">[docs]</a>    <span class="k">def</span> <span class="nf">get_session_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the session ID of the experiment.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: The session ID of the experiment.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_id</span></div>
+
+<div class="viewcode-block" id="SyntheticAgent.get_demographic_info"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_demographic_info">[docs]</a>    <span class="k">def</span> <span class="nf">get_demographic_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the demographic information of the synthetic agent.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The demographic information of the synthetic agent</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">demographic_info</span></div>
+
+<div class="viewcode-block" id="SyntheticAgent.get_model_info"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_model_info">[docs]</a>    <span class="k">def</span> <span class="nf">get_model_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the model information of the synthetic agent.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The model information of the synthetic agent</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_info</span></div>
+
+<div class="viewcode-block" id="SyntheticAgent.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.SyntheticAgent.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts the SyntheticAgent object to a dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, Any]: A dictionary representation of the SyntheticAgent object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;experiment_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span>
+            <span class="s2">&quot;experiment_context&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span><span class="p">,</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="s2">&quot;demographic_info&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">demographic_info</span><span class="p">,</span>
+            <span class="s2">&quot;model_info&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_info</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="SyntheticAgent.respond"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.SyntheticAgent.respond">[docs]</a>    <span class="k">def</span> <span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a response based on the synthetic agent&#39;s model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The response generated by the synthetic agent</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Log the exception</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error during response generation in SyntheticAgent object: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span></div></div>
+
+
+<div class="viewcode-block" id="ConversationalSyntheticAgent"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent">[docs]</a><span class="k">class</span> <span class="nc">ConversationalSyntheticAgent</span><span class="p">(</span><span class="n">SyntheticAgent</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A synthetic agent that interacts with users in a conversational system. Inherits from the SyntheticAgent base class.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        experiment_id (str): The ID of the experiment.</span>
+<span class="sd">        experiment_context (str): The context of the experiment.</span>
+<span class="sd">        session_id (int): The ID of the session.</span>
+<span class="sd">        demographic_info (DemographicInfo): The demographic information of the user.</span>
+<span class="sd">        role (str): The name of the role assigned to the agent.</span>
+<span class="sd">        role_description (str): The description of the role assigned to the agent.</span>
+<span class="sd">        model_info (str): The information about the model used by the agent.</span>
+<span class="sd">        treatment (str): The treatment assigned to the session.</span>
+<span class="sd">        demographic_prompt_generator (Callable[[DemographicInfo], str], optional):</span>
+<span class="sd">            A function that generates a demographic prompt based on the demographic information.</span>
+<span class="sd">            Defaults to generate_demographic_prompt.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        role (str): The name of the role assigned to the agent.</span>
+<span class="sd">        role_description (str): The description of the role assigned to the agent.</span>
+<span class="sd">        treatment (str): The treatment assigned to the session.</span>
+<span class="sd">        system_message (str): The system message generated for the conversation.</span>
+<span class="sd">        message_history (List[dict]): The history of the conversation with the synthetic agent.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">experiment_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">experiment_context</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">demographic_info</span><span class="p">:</span> <span class="n">DemographicInfo</span><span class="p">,</span>
+        <span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">role_description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">model_info</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">treatment</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">demographic_prompt_generator</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span>
+            <span class="p">[</span><span class="n">DemographicInfo</span><span class="p">],</span> <span class="nb">str</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">generate_demographic_prompt</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">experiment_id</span><span class="p">,</span>
+            <span class="n">experiment_context</span><span class="p">,</span>
+            <span class="n">session_id</span><span class="p">,</span>
+            <span class="n">demographic_info</span><span class="p">,</span>
+            <span class="n">model_info</span><span class="p">,</span>
+            <span class="n">demographic_prompt_generator</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">role</span> <span class="o">=</span> <span class="n">role</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">role_description</span> <span class="o">=</span> <span class="n">role_description</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">treatment</span> <span class="o">=</span> <span class="n">treatment</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_message</span> <span class="o">=</span> <span class="n">generate_conversational_agent_system_message</span><span class="p">(</span>
+            <span class="n">experiment_context</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span><span class="p">,</span>
+            <span class="n">treatment</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">treatment</span><span class="p">,</span>
+            <span class="n">role_description</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">role_description</span><span class="p">,</span>
+            <span class="n">demographic_info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">demographic_info</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message_history</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_message</span><span class="p">},</span>
+        <span class="p">]</span>
+
+<div class="viewcode-block" id="ConversationalSyntheticAgent.get_role"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_role">[docs]</a>    <span class="k">def</span> <span class="nf">get_role</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the assigned role of the synthetic agent.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The assigned role of the synthetic agent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">role</span></div>
+
+<div class="viewcode-block" id="ConversationalSyntheticAgent.get_role_description"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_role_description">[docs]</a>    <span class="k">def</span> <span class="nf">get_role_description</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the description of the synthetic agent&#39;s role.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The description of the synthetic agent&#39;s role.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">role_description</span></div>
+
+<div class="viewcode-block" id="ConversationalSyntheticAgent.get_treatment"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_treatment">[docs]</a>    <span class="k">def</span> <span class="nf">get_treatment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the treatment assigned to the session.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The treatment assigned to the session.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">treatment</span></div>
+
+<div class="viewcode-block" id="ConversationalSyntheticAgent.get_system_message"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_system_message">[docs]</a>    <span class="k">def</span> <span class="nf">get_system_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the system message of the synthetic agent.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The system message of the synthetic agent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_message</span></div>
+
+<div class="viewcode-block" id="ConversationalSyntheticAgent.get_message_history"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_message_history">[docs]</a>    <span class="k">def</span> <span class="nf">get_message_history</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the message history of the synthetic agent.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[dict]: The conversation history of the synthetic agent</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">message_history</span></div>
+
+<div class="viewcode-block" id="ConversationalSyntheticAgent.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts the ConversationalSyntheticAgent object to a dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, Any]: A dictionary representation of the ConversationalSyntheticAgent object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;experiment_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span>
+            <span class="s2">&quot;experiment_context&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span><span class="p">,</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="s2">&quot;demographic_info&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">demographic_info</span><span class="p">,</span>
+            <span class="s2">&quot;model_info&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_info</span><span class="p">,</span>
+            <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">role</span><span class="p">,</span>
+            <span class="s2">&quot;role_description&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">role_description</span><span class="p">,</span>
+            <span class="s2">&quot;treatment&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">treatment</span><span class="p">,</span>
+            <span class="s2">&quot;system_message&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_message</span><span class="p">,</span>
+            <span class="s2">&quot;message_history&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">message_history</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="ConversationalSyntheticAgent.update_message_history"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.update_message_history">[docs]</a>    <span class="k">def</span> <span class="nf">update_message_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the message history of the synthetic agent with a new message.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            message (str): A message to add to the conversation history.</span>
+<span class="sd">            role (str): The identifier of the party that generated the message.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message_history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="n">role</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">})</span></div>
+
+<div class="viewcode-block" id="ConversationalSyntheticAgent.respond"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.respond">[docs]</a>    <span class="k">def</span> <span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a response to a question posed to the synthetic agent.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            question (str): A question or prompt to which the agent should respond.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The response generated by the synthetic agent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_message_history</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">question</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="s2">&quot;assistant&quot;</span><span class="p">)</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">query_llm</span><span class="p">(</span>
+                <span class="n">model_info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_info</span><span class="p">,</span>
+                <span class="n">message_history</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">message_history</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_message_history</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">response</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">response</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Log the exception</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Error during response generation by ConversationalSyntheticAgent object: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

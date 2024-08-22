@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.management.treatment &mdash; talking-to-machines 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.management.treatment</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.management.treatment</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">talkingtomachines.generative.synthetic_agent</span> <span class="kn">import</span> <span class="n">DemographicInfo</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
+
+
+<div class="viewcode-block" id="simple_random_assignment_session"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.treatment.simple_random_assignment_session">[docs]</a><span class="k">def</span> <span class="nf">simple_random_assignment_session</span><span class="p">(</span>
+    <span class="n">treatment_labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">num_sessions</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Assigns treatment labels randomly to each session using a simepl random assignment strategy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        treatment_labels (List[str]): A list of treatment labels.</span>
+<span class="sd">        num_sessions (int): The number of sessions to assign treatment labels to.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[int, str]: A dictionary where the keys represent session numbers and the values represent the assigned treatment labels.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">treatment_assignment</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_sessions</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">treatment_labels</span><span class="p">:</span>
+            <span class="n">treatment_assignment</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">treatment_assignment</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">treatment_labels</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">treatment_assignment</span></div>
+
+
+<div class="viewcode-block" id="complete_random_assignment_session"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.treatment.complete_random_assignment_session">[docs]</a><span class="k">def</span> <span class="nf">complete_random_assignment_session</span><span class="p">(</span>
+    <span class="n">treatment_labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">num_sessions</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Assigns treatment labels randomly to a specified number of sessions using a complete random assignment strategy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        treatment_labels (List[str]): A list of treatment labels.</span>
+<span class="sd">        num_sessions (int): The number of sessions to assign treatment labels to.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[int, str]: A dictionary where the keys represent session numbers and the values represent the assigned treatment labels.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_treatments</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">treatment_labels</span><span class="p">)</span>
+
+    <span class="n">treatment_assignment</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_sessions</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">treatment_labels</span><span class="p">:</span>
+            <span class="n">treatment_assignment</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">treatment_assignment</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">treatment_labels</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="n">num_treatments</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">treatment_assignment</span></div>
+
+
+<div class="viewcode-block" id="full_factorial_assignment_session"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.treatment.full_factorial_assignment_session">[docs]</a><span class="k">def</span> <span class="nf">full_factorial_assignment_session</span><span class="p">(</span>
+    <span class="n">treatment_labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">num_sessions</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Assigns treatment labels to sessions using a full factorial design assignment strategy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        treatment_labels (List[List[str]]): A list of lists containing the treatment labels.</span>
+<span class="sd">            Each inner list represents the possible labels for a specific treatment factor.</span>
+<span class="sd">        num_sessions (int): The number of sessions to assign treatment labels to.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[int, str]: A dictionary where the keys represent the session numbers and the values</span>
+<span class="sd">            represent the assigned treatment labels.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">treatment_labels</span><span class="p">:</span>
+        <span class="n">treatment_label_combinations</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">treatment_label_combinations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">treatment_labels</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">complete_random_assignment_session</span><span class="p">(</span>
+        <span class="n">treatment_label_combinations</span><span class="p">,</span> <span class="n">num_sessions</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="simple_random_assignment_individual"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.treatment.simple_random_assignment_individual">[docs]</a><span class="k">def</span> <span class="nf">simple_random_assignment_individual</span><span class="p">(</span>
+    <span class="n">treatment_labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">agent_demographics</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Randomly assigns agents to different treatments based on their demographics using a simple random assignment strategy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        treatment_labels (List[str]): A list containing the treatment labels.</span>
+<span class="sd">        agent_demographics (pd.DataFrame): A pandas DataFrame containing the demographic information of the agents.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[pd.DataFrame, dict[str, List]]: A tuple containing the updated agent demographics DataFrame and a dictionary</span>
+<span class="sd">        mapping treatment labels to lists of agent IDs assigned to each treatment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_agents</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">agent_demographics</span><span class="p">)</span>
+    <span class="n">agent_demographics</span><span class="p">[</span><span class="s2">&quot;treatment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">treatment_labels</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_agents</span><span class="p">)</span>
+    <span class="p">]</span>
+
+    <span class="n">treatment_assignment</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">treatment_labels</span><span class="p">:</span>
+        <span class="n">treatment_assignment</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">agent_demographics</span><span class="p">[</span>
+            <span class="n">agent_demographics</span><span class="p">[</span><span class="s2">&quot;treatment&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">label</span>
+        <span class="p">][</span><span class="s2">&quot;ID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">agent_demographics</span><span class="p">,</span> <span class="n">treatment_assignment</span></div>
+
+
+<div class="viewcode-block" id="complete_random_assignment_individual"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.treatment.complete_random_assignment_individual">[docs]</a><span class="k">def</span> <span class="nf">complete_random_assignment_individual</span><span class="p">(</span>
+    <span class="n">treatment_labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+    <span class="n">agent_demographics</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Randomly assigns agents to different treatments using a complete random assignment strategy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        treatment_labels (List[Any]): A list of treatment labels.</span>
+<span class="sd">        agent_demographics (pd.DataFrame): A DataFrame containing agent demographics.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[pd.DataFrame, dict[Any, List]]: A tuple containing the updated agent demographics DataFrame and a dictionary</span>
+<span class="sd">        mapping treatment labels to lists of agent IDs assigned to each treatment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_agents</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">agent_demographics</span><span class="p">)</span>
+    <span class="n">num_treatments</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">treatment_labels</span><span class="p">)</span>
+    <span class="n">agent_demographics</span><span class="p">[</span><span class="s2">&quot;treatment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">treatment_labels</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="n">num_treatments</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_agents</span><span class="p">)</span>
+    <span class="p">]</span>
+
+    <span class="n">treatment_assignment</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">treatment_labels</span><span class="p">:</span>
+        <span class="n">treatment_assignment</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">agent_demographics</span><span class="p">[</span>
+            <span class="n">agent_demographics</span><span class="p">[</span><span class="s2">&quot;treatment&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">label</span>
+        <span class="p">][</span><span class="s2">&quot;ID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">agent_demographics</span><span class="p">,</span> <span class="n">treatment_assignment</span></div>
+
+
+<div class="viewcode-block" id="full_factorial_assignment_individual"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.treatment.full_factorial_assignment_individual">[docs]</a><span class="k">def</span> <span class="nf">full_factorial_assignment_individual</span><span class="p">(</span>
+    <span class="n">treatment_labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+    <span class="n">agent_demographics</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Assigns treatments to agents using a full factorial design assignment strategy.</span>
+
+<span class="sd">    This function takes a list of treatment labels and a DataFrame containing agent demographics,</span>
+<span class="sd">    and assigns treatments to agents using a full factorial design. It generates all possible combinations</span>
+<span class="sd">    of treatment labels and assigns agents to each combination randomly.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        treatment_labels (List[List[str]]): A list of treatment labels. Each inner list represents the possible</span>
+<span class="sd">            treatment options for a specific factor.</span>
+<span class="sd">        agent_demographics (pd.DataFrame): A DataFrame containing agent demographics.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[pd.DataFrame, dict[str, List]]: A tuple containing the updated agent demographics DataFrame and a dictionary</span>
+<span class="sd">        mapping treatment labels to lists of agent IDs assigned to each treatment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">treatment_label_combinations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">treatment_labels</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">complete_random_assignment_individual</span><span class="p">(</span>
+        <span class="n">treatment_label_combinations</span><span class="p">,</span> <span class="n">agent_demographics</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="block_random_assignment_individual"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.treatment.block_random_assignment_individual">[docs]</a><span class="k">def</span> <span class="nf">block_random_assignment_individual</span><span class="p">(</span>
+    <span class="n">treatment_labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">agent_demographics</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">block_size</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Assigns treatments randomly to agents using block random assignment strategy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        treatment_labels (List[str]): A list of treatment labels.</span>
+<span class="sd">        agent_demographics (pd.DataFrame): A DataFrame containing agent demographics.</span>
+<span class="sd">        block_size (int): The size of each block.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[pd.DataFrame, dict[str, List]]: A tuple containing the updated agent demographics DataFrame and a dictionary mapping block-treatment assignments to agent IDs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_agents</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">agent_demographics</span><span class="p">)</span>
+    <span class="n">num_treatments</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">treatment_labels</span><span class="p">)</span>
+    <span class="n">num_blocks</span> <span class="o">=</span> <span class="n">num_agents</span> <span class="o">//</span> <span class="n">block_size</span>
+
+    <span class="c1"># Assign block to subjects</span>
+    <span class="n">block_assignments</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="n">num_blocks</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_agents</span><span class="p">)]</span>
+    <span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">block_assignment</span><span class="p">)</span>
+    <span class="n">agent_demographics</span><span class="p">[</span><span class="s2">&quot;block&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">block_assignments</span>
+
+    <span class="c1"># Assign treatments within each block</span>
+    <span class="n">agent_demographics</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">&quot;block&quot;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">agent_demographics</span><span class="p">[</span><span class="s2">&quot;treatment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">treatment_labels</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="n">num_treatments</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_agents</span><span class="p">)</span>
+    <span class="p">]</span>
+
+    <span class="n">block_treatment_assignment</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">block_assignment</span><span class="p">,</span> <span class="n">treatment_assignment</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span>
+        <span class="n">product</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">block_assignments</span><span class="p">),</span> <span class="n">treatment_labels</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="n">block_treatment_assignment</span><span class="p">[(</span><span class="n">block_assignment</span><span class="p">,</span> <span class="n">treatment_assignment</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">agent_demographics</span><span class="p">[</span>
+                <span class="p">(</span><span class="n">agent_demographics</span><span class="p">[</span><span class="s2">&quot;block&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">block_assignment</span><span class="p">)</span>
+                <span class="o">&amp;</span> <span class="p">(</span><span class="n">agent_demographics</span><span class="p">[</span><span class="s2">&quot;treatment&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">treatment_assignment</span><span class="p">)</span>
+            <span class="p">][</span><span class="s2">&quot;ID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">agent_demographics</span><span class="p">,</span> <span class="n">block_treatment_assignment</span></div>
+
+
+<div class="viewcode-block" id="cluster_random_assignment_individual"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.treatment.cluster_random_assignment_individual">[docs]</a><span class="k">def</span> <span class="nf">cluster_random_assignment_individual</span><span class="p">(</span>
+    <span class="n">treatment_labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">agent_demographics</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">cluster_criteria</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Assigns treatments randomly using a cluster random assignment strategy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        treatment_labels (List[str]): A list of treatment labels.</span>
+<span class="sd">        agent_demographics (pd.DataFrame): A pandas DataFrame containing agent demographics.</span>
+<span class="sd">        cluster_criteria (str): The column name in `agent_demographics` DataFrame to use for clustering.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[pd.DataFrame, dict[str, List]]: A tuple containing the updated `agent_demographics` DataFrame</span>
+<span class="sd">        with assigned treatments, and a dictionary mapping clusters to assigned treatments.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">clusters</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">agent_demographics</span><span class="p">[</span><span class="n">cluster_criteria</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+    <span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">clusters</span><span class="p">)</span>
+
+    <span class="n">num_clusters</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">clusters</span><span class="p">)</span>
+    <span class="n">num_treatments</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">treatment_labels</span><span class="p">)</span>
+
+    <span class="n">agent_demographics</span><span class="p">[</span><span class="s2">&quot;treatment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">cluster_treatment_assignment</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">assigned_cluster_treatment</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">clusters</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">treatment_labels</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="n">num_treatments</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_clusters</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">for</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">treatment</span> <span class="ow">in</span> <span class="n">assigned_cluster_treatment</span><span class="p">:</span>
+        <span class="n">agent_demographics</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+            <span class="n">agent_demographics</span><span class="p">[</span><span class="n">cluster_criteria</span><span class="p">]</span> <span class="o">==</span> <span class="n">cluster</span><span class="p">,</span> <span class="s2">&quot;treatment&quot;</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">treatment</span>
+        <span class="n">cluster_treatment_assignment</span><span class="p">[(</span><span class="n">cluster</span><span class="p">,</span> <span class="n">treatment</span><span class="p">)]</span> <span class="o">=</span> <span class="n">agent_demographics</span><span class="p">[</span>
+            <span class="n">agent_demographics</span><span class="p">[</span><span class="n">cluster_criteria</span><span class="p">]</span> <span class="o">==</span> <span class="n">cluster</span>
+        <span class="p">][</span><span class="s2">&quot;ID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="c1"># Check for None values in treatment column</span>
+    <span class="k">if</span> <span class="n">agent_demographics</span><span class="p">[</span><span class="s2">&quot;treatment&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Some agents have not been assigned a treatment when performing cluster random assignment.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">agent_demographics</span><span class="p">,</span> <span class="n">cluster_treatment_assignment</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

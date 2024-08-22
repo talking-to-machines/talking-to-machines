@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.generative package &mdash; talking-to-machines 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="talkingtomachines.interface package" href="talkingtomachines.interface.html" />
+    <link rel="prev" title="talkingtomachines.analytics package" href="talkingtomachines.analytics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">talkingtomachines</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.generative package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/talkingtomachines.generative.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="talkingtomachines-generative-package">
+<h1>talkingtomachines.generative package<a class="headerlink" href="#talkingtomachines-generative-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-talkingtomachines.generative.llm">
+<span id="talkingtomachines-generative-llm-module"></span><h2>talkingtomachines.generative.llm module<a class="headerlink" href="#module-talkingtomachines.generative.llm" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.llm.integrate_with_meta">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.llm.</span></span><span class="sig-name descname"><span class="pre">integrate_with_meta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">messsage_history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/llm.html#integrate_with_meta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.llm.integrate_with_meta" title="Permalink to this definition"></a></dt>
+<dd><p>Query Meta for the provided prompt.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.llm.integrate_with_mistral">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.llm.</span></span><span class="sig-name descname"><span class="pre">integrate_with_mistral</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">messsage_history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/llm.html#integrate_with_mistral"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.llm.integrate_with_mistral" title="Permalink to this definition"></a></dt>
+<dd><p>Query Mistral for the provided prompt.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.llm.query_anthropic">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.llm.</span></span><span class="sig-name descname"><span class="pre">query_anthropic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">messsage_history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/llm.html#query_anthropic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.llm.query_anthropic" title="Permalink to this definition"></a></dt>
+<dd><p>Query Anthropic for the provided prompt.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.llm.query_llm">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.llm.</span></span><span class="sig-name descname"><span class="pre">query_llm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/llm.html#query_llm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.llm.query_llm" title="Permalink to this definition"></a></dt>
+<dd><p>Queries a LLM for a response based on the latest message history.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_info</strong> (<em>str</em>) – Information about the model.</p></li>
+<li><p><strong>message_history</strong> (<em>List</em><em>[</em><em>dict</em><em>]</em>) – Contains the history of message exchanged between user and assistant.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Response from the LLM.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.llm.query_open_ai">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.llm.</span></span><span class="sig-name descname"><span class="pre">query_open_ai</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/llm.html#query_open_ai"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.llm.query_open_ai" title="Permalink to this definition"></a></dt>
+<dd><p>Query OpenAI API with the provided prompt.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_info</strong> (<em>str</em>) – Information about the model.</p></li>
+<li><p><strong>message_history</strong> (<em>List</em><em>[</em><em>dict</em><em>]</em>) – Contains the history of message exchanged between user and assistant.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Response from the LLM.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.generative.prompt">
+<span id="talkingtomachines-generative-prompt-module"></span><h2>talkingtomachines.generative.prompt module<a class="headerlink" href="#module-talkingtomachines.generative.prompt" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.prompt.generate_conversational_agent_system_message">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.prompt.</span></span><span class="sig-name descname"><span class="pre">generate_conversational_agent_system_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">treatment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role_description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">demographic_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/prompt.html#generate_conversational_agent_system_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.prompt.generate_conversational_agent_system_message" title="Permalink to this definition"></a></dt>
+<dd><p>Constructs system message for conversational agents by combining experiment_context, treatment, role description, and demographic_info.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>experiment_context</strong> (<em>str</em>) – The context of the experiment.</p></li>
+<li><p><strong>treatment</strong> (<em>str</em>) – The treatment that is assigned to the session.</p></li>
+<li><p><strong>role_description</strong> (<em>str</em>) – A description of the agent’s role.</p></li>
+<li><p><strong>demographic_info</strong> (<em>str</em>) – The demographic information of the synthetic subject.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The constructed conversational system message.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.prompt.generate_conversational_session_system_message">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.prompt.</span></span><span class="sig-name descname"><span class="pre">generate_conversational_session_system_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">treatment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/prompt.html#generate_conversational_session_system_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.prompt.generate_conversational_session_system_message" title="Permalink to this definition"></a></dt>
+<dd><p>Constructs system message for conversational sessions by combining experiment_context and treatment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>experiment_context</strong> (<em>str</em>) – The context of the experiment.</p></li>
+<li><p><strong>treatment</strong> (<em>str</em>) – The treatment that is assigned to the session.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The constructed conversational system message.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.prompt.generate_demographic_prompt">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.prompt.</span></span><span class="sig-name descname"><span class="pre">generate_demographic_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">demographic_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/prompt.html#generate_demographic_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.prompt.generate_demographic_prompt" title="Permalink to this definition"></a></dt>
+<dd><p>Formats the demographic information of a synthetic subject into a prompt.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>demographic_info</strong> (<em>dict</em>) – A dictionary containing the demographic information of the synthetic subject.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The formatted demographic information as a prompt.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.generative.synthetic_agent">
+<span id="talkingtomachines-generative-synthetic-agent-module"></span><h2>talkingtomachines.generative.synthetic_agent module<a class="headerlink" href="#module-talkingtomachines.generative.synthetic_agent" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.synthetic_agent.</span></span><span class="sig-name descname"><span class="pre">ConversationalSyntheticAgent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">experiment_id:</span> <span class="pre">str,</span> <span class="pre">experiment_context:</span> <span class="pre">str,</span> <span class="pre">session_id:</span> <span class="pre">int,</span> <span class="pre">demographic_info:</span> <span class="pre">dict[str,</span> <span class="pre">typing.Any],</span> <span class="pre">role:</span> <span class="pre">str,</span> <span class="pre">role_description:</span> <span class="pre">str,</span> <span class="pre">model_info:</span> <span class="pre">str,</span> <span class="pre">treatment:</span> <span class="pre">str,</span> <span class="pre">demographic_prompt_generator:</span> <span class="pre">~typing.Callable[[dict[str,</span> <span class="pre">typing.Any]],</span> <span class="pre">str]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">generate_demographic_prompt&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#ConversationalSyntheticAgent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#talkingtomachines.generative.synthetic_agent.SyntheticAgent" title="talkingtomachines.generative.synthetic_agent.SyntheticAgent"><code class="xref py py-class docutils literal notranslate"><span class="pre">SyntheticAgent</span></code></a></p>
+<p>A synthetic agent that interacts with users in a conversational system. Inherits from the SyntheticAgent base class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>experiment_id</strong> (<em>str</em>) – The ID of the experiment.</p></li>
+<li><p><strong>experiment_context</strong> (<em>str</em>) – The context of the experiment.</p></li>
+<li><p><strong>session_id</strong> (<em>int</em>) – The ID of the session.</p></li>
+<li><p><strong>demographic_info</strong> (<em>DemographicInfo</em>) – The demographic information of the user.</p></li>
+<li><p><strong>role</strong> (<em>str</em>) – The name of the role assigned to the agent.</p></li>
+<li><p><strong>role_description</strong> (<em>str</em>) – The description of the role assigned to the agent.</p></li>
+<li><p><strong>model_info</strong> (<em>str</em>) – The information about the model used by the agent.</p></li>
+<li><p><strong>treatment</strong> (<em>str</em>) – The treatment assigned to the session.</p></li>
+<li><p><strong>demographic_prompt_generator</strong> (<em>Callable</em><em>[</em><em>[</em><em>DemographicInfo</em><em>]</em><em>, </em><em>str</em><em>]</em><em>, </em><em>optional</em>) – A function that generates a demographic prompt based on the demographic information.
+Defaults to generate_demographic_prompt.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.role">
+<span class="sig-name descname"><span class="pre">role</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.role" title="Permalink to this definition"></a></dt>
+<dd><p>The name of the role assigned to the agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.role_description">
+<span class="sig-name descname"><span class="pre">role_description</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.role_description" title="Permalink to this definition"></a></dt>
+<dd><p>The description of the role assigned to the agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.treatment">
+<span class="sig-name descname"><span class="pre">treatment</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.treatment" title="Permalink to this definition"></a></dt>
+<dd><p>The treatment assigned to the session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.system_message">
+<span class="sig-name descname"><span class="pre">system_message</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.system_message" title="Permalink to this definition"></a></dt>
+<dd><p>The system message generated for the conversation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.message_history">
+<span class="sig-name descname"><span class="pre">message_history</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.message_history" title="Permalink to this definition"></a></dt>
+<dd><p>The history of the conversation with the synthetic agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_message_history">
+<span class="sig-name descname"><span class="pre">get_message_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#ConversationalSyntheticAgent.get_message_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_message_history" title="Permalink to this definition"></a></dt>
+<dd><p>Return the message history of the synthetic agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The conversation history of the synthetic agent</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_role">
+<span class="sig-name descname"><span class="pre">get_role</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#ConversationalSyntheticAgent.get_role"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_role" title="Permalink to this definition"></a></dt>
+<dd><p>Return the assigned role of the synthetic agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The assigned role of the synthetic agent.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_role_description">
+<span class="sig-name descname"><span class="pre">get_role_description</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#ConversationalSyntheticAgent.get_role_description"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_role_description" title="Permalink to this definition"></a></dt>
+<dd><p>Return the description of the synthetic agent’s role.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The description of the synthetic agent’s role.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_system_message">
+<span class="sig-name descname"><span class="pre">get_system_message</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#ConversationalSyntheticAgent.get_system_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_system_message" title="Permalink to this definition"></a></dt>
+<dd><p>Return the system message of the synthetic agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The system message of the synthetic agent.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_treatment">
+<span class="sig-name descname"><span class="pre">get_treatment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#ConversationalSyntheticAgent.get_treatment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.get_treatment" title="Permalink to this definition"></a></dt>
+<dd><p>Return the treatment assigned to the session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The treatment assigned to the session.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.respond">
+<span class="sig-name descname"><span class="pre">respond</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">question</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#ConversationalSyntheticAgent.respond"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.respond" title="Permalink to this definition"></a></dt>
+<dd><p>Generate a response to a question posed to the synthetic agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>question</strong> (<em>str</em>) – A question or prompt to which the agent should respond.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The response generated by the synthetic agent.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#ConversationalSyntheticAgent.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.to_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the ConversationalSyntheticAgent object to a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary representation of the ConversationalSyntheticAgent object.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.update_message_history">
+<span class="sig-name descname"><span class="pre">update_message_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#ConversationalSyntheticAgent.update_message_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent.update_message_history" title="Permalink to this definition"></a></dt>
+<dd><p>Update the message history of the synthetic agent with a new message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>message</strong> (<em>str</em>) – A message to add to the conversation history.</p></li>
+<li><p><strong>role</strong> (<em>str</em>) – The identifier of the party that generated the message.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.SyntheticAgent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.synthetic_agent.</span></span><span class="sig-name descname"><span class="pre">SyntheticAgent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">experiment_id:</span> <span class="pre">str,</span> <span class="pre">experiment_context:</span> <span class="pre">str,</span> <span class="pre">session_id:</span> <span class="pre">int,</span> <span class="pre">demographic_info:</span> <span class="pre">dict[str,</span> <span class="pre">typing.Any],</span> <span class="pre">model_info:</span> <span class="pre">str,</span> <span class="pre">demographic_prompt_generator:</span> <span class="pre">~typing.Callable[[dict[str,</span> <span class="pre">typing.Any]],</span> <span class="pre">str]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">generate_demographic_prompt&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#SyntheticAgent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.SyntheticAgent" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A class for constructing the base synthetic agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>experiment_id</strong> (<em>str</em>) – The ID of the experiment.</p></li>
+<li><p><strong>experiment_context</strong> (<em>str</em>) – The context of the experiment.</p></li>
+<li><p><strong>session_id</strong> (<em>int</em>) – The ID of the session.</p></li>
+<li><p><strong>demographic_info</strong> (<em>DemographicInfo</em>) – The demographic information of the user.</p></li>
+<li><p><strong>model_info</strong> (<em>str</em>) – The information about the model used by the agent.</p></li>
+<li><p><strong>demographic_prompt_generator</strong> (<em>Callable</em><em>[</em><em>[</em><em>DemographicInfo</em><em>]</em><em>, </em><em>str</em><em>]</em><em>, </em><em>optional</em>) – A function that generates a demographic prompt based on the demographic information.
+Defaults to generate_demographic_prompt.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.SyntheticAgent.experiment_id">
+<span class="sig-name descname"><span class="pre">experiment_id</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.SyntheticAgent.experiment_id" title="Permalink to this definition"></a></dt>
+<dd><p>The ID of the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.SyntheticAgent.experiment_context">
+<span class="sig-name descname"><span class="pre">experiment_context</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.SyntheticAgent.experiment_context" title="Permalink to this definition"></a></dt>
+<dd><p>The context of the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.SyntheticAgent.session_id">
+<span class="sig-name descname"><span class="pre">session_id</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.SyntheticAgent.session_id" title="Permalink to this definition"></a></dt>
+<dd><p>The ID of the session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.SyntheticAgent.demographic_info">
+<span class="sig-name descname"><span class="pre">demographic_info</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.SyntheticAgent.demographic_info" title="Permalink to this definition"></a></dt>
+<dd><p>The demographic information of the user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DemographicInfo</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.SyntheticAgent.model_info">
+<span class="sig-name descname"><span class="pre">model_info</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.SyntheticAgent.model_info" title="Permalink to this definition"></a></dt>
+<dd><p>The information about the model used by the agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_demographic_info">
+<span class="sig-name descname"><span class="pre">get_demographic_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#SyntheticAgent.get_demographic_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_demographic_info" title="Permalink to this definition"></a></dt>
+<dd><p>Return the demographic information of the synthetic agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The demographic information of the synthetic agent</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_experiment_context">
+<span class="sig-name descname"><span class="pre">get_experiment_context</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#SyntheticAgent.get_experiment_context"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_experiment_context" title="Permalink to this definition"></a></dt>
+<dd><p>Return the experiment context of the synthetic agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The experiment context of the synthetic agent.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_experiment_id">
+<span class="sig-name descname"><span class="pre">get_experiment_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#SyntheticAgent.get_experiment_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_experiment_id" title="Permalink to this definition"></a></dt>
+<dd><p>Return the experiment ID of the synthetic agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The experiment ID of the synthetic agent.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_model_info">
+<span class="sig-name descname"><span class="pre">get_model_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#SyntheticAgent.get_model_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_model_info" title="Permalink to this definition"></a></dt>
+<dd><p>Return the model information of the synthetic agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The model information of the synthetic agent</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_session_id">
+<span class="sig-name descname"><span class="pre">get_session_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#SyntheticAgent.get_session_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.SyntheticAgent.get_session_id" title="Permalink to this definition"></a></dt>
+<dd><p>Return the session ID of the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The session ID of the experiment.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.SyntheticAgent.respond">
+<span class="sig-name descname"><span class="pre">respond</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#SyntheticAgent.respond"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.SyntheticAgent.respond" title="Permalink to this definition"></a></dt>
+<dd><p>Generate a response based on the synthetic agent’s model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The response generated by the synthetic agent</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_agent.SyntheticAgent.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_agent.html#SyntheticAgent.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_agent.SyntheticAgent.to_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the SyntheticAgent object to a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary representation of the SyntheticAgent object.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.generative.video">
+<span id="talkingtomachines-generative-video-module"></span><h2>talkingtomachines.generative.video module<a class="headerlink" href="#module-talkingtomachines.generative.video" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.video.generate_video_treatment">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.video.</span></span><span class="sig-name descname"><span class="pre">generate_video_treatment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatment_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/video.html#generate_video_treatment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.video.generate_video_treatment" title="Permalink to this definition"></a></dt>
+<dd><p>Generate a video treatment based on the provided data.</p>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.generative">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-talkingtomachines.generative" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="talkingtomachines.analytics.html" class="btn btn-neutral float-left" title="talkingtomachines.analytics package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="talkingtomachines.interface.html" class="btn btn-neutral float-right" title="talkingtomachines.interface package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

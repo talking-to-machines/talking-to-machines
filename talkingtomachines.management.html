@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.management package &mdash; talking-to-machines 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="talkingtomachines.storage package" href="talkingtomachines.storage.html" />
+    <link rel="prev" title="talkingtomachines.interface.auth package" href="talkingtomachines.interface.auth.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">talkingtomachines</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.management package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/talkingtomachines.management.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="talkingtomachines-management-package">
+<h1>talkingtomachines.management package<a class="headerlink" href="#talkingtomachines-management-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-talkingtomachines.management.experiment">
+<span id="talkingtomachines-management-experiment-module"></span><h2>talkingtomachines.management.experiment module<a class="headerlink" href="#module-talkingtomachines.management.experiment" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.experiment.</span></span><span class="sig-name descname"><span class="pre">AIConversationalExperiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_demographics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_conversation_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">treatments</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">treatment_assignment_strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'simple_random'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AIConversationalExperiment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#talkingtomachines.management.experiment.Experiment" title="talkingtomachines.management.experiment.Experiment"><code class="xref py py-class docutils literal notranslate"><span class="pre">Experiment</span></code></a></p>
+<p>A class representing an AI conversational experiment. Inherits from the Experiment base class.</p>
+<p>This class extends the base <cite>Experiment</cite> class and provides additional functionality
+specific to AI conversational experiments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_info</strong> (<em>str</em>) – The information about the AI model used in the experiment.</p></li>
+<li><p><strong>experiment_context</strong> (<em>str</em>) – The context or purpose of the experiment.</p></li>
+<li><p><strong>agent_demographics</strong> (<em>pd.DataFrame</em>) – The demographic information of the agents participating in the experiment.</p></li>
+<li><p><strong>max_conversation_length</strong> (<em>int</em><em>, </em><em>optional</em>) – The maximum length of a conversation. Defaults to 10.</p></li>
+<li><p><strong>treatments</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>, </em><em>optional</em>) – The treatments for the experiment. Defaults to an empty dictionary.</p></li>
+<li><p><strong>treatment_assignment_strategy</strong> (<em>str</em><em>, </em><em>optional</em>) – The strategy used for assigning treatments to agents.
+Defaults to “simple_random”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the provided model_info is not supported.</p></li>
+<li><p><strong>ValueError</strong> – If the provided treatment_assignment_strategy is not supported.</p></li>
+<li><p><strong>ValueError</strong> – If the provided agent_demographics is an empty DataFrame or does not contain a ‘ID’ column.</p></li>
+<li><p><strong>ValueError</strong> – If the provided max_conversation_length is lesser than 5.</p></li>
+<li><p><strong>ValueError</strong> – If the provided treatment is not in the nested dictionary structure when treatment_assignment_strategy is ‘full_factorial’.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.model_info">
+<span class="sig-name descname"><span class="pre">model_info</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.model_info" title="Permalink to this definition"></a></dt>
+<dd><p>The information about the AI model used in the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.agent_demographics">
+<span class="sig-name descname"><span class="pre">agent_demographics</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.agent_demographics" title="Permalink to this definition"></a></dt>
+<dd><p>The demographic information of the agents participating in the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.max_conversation_length">
+<span class="sig-name descname"><span class="pre">max_conversation_length</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.max_conversation_length" title="Permalink to this definition"></a></dt>
+<dd><p>The maximum length of a conversation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.treatments">
+<span class="sig-name descname"><span class="pre">treatments</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.treatments" title="Permalink to this definition"></a></dt>
+<dd><p>The treatments for the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.treatment_assignment_strategy">
+<span class="sig-name descname"><span class="pre">treatment_assignment_strategy</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.treatment_assignment_strategy" title="Permalink to this definition"></a></dt>
+<dd><p>The strategy used for assigning treatments to agents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.experiment_context">
+<span class="sig-name descname"><span class="pre">experiment_context</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.experiment_context" title="Permalink to this definition"></a></dt>
+<dd><p>The context or purpose of the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.check_agent_demographics">
+<span class="sig-name descname"><span class="pre">check_agent_demographics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_demographics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AIConversationalExperiment.check_agent_demographics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.check_agent_demographics" title="Permalink to this definition"></a></dt>
+<dd><p>Checks to ensure that provided agent_demographics is not empty and contains a ID column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>agent_demographics</strong> (<em>str</em>) – The agent_demographics to be checked.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The validated agent_demographics.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the provided agent_demographics is an empty dataframe or if it does not contain an ID column.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.check_max_conversation_length">
+<span class="sig-name descname"><span class="pre">check_max_conversation_length</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_conversation_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AIConversationalExperiment.check_max_conversation_length"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.check_max_conversation_length" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the provided max_conversation is an integer greater than or equal to 5.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>max_conversation_length</strong> (<em>int</em>) – The max_conversation_length to be checked.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The validated max_conversation_length.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the provided treatments is less than 5.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.check_model_info">
+<span class="sig-name descname"><span class="pre">check_model_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AIConversationalExperiment.check_model_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.check_model_info" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the provided model_info is supported.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model_info</strong> (<em>str</em>) – The model_info to be checked.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The validated model_info.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the provided model_info is not supported.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.check_treatment_assignment_strategy">
+<span class="sig-name descname"><span class="pre">check_treatment_assignment_strategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatment_assignment_strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AIConversationalExperiment.check_treatment_assignment_strategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.check_treatment_assignment_strategy" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the provided treatment_assignment_strategy is supported.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>treatment_assignment_strategy</strong> (<em>str</em>) – The treatment_assignment_strategy to be checked.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The validated treatment_assignment_strategy.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the provided treatment_assignment_strategy is not supported.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.check_treatments">
+<span class="sig-name descname"><span class="pre">check_treatments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatments</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AIConversationalExperiment.check_treatments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.check_treatments" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the provided treatments is valid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>treatments</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – The treatments to be checked.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The validated treatments.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, Any]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the provided treatments is not in the correct format.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.get_agent_demographics">
+<span class="sig-name descname"><span class="pre">get_agent_demographics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AIConversationalExperiment.get_agent_demographics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.get_agent_demographics" title="Permalink to this definition"></a></dt>
+<dd><p>Return the agents’ demographic information for this experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The agents’ demographic information.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.get_experiment_context">
+<span class="sig-name descname"><span class="pre">get_experiment_context</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AIConversationalExperiment.get_experiment_context"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.get_experiment_context" title="Permalink to this definition"></a></dt>
+<dd><p>Return the experiment context.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The experiment context.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.get_max_conversation_length">
+<span class="sig-name descname"><span class="pre">get_max_conversation_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AIConversationalExperiment.get_max_conversation_length"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.get_max_conversation_length" title="Permalink to this definition"></a></dt>
+<dd><p>Return the maximum length of a conversation for this experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The maximum length of a conversation.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.get_model_info">
+<span class="sig-name descname"><span class="pre">get_model_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AIConversationalExperiment.get_model_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.get_model_info" title="Permalink to this definition"></a></dt>
+<dd><p>Return the model used in this experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The model information.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.get_treatment_assignment_strategy">
+<span class="sig-name descname"><span class="pre">get_treatment_assignment_strategy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AIConversationalExperiment.get_treatment_assignment_strategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.get_treatment_assignment_strategy" title="Permalink to this definition"></a></dt>
+<dd><p>Return the treatment assignment strategy for this experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The treatments assignment strategy.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AIConversationalExperiment.get_treatments">
+<span class="sig-name descname"><span class="pre">get_treatments</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AIConversationalExperiment.get_treatments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AIConversationalExperiment.get_treatments" title="Permalink to this definition"></a></dt>
+<dd><p>Return the treatments for this experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The treatments for this experiment.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.experiment.</span></span><span class="sig-name descname"><span class="pre">AItoAIConversationalExperiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_demographics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_roles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_agents_per_session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_sessions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_conversation_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">treatments</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">treatment_assignment_strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'simple_random'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#talkingtomachines.management.experiment.AIConversationalExperiment" title="talkingtomachines.management.experiment.AIConversationalExperiment"><code class="xref py py-class docutils literal notranslate"><span class="pre">AIConversationalExperiment</span></code></a></p>
+<p>A class representing an AI-to-AI conversational experiment. Inherits from the AIConversationalExperiment class.</p>
+<p>This class extends the <cite>AIConversationalExperiment</cite> class and provides additional functionality
+specific to AI-to-AI conversational experiments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_info</strong> (<em>str</em>) – The information about the AI model used in the experiment.</p></li>
+<li><p><strong>experiment_context</strong> (<em>str</em>) – The context or purpose of the experiment.</p></li>
+<li><p><strong>agent_demographics</strong> (<em>pd.DataFrame</em>) – The demographic information of the agents participating in the experiment.</p></li>
+<li><p><strong>agent_roles</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – Dictionary mapping agent roles to their descriptions.</p></li>
+<li><p><strong>num_agents_per_session</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of agents per session. Defaults to 2.</p></li>
+<li><p><strong>num_sessions</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of sessions. Defaults to 10.</p></li>
+<li><p><strong>max_conversation_length</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum length of a conversation. Defaults to 10.</p></li>
+<li><p><strong>treatments</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>, </em><em>optional</em>) – The treatments for the experiment. Defaults to an empty dictionary.</p></li>
+<li><p><strong>treatment_assignment_strategy</strong> (<em>str</em><em>, </em><em>optional</em>) – The strategy used for assigning treatments to agents.
+Defaults to “simple_random”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the provided num_sessions is not valid.</p></li>
+<li><p><strong>ValueError</strong> – If the provided num_agents_per_session is less than 2 or will exceed the total number of demographic information.</p></li>
+<li><p><strong>ValueError</strong> – If the provided number of agent_roles is not equal to num_agents_per_session.</p></li>
+<li><p><strong>ValueError</strong> – If the number of roles defined does not match the number of agents assigned to each session.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.num_sessions">
+<span class="sig-name descname"><span class="pre">num_sessions</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.num_sessions" title="Permalink to this definition"></a></dt>
+<dd><p>The number of sessions in the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.num_agents_per_session">
+<span class="sig-name descname"><span class="pre">num_agents_per_session</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.num_agents_per_session" title="Permalink to this definition"></a></dt>
+<dd><p>The number of agents per session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.agent_roles">
+<span class="sig-name descname"><span class="pre">agent_roles</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.agent_roles" title="Permalink to this definition"></a></dt>
+<dd><p>The roles assigned to agents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.treatment_assignment">
+<span class="sig-name descname"><span class="pre">treatment_assignment</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.treatment_assignment" title="Permalink to this definition"></a></dt>
+<dd><p>The assignment of treatments to agents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[int, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.session_id_list">
+<span class="sig-name descname"><span class="pre">session_id_list</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.session_id_list" title="Permalink to this definition"></a></dt>
+<dd><p>List of session IDs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.agent_assignment">
+<span class="sig-name descname"><span class="pre">agent_assignment</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.agent_assignment" title="Permalink to this definition"></a></dt>
+<dd><p>The assignment of agents to sessions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[int, list[DemographicInfo]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.assign_agents_to_session">
+<span class="sig-name descname"><span class="pre">assign_agents_to_session</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.assign_agents_to_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.assign_agents_to_session" title="Permalink to this definition"></a></dt>
+<dd><p>Randomly assigns agents’ demographics to each session based on the given number of agents per session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary mapping session IDs to a list of agent demographic information.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[int, list[DemographicInfo]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.assign_treatment">
+<span class="sig-name descname"><span class="pre">assign_treatment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.assign_treatment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.assign_treatment" title="Permalink to this definition"></a></dt>
+<dd><p>Assign treatments to sessions based on the specified treatment assignment strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary where the keys represent session numbers and the values represent the assigned treatment labels.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[int, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.check_agent_roles">
+<span class="sig-name descname"><span class="pre">check_agent_roles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_roles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.check_agent_roles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.check_agent_roles" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the provided agent_roles is valid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>agent_roles</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – The agent_roles to be checked.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The validated agent_roles.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, str]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the provided agent_roles is not valid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.check_num_agents_per_session">
+<span class="sig-name descname"><span class="pre">check_num_agents_per_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_agents_per_session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.check_num_agents_per_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.check_num_agents_per_session" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the provided num_agents_per_session is valid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>num_agents_per_session</strong> (<em>int</em>) – The num_agents_per_session to be checked.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The validated num_agents_per_session.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the provided num_agents_per_session is not valid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.check_num_sessions">
+<span class="sig-name descname"><span class="pre">check_num_sessions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_sessions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.check_num_sessions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.check_num_sessions" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the provided num_sessions is valid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>num_sessions</strong> (<em>int</em>) – The num_sessions to be checked.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The validated num_sessions.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the provided check_num_sessions is not valid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_agent_assignment">
+<span class="sig-name descname"><span class="pre">get_agent_assignment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.get_agent_assignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_agent_assignment" title="Permalink to this definition"></a></dt>
+<dd><p>Return the agent_assignment for this experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The agent_assignment information.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[int, list[DemographicInfo]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_agent_roles">
+<span class="sig-name descname"><span class="pre">get_agent_roles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.get_agent_roles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_agent_roles" title="Permalink to this definition"></a></dt>
+<dd><p>Return the agent_roles defined this experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The agent_roles information.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_num_agents_per_session">
+<span class="sig-name descname"><span class="pre">get_num_agents_per_session</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.get_num_agents_per_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_num_agents_per_session" title="Permalink to this definition"></a></dt>
+<dd><p>Return the num_agents_per_session defined this experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The num_agents_per_session information.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_num_sessions">
+<span class="sig-name descname"><span class="pre">get_num_sessions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.get_num_sessions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_num_sessions" title="Permalink to this definition"></a></dt>
+<dd><p>Return the num_sessions defined this experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The num_sessions information.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_session_id_list">
+<span class="sig-name descname"><span class="pre">get_session_id_list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.get_session_id_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_session_id_list" title="Permalink to this definition"></a></dt>
+<dd><p>Return the session_id_list of this experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The session_id_list information.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_treatment_assignment">
+<span class="sig-name descname"><span class="pre">get_treatment_assignment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.get_treatment_assignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.get_treatment_assignment" title="Permalink to this definition"></a></dt>
+<dd><p>Return the treatment_assignment defined this experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The treatment_assignment information.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[int, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.initialize_agents">
+<span class="sig-name descname"><span class="pre">initialize_agents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent" title="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent"><span class="pre">talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.initialize_agents"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.initialize_agents" title="Permalink to this definition"></a></dt>
+<dd><p>Initializes and returns a list of ConversationalSyntheticAgent objects based on the provided session information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>session_info</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – A dictionary containing session information, including agents’ demographics, session ID, treatment, etc.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of initialized ConversationalSyntheticAgent objects.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[<a class="reference internal" href="talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent" title="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent">ConversationalSyntheticAgent</a>]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If the number of agents’ demographics does not match the number of agent roles when initializing agents.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.run_experiment">
+<span class="sig-name descname"><span class="pre">run_experiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">test_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.run_experiment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.run_experiment" title="Permalink to this definition"></a></dt>
+<dd><p>Runs an experiment based on the experimental settings defined during class initialisation. If test_mode is set to True, the first session will be selected and run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>test_mode</strong> (<em>bool</em><em>, </em><em>optional</em>) – Indicates whether the experiment is in test mode or not.
+Defaults to True.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing the experiment ID and session information.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.run_session">
+<span class="sig-name descname"><span class="pre">run_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.run_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.run_session" title="Permalink to this definition"></a></dt>
+<dd><p>Runs a session involving a conversation between multiple AI agents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>session_info</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – A dictionary containing session information.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing the updated session information at the end of the session.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIConversationalExperiment.save_experiment">
+<span class="sig-name descname"><span class="pre">save_experiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIConversationalExperiment.save_experiment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment.save_experiment" title="Permalink to this definition"></a></dt>
+<dd><p>Save the experimental data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>experiment</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>Any</em><em>]</em>) – The experiment data to be saved.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIInterviewExperiment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.experiment.</span></span><span class="sig-name descname"><span class="pre">AItoAIInterviewExperiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_demographics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_roles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_agents_per_session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_sessions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_conversation_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">treatments</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">treatment_assignment_strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'simple_random'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIInterviewExperiment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIInterviewExperiment" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#talkingtomachines.management.experiment.AItoAIConversationalExperiment" title="talkingtomachines.management.experiment.AItoAIConversationalExperiment"><code class="xref py py-class docutils literal notranslate"><span class="pre">AItoAIConversationalExperiment</span></code></a></p>
+<p>A class representing an AI-to-AI interview experiment. Inherits from the AItoAIConversationalExperiment class.</p>
+<p>This class extends the <cite>AItoAIConversationalExperiment</cite> class and provides additional functionality
+specific to AI-to-AI interview experiments. More specifically, one of the agents in the session will serve
+as the interviewer and will not be given a demographic profile.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_info</strong> (<em>str</em>) – The information about the AI model used in the experiment.</p></li>
+<li><p><strong>experiment_context</strong> (<em>str</em>) – The context or purpose of the experiment.</p></li>
+<li><p><strong>agent_demographics</strong> (<em>pd.DataFrame</em>) – The demographic information of the agents participating in the experiment.</p></li>
+<li><p><strong>agent_roles</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – Dictionary mapping agent roles to their descriptions.</p></li>
+<li><p><strong>num_agents_per_session</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of agents per session. Defaults to 2.</p></li>
+<li><p><strong>num_sessions</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of sessions. Defaults to 10.</p></li>
+<li><p><strong>max_conversation_length</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum length of a conversation. Defaults to 10.</p></li>
+<li><p><strong>treatments</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>, </em><em>optional</em>) – The treatments for the experiment. Defaults to an empty dictionary.</p></li>
+<li><p><strong>treatment_assignment_strategy</strong> (<em>str</em><em>, </em><em>optional</em>) – The strategy used for assigning treatments to agents.
+Defaults to “simple_random”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the provided num_sessions is not valid.</p></li>
+<li><p><strong>ValueError</strong> – If the provided num_agents_per_session is less than 2 or will exceed the total number of demographic information.</p></li>
+<li><p><strong>ValueError</strong> – If the provided number of agent_roles is not equal to num_agents_per_session or if the first role is not Interviewer.</p></li>
+<li><p><strong>ValueError</strong> – If the number of roles defined does not match the number of agents assigned to each session. Also if the first role is not Interviewer.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIInterviewExperiment.num_sessions">
+<span class="sig-name descname"><span class="pre">num_sessions</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIInterviewExperiment.num_sessions" title="Permalink to this definition"></a></dt>
+<dd><p>The number of sessions in the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIInterviewExperiment.num_agents_per_session">
+<span class="sig-name descname"><span class="pre">num_agents_per_session</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIInterviewExperiment.num_agents_per_session" title="Permalink to this definition"></a></dt>
+<dd><p>The number of agents per session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIInterviewExperiment.agent_roles">
+<span class="sig-name descname"><span class="pre">agent_roles</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIInterviewExperiment.agent_roles" title="Permalink to this definition"></a></dt>
+<dd><p>The roles assigned to agents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIInterviewExperiment.treatment_assignment">
+<span class="sig-name descname"><span class="pre">treatment_assignment</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIInterviewExperiment.treatment_assignment" title="Permalink to this definition"></a></dt>
+<dd><p>The assignment of treatments to agents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[int, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIInterviewExperiment.session_id_list">
+<span class="sig-name descname"><span class="pre">session_id_list</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIInterviewExperiment.session_id_list" title="Permalink to this definition"></a></dt>
+<dd><p>List of session IDs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIInterviewExperiment.agent_assignment">
+<span class="sig-name descname"><span class="pre">agent_assignment</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIInterviewExperiment.agent_assignment" title="Permalink to this definition"></a></dt>
+<dd><p>The assignment of agents to sessions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[int, list[DemographicInfo]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIInterviewExperiment.assign_agents_to_session">
+<span class="sig-name descname"><span class="pre">assign_agents_to_session</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIInterviewExperiment.assign_agents_to_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIInterviewExperiment.assign_agents_to_session" title="Permalink to this definition"></a></dt>
+<dd><p>Randomly assigns agents’ demographics to each session based on the given number of agents per session minus the Interviewer agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary mapping session IDs to a list of agent demographic information.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[int, list[DemographicInfo]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIInterviewExperiment.check_agent_roles">
+<span class="sig-name descname"><span class="pre">check_agent_roles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_roles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIInterviewExperiment.check_agent_roles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIInterviewExperiment.check_agent_roles" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the provided agent_roles is valid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>agent_roles</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – The agent_roles to be checked.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The validated agent_roles.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, str]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the provided agent_roles is not valid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIInterviewExperiment.check_num_agents_per_session">
+<span class="sig-name descname"><span class="pre">check_num_agents_per_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_agents_per_session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIInterviewExperiment.check_num_agents_per_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIInterviewExperiment.check_num_agents_per_session" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the provided num_agents_per_session is valid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>num_agents_per_session</strong> (<em>int</em>) – The num_agents_per_session to be checked.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The validated num_agents_per_session.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the provided num_agents_per_session is not valid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.AItoAIInterviewExperiment.initialize_agents">
+<span class="sig-name descname"><span class="pre">initialize_agents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent" title="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent"><span class="pre">talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#AItoAIInterviewExperiment.initialize_agents"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.AItoAIInterviewExperiment.initialize_agents" title="Permalink to this definition"></a></dt>
+<dd><p>Initializes and returns a list of ConversationalSyntheticAgent objects based on the provided session information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>session_info</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em>) – A dictionary containing session information, including agents’ demographics, session ID, treatment, etc.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of initialized ConversationalSyntheticAgent objects.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[<a class="reference internal" href="talkingtomachines.generative.html#talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent" title="talkingtomachines.generative.synthetic_agent.ConversationalSyntheticAgent">ConversationalSyntheticAgent</a>]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – If the number of agents’ demographics does not match the number of agent roles (minus Interviewer role) when initializing agents.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.Experiment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.experiment.</span></span><span class="sig-name descname"><span class="pre">Experiment</span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#Experiment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.Experiment" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A class for constructing the base experiment class.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.Experiment.experiment_id">
+<span class="sig-name descname"><span class="pre">experiment_id</span></span><a class="headerlink" href="#talkingtomachines.management.experiment.Experiment.experiment_id" title="Permalink to this definition"></a></dt>
+<dd><p>The unique ID of the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.Experiment.generate_experiment_id">
+<span class="sig-name descname"><span class="pre">generate_experiment_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#Experiment.generate_experiment_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.Experiment.generate_experiment_id" title="Permalink to this definition"></a></dt>
+<dd><p>Generates a unique ID for the experiment by concatenating the date and time information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Unique ID for the experiment as a base64 encoded string.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.management.experiment.Experiment.get_experiment_id">
+<span class="sig-name descname"><span class="pre">get_experiment_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/experiment.html#Experiment.get_experiment_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.experiment.Experiment.get_experiment_id" title="Permalink to this definition"></a></dt>
+<dd><p>Return the experiment ID of the synthetic agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The experiment ID of the synthetic agent.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.management.integration">
+<span id="talkingtomachines-management-integration-module"></span><h2>talkingtomachines.management.integration module<a class="headerlink" href="#module-talkingtomachines.management.integration" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.integration.otree_integration">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.integration.</span></span><span class="sig-name descname"><span class="pre">otree_integration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/integration.html#otree_integration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.integration.otree_integration" title="Permalink to this definition"></a></dt>
+<dd><p>Perform integration with oTree for the specified experiment.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.integration.qualtrics_integration">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.integration.</span></span><span class="sig-name descname"><span class="pre">qualtrics_integration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/integration.html#qualtrics_integration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.integration.qualtrics_integration" title="Permalink to this definition"></a></dt>
+<dd><p>Perform integration with Qualtrics for the specified experiment.</p>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.management.monitoring">
+<span id="talkingtomachines-management-monitoring-module"></span><h2>talkingtomachines.management.monitoring module<a class="headerlink" href="#module-talkingtomachines.management.monitoring" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.monitoring.generate_report">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.monitoring.</span></span><span class="sig-name descname"><span class="pre">generate_report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/monitoring.html#generate_report"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.monitoring.generate_report" title="Permalink to this definition"></a></dt>
+<dd><p>Generate a report for the specified experiment.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.monitoring.monitor_experiment">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.monitoring.</span></span><span class="sig-name descname"><span class="pre">monitor_experiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/monitoring.html#monitor_experiment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.monitoring.monitor_experiment" title="Permalink to this definition"></a></dt>
+<dd><p>Monitor the specified experiment.</p>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.management.participant">
+<span id="talkingtomachines-management-participant-module"></span><h2>talkingtomachines.management.participant module<a class="headerlink" href="#module-talkingtomachines.management.participant" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.participant.recruit_participants">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.participant.</span></span><span class="sig-name descname"><span class="pre">recruit_participants</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">criteria</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/participant.html#recruit_participants"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.participant.recruit_participants" title="Permalink to this definition"></a></dt>
+<dd><p>Recruit participants based on the provided criteria.</p>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.management.treatment">
+<span id="talkingtomachines-management-treatment-module"></span><h2>talkingtomachines.management.treatment module<a class="headerlink" href="#module-talkingtomachines.management.treatment" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.treatment.block_random_assignment_individual">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.treatment.</span></span><span class="sig-name descname"><span class="pre">block_random_assignment_individual</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatment_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_demographics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">DataFrame</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/treatment.html#block_random_assignment_individual"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.treatment.block_random_assignment_individual" title="Permalink to this definition"></a></dt>
+<dd><p>Assigns treatments randomly to agents using block random assignment strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>treatment_labels</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – A list of treatment labels.</p></li>
+<li><p><strong>agent_demographics</strong> (<em>pd.DataFrame</em>) – A DataFrame containing agent demographics.</p></li>
+<li><p><strong>block_size</strong> (<em>int</em>) – The size of each block.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tuple containing the updated agent demographics DataFrame and a dictionary mapping block-treatment assignments to agent IDs.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[pd.DataFrame, dict[str, List]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.treatment.cluster_random_assignment_individual">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.treatment.</span></span><span class="sig-name descname"><span class="pre">cluster_random_assignment_individual</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatment_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_demographics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster_criteria</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">DataFrame</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/treatment.html#cluster_random_assignment_individual"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.treatment.cluster_random_assignment_individual" title="Permalink to this definition"></a></dt>
+<dd><p>Assigns treatments randomly using a cluster random assignment strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>treatment_labels</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – A list of treatment labels.</p></li>
+<li><p><strong>agent_demographics</strong> (<em>pd.DataFrame</em>) – A pandas DataFrame containing agent demographics.</p></li>
+<li><p><strong>cluster_criteria</strong> (<em>str</em>) – The column name in <cite>agent_demographics</cite> DataFrame to use for clustering.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tuple containing the updated <cite>agent_demographics</cite> DataFrame
+with assigned treatments, and a dictionary mapping clusters to assigned treatments.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[pd.DataFrame, dict[str, List]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.treatment.complete_random_assignment_individual">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.treatment.</span></span><span class="sig-name descname"><span class="pre">complete_random_assignment_individual</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatment_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_demographics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">DataFrame</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/treatment.html#complete_random_assignment_individual"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.treatment.complete_random_assignment_individual" title="Permalink to this definition"></a></dt>
+<dd><p>Randomly assigns agents to different treatments using a complete random assignment strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>treatment_labels</strong> (<em>List</em><em>[</em><em>Any</em><em>]</em>) – A list of treatment labels.</p></li>
+<li><p><strong>agent_demographics</strong> (<em>pd.DataFrame</em>) – A DataFrame containing agent demographics.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tuple containing the updated agent demographics DataFrame and a dictionary
+mapping treatment labels to lists of agent IDs assigned to each treatment.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[pd.DataFrame, dict[Any, List]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.treatment.complete_random_assignment_session">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.treatment.</span></span><span class="sig-name descname"><span class="pre">complete_random_assignment_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatment_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_sessions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/treatment.html#complete_random_assignment_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.treatment.complete_random_assignment_session" title="Permalink to this definition"></a></dt>
+<dd><p>Assigns treatment labels randomly to a specified number of sessions using a complete random assignment strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>treatment_labels</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – A list of treatment labels.</p></li>
+<li><p><strong>num_sessions</strong> (<em>int</em>) – The number of sessions to assign treatment labels to.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary where the keys represent session numbers and the values represent the assigned treatment labels.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[int, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.treatment.full_factorial_assignment_individual">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.treatment.</span></span><span class="sig-name descname"><span class="pre">full_factorial_assignment_individual</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatment_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_demographics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">DataFrame</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/treatment.html#full_factorial_assignment_individual"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.treatment.full_factorial_assignment_individual" title="Permalink to this definition"></a></dt>
+<dd><p>Assigns treatments to agents using a full factorial design assignment strategy.</p>
+<p>This function takes a list of treatment labels and a DataFrame containing agent demographics,
+and assigns treatments to agents using a full factorial design. It generates all possible combinations
+of treatment labels and assigns agents to each combination randomly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>treatment_labels</strong> (<em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em>) – A list of treatment labels. Each inner list represents the possible
+treatment options for a specific factor.</p></li>
+<li><p><strong>agent_demographics</strong> (<em>pd.DataFrame</em>) – A DataFrame containing agent demographics.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tuple containing the updated agent demographics DataFrame and a dictionary
+mapping treatment labels to lists of agent IDs assigned to each treatment.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[pd.DataFrame, dict[str, List]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.treatment.full_factorial_assignment_session">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.treatment.</span></span><span class="sig-name descname"><span class="pre">full_factorial_assignment_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatment_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_sessions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/treatment.html#full_factorial_assignment_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.treatment.full_factorial_assignment_session" title="Permalink to this definition"></a></dt>
+<dd><p>Assigns treatment labels to sessions using a full factorial design assignment strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>treatment_labels</strong> (<em>List</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em>) – A list of lists containing the treatment labels.
+Each inner list represents the possible labels for a specific treatment factor.</p></li>
+<li><p><strong>num_sessions</strong> (<em>int</em>) – The number of sessions to assign treatment labels to.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A dictionary where the keys represent the session numbers and the values</dt><dd><p>represent the assigned treatment labels.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[int, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.treatment.simple_random_assignment_individual">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.treatment.</span></span><span class="sig-name descname"><span class="pre">simple_random_assignment_individual</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatment_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_demographics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">DataFrame</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/treatment.html#simple_random_assignment_individual"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.treatment.simple_random_assignment_individual" title="Permalink to this definition"></a></dt>
+<dd><p>Randomly assigns agents to different treatments based on their demographics using a simple random assignment strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>treatment_labels</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – A list containing the treatment labels.</p></li>
+<li><p><strong>agent_demographics</strong> (<em>pd.DataFrame</em>) – A pandas DataFrame containing the demographic information of the agents.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tuple containing the updated agent demographics DataFrame and a dictionary
+mapping treatment labels to lists of agent IDs assigned to each treatment.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[pd.DataFrame, dict[str, List]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.management.treatment.simple_random_assignment_session">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.management.treatment.</span></span><span class="sig-name descname"><span class="pre">simple_random_assignment_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatment_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_sessions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/management/treatment.html#simple_random_assignment_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.management.treatment.simple_random_assignment_session" title="Permalink to this definition"></a></dt>
+<dd><p>Assigns treatment labels randomly to each session using a simepl random assignment strategy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>treatment_labels</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – A list of treatment labels.</p></li>
+<li><p><strong>num_sessions</strong> (<em>int</em>) – The number of sessions to assign treatment labels to.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary where the keys represent session numbers and the values represent the assigned treatment labels.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[int, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.management">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-talkingtomachines.management" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="talkingtomachines.interface.auth.html" class="btn btn-neutral float-left" title="talkingtomachines.interface.auth package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="talkingtomachines.storage.html" class="btn btn-neutral float-right" title="talkingtomachines.storage package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
