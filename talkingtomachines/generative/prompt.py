@@ -9,33 +9,50 @@ def generate_demographic_prompt(demographic_info: dict) -> str:
     """
     try:
         demographic_prompt = ""
+        counter = 1
         for question, response in demographic_info.items():
-            demographic_prompt += f"Interviewer: {question} Me: {response} "
+            demographic_prompt += f"{counter}) Interviewer: {question} Me: {response} "
+            counter += 1
         return demographic_prompt
 
     except Exception as e:
         # Log the exception
-        print(f"Error encountered when generating demographic prompt: {e}")
+        print(
+            f"Error encountered when generating demographic prompt: {e}. Returning empty string."
+        )
         return ""
 
 
-def generate_conversational_system_message(
-    experiment_context: str, demographic_info: str, assigned_treatment: str
+def generate_conversational_agent_system_message(
+    experiment_context: str,
+    treatment: str,
+    role_description: str,
+    demographic_info: str,
 ) -> str:
-    """Constructs system message for conversational-based experiment by combining experiment_context, demographic_info and assigned_treatment.
+    """Constructs system message for conversational agents by combining experiment_context, treatment, role description, and demographic_info.
 
     Args:
         experiment_context (str): The context of the experiment.
+        treatment (str): The treatment that is assigned to the session.
+        role_description (str): A description of the agent's role.
         demographic_info (str): The demographic information of the synthetic subject.
-        assigned_treatment (str): The treatment assigned to the synthetic subject.
 
     Returns:
         str: The constructed conversational system message.
     """
-    try:
-        return f"{experiment_context}\n\n{demographic_info}\n\n{assigned_treatment}"
+    return f"{experiment_context}\n\n{treatment}\n\n{role_description}\n\n{demographic_info}"
 
-    except Exception as e:
-        # Log the exception
-        print(f"Error encountered when generating conversational system message: {e}")
-        return ""
+
+def generate_conversational_session_system_message(
+    experiment_context: str, treatment: str
+) -> str:
+    """Constructs system message for conversational sessions by combining experiment_context and treatment.
+
+    Args:
+        experiment_context (str): The context of the experiment.
+        treatment (str): The treatment that is assigned to the session.
+
+    Returns:
+        str: The constructed conversational system message.
+    """
+    return f"{experiment_context}\n\n{treatment}"

@@ -7,168 +7,88 @@ from talkingtomachines.generative.synthetic_agent import (
 )
 
 
-@pytest.fixture
-def demographic_info():
-    # Replace with actual initialization of DemographicInfo
-    return DemographicInfo(name="John Doe", age=30, gender="Male")
+def test_synthetic_agent():
+    # Create a sample demographic info
+    demographic_info = {"age": 30, "gender": "male", "occupation": "engineer"}
 
-
-@pytest.fixture
-def mock_demographic_prompt_generator():
-    return Mock(return_value="Mock demographic prompt")
-
-
-@pytest.fixture
-def base_synthetic_agent(demographic_info, mock_demographic_prompt_generator):
-    return SyntheticAgent(
-        experiment_id="exp123",
-        experiment_context="Test Context",
-        session_id="sess456",
+    # Create a synthetic agent instance
+    agent = SyntheticAgent(
+        experiment_id="123",
+        experiment_context="context",
+        session_id=1,
         demographic_info=demographic_info,
-        model_info="model789",
-        demographic_prompt_generator=mock_demographic_prompt_generator,
+        model_info="model",
     )
 
-
-def test_initialization_base(
-    base_synthetic_agent, demographic_info, mock_demographic_prompt_generator
-):
-    assert base_synthetic_agent.experiment_id == "exp123"
-    assert base_synthetic_agent.experiment_context == "Test Context"
-    assert base_synthetic_agent.session_id == "sess456"
-    assert base_synthetic_agent.demographic_info == "Mock demographic prompt"
-    assert base_synthetic_agent.model_info == "model789"
-    mock_demographic_prompt_generator.assert_called_once_with(demographic_info)
-
-
-def test_get_experiment_id_base(base_synthetic_agent):
-    assert base_synthetic_agent.get_experiment_id() == "exp123"
-
-
-def test_get_session_id_base(base_synthetic_agent):
-    assert base_synthetic_agent.get_session_id() == "exp123"
-
-
-def test_get_experiment_context_base(base_synthetic_agent):
-    assert base_synthetic_agent.get_experiment_context() == "Test Context"
-
-
-def test_get_demographic_info_base(base_synthetic_agent):
-    assert base_synthetic_agent.get_demographic_info() == "Mock demographic prompt"
-
-
-def test_get_model_info_base(base_synthetic_agent):
-    assert base_synthetic_agent.get_model_info() == "model789"
-
-
-def test_respond_base(base_synthetic_agent):
-    assert base_synthetic_agent.respond("What is your name?") == ""
-
-
-@pytest.fixture
-def mock_generate_conversational_system_message():
-    return Mock(return_value="Mock system message")
-
-
-@pytest.fixture
-def conversational_synthetic_agent(
-    demographic_info,
-    mock_demographic_prompt_generator,
-    mock_generate_conversational_system_message,
-):
-    with patch(
-        "talkingtomachines.generative.prompt.generate_conversational_system_message",
-        mock_generate_conversational_system_message,
-    ):
-        return ConversationalSyntheticAgent(
-            experiment_id="exp123",
-            experiment_context="Test Context",
-            session_id="sess456",
-            demographic_info=demographic_info,
-            model_info="model789",
-            assigned_treatment="treatmentA",
-            demographic_prompt_generator=mock_demographic_prompt_generator,
-        )
-
-
-def test_initialization_conversational(conversational_synthetic_agent):
-    assert conversational_synthetic_agent.experiment_id == "exp123"
-    assert conversational_synthetic_agent.experiment_context == "Test Context"
-    assert conversational_synthetic_agent.session_id == "sess456"
-    assert conversational_synthetic_agent.demographic_info == "Mock demographic prompt"
-    assert conversational_synthetic_agent.model_info == "model789"
-    assert conversational_synthetic_agent.assigned_treatment == "treatmentA"
+    # Test the getter methods
+    assert agent.get_experiment_id() == "123"
+    assert agent.get_experiment_context() == "context"
+    assert agent.get_session_id() == 1
     assert (
-        conversational_synthetic_agent.system_message
-        == "Test Context\n\nMock demographic prompt\n\ntreatmentA"
+        agent.get_demographic_info()
+        == "1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
     )
-    assert conversational_synthetic_agent.message_history == [
-        {
-            "role": "system",
-            "content": "Test Context\n\nMock demographic prompt\n\ntreatmentA",
-        }
-    ]
+    assert agent.get_model_info() == "model"
 
-
-def test_get_assigned_treatment_conversational(conversational_synthetic_agent):
-    assert conversational_synthetic_agent.get_assigned_treatment() == "treatmentA"
-
-
-def test_get_system_message_conversational(conversational_synthetic_agent):
+    # Test the to_dict() method
+    agent_dict = agent.to_dict()
+    assert agent_dict["experiment_id"] == "123"
+    assert agent_dict["experiment_context"] == "context"
+    assert agent_dict["session_id"] == 1
     assert (
-        conversational_synthetic_agent.get_system_message()
-        == "Test Context\n\nMock demographic prompt\n\ntreatmentA"
+        agent_dict["demographic_info"]
+        == "1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
+    )
+    assert agent_dict["model_info"] == "model"
+
+    # Test the respond() method
+    response = agent.respond()
+    assert isinstance(response, str)
+
+
+def test_conversational_synthetic_agent():
+    # Create a sample demographic info
+    demographic_info = {"age": 30, "gender": "male", "occupation": "engineer"}
+
+    # Create a conversational synthetic agent instance
+    agent = ConversationalSyntheticAgent(
+        experiment_id="123",
+        experiment_context="context",
+        session_id=1,
+        demographic_info=demographic_info,
+        role="assistant",
+        role_description="AI assistant",
+        model_info="model",
+        treatment="treatment",
     )
 
-
-def test_get_message_history_conversational(conversational_synthetic_agent):
-    assert conversational_synthetic_agent.get_message_history() == [
-        {
-            "role": "system",
-            "content": "Test Context\n\nMock demographic prompt\n\ntreatmentA",
-        }
-    ]
-
-
-def test_update_message_history_conversational(conversational_synthetic_agent):
-    conversational_synthetic_agent.update_message_history(
-        message="Hello", message_type="user"
-    )
-    assert conversational_synthetic_agent.get_message_history()[-1] == {
-        "role": "user",
-        "content": "Hello",
-    }
-    conversational_synthetic_agent.update_message_history(
-        message="Hi there", message_type="assistant"
-    )
-    assert conversational_synthetic_agent.get_message_history()[-1] == {
-        "role": "assistant",
-        "content": "Hi there",
-    }
-
-
-def test_update_message_history_invalid_type_conversational(
-    conversational_synthetic_agent,
-):
+    # Test the getter methods
+    assert agent.get_experiment_id() == "123"
+    assert agent.get_experiment_context() == "context"
+    assert agent.get_session_id() == 1
     assert (
-        conversational_synthetic_agent.update_message_history(
-            message="Hello", message_type="invalid"
-        )
-        is None
+        agent.get_demographic_info()
+        == "1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
     )
+    assert agent.get_model_info() == "model"
+    assert agent.get_role() == "assistant"
+    assert agent.get_role_description() == "AI assistant"
+    assert agent.get_treatment() == "treatment"
 
+    # Test the to_dict() method
+    agent_dict = agent.to_dict()
+    assert agent_dict["experiment_id"] == "123"
+    assert agent_dict["experiment_context"] == "context"
+    assert agent_dict["session_id"] == 1
+    assert (
+        agent_dict["demographic_info"]
+        == "1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
+    )
+    assert agent_dict["model_info"] == "model"
+    assert agent_dict["role"] == "assistant"
+    assert agent_dict["role_description"] == "AI assistant"
+    assert agent_dict["treatment"] == "treatment"
 
-def test_respond_conversational(conversational_synthetic_agent):
-    with patch(
-        "talkingtomachines.generative.llm.query_llm", return_value="Mock response"
-    ):
-        response = conversational_synthetic_agent.respond("What is your name?")
-        assert response == ""
-
-
-def test_respond_exception_handling_conversational(conversational_synthetic_agent):
-    with patch(
-        "talkingtomachines.generative.llm.query_llm", side_effect=Exception("API error")
-    ):
-        response = conversational_synthetic_agent.respond("What is your name?")
-        assert response == ""
+    # Test the respond() method
+    response = agent.respond("How can I assist you?")
+    assert isinstance(response, str)

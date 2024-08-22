@@ -8,7 +8,7 @@ class Config:
     DEBUG = False
     TESTING = False
     DATABASE_URI = os.getenv("DATABASE_URI", "sqlite:///:memory:")
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "your_openai_api_key")
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "openai_api_key")
     QUALTRICS_API_KEY = os.getenv("QUALTRICS_API_KEY", "your_qualtrics_api_key")
     OTREE_API_KEY = os.getenv("OTREE_API_KEY", "your_otree_api_key")
 
@@ -24,4 +24,5 @@ class TestingConfig(Config):
 
 
 class ProductionConfig(Config):
+    TESTING = False
     DATABASE_URI = os.getenv("DATABASE_URI", "postgresql://user@localhost/prod")
