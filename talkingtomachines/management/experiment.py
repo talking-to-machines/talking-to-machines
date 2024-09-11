@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 import pandas as pd
 import datetime
 from tqdm import tqdm
@@ -10,6 +10,7 @@ from talkingtomachines.management.treatment import (
     simple_random_assignment_session,
     complete_random_assignment_session,
     full_factorial_assignment_session,
+    manual_assignment_session,
 )
 from talkingtomachines.generative.prompt import (
     generate_conversational_session_system_message,
@@ -17,12 +18,16 @@ from talkingtomachines.generative.prompt import (
 from talkingtomachines.storage.experiment import save_experiment
 
 SUPPORTED_MODELS = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"]
-SUPPORTED_ASSIGNMENT_STRATEGIES = [
+SUPPORTED_TREATMENT_ASSIGNMENT_STRATEGIES = [
     "simple_random",
     "complete_random",
     "full_factorial",
     "block_randomisation",
     "cluster_randomisation",
+    "manual",
+]
+SUPPORTED_AGENT_ASSIGNMENT_STRATEGIES = [
+    "random",
     "manual",
 ]
 
@@ -96,14 +101,22 @@ class AIConversationalExperiment(Experiment):
         max_conversation_length: int = 10,
         treatments: dict[str, Any] = {},
         treatment_assignment_strategy: str = "simple_random",
+        agent_assignment_strategy: str = "random",
+        treatment_column: str = "",
+        session_column: str = "",
     ):
         super().__init__()
 
         self.model_info = self.check_model_info(model_info)
-        self.treatment_assignment_strategy = self.check_treatment_assignment_strategy(
-            treatment_assignment_strategy
-        )
         self.agent_demographics = self.check_agent_demographics(agent_demographics)
+        self.treatment_assignment_strategy = self.check_treatment_assignment_strategy(
+            treatment_assignment_strategy, treatment_column, session_column
+        )
+        self.agent_assignment_strategy = self.check_agent_assignment_strategy(
+            agent_assignment_strategy, session_column
+        )
+        self.treatment_column = treatment_column
+        self.session_column = session_column
         self.max_conversation_length = self.check_max_conversation_length(
             max_conversation_length
         )
@@ -130,26 +143,85 @@ class AIConversationalExperiment(Experiment):
         return model_info
 
     def check_treatment_assignment_strategy(
-        self, treatment_assignment_strategy: str
+        self,
+        treatment_assignment_strategy: str,
+        treatment_column: str,
+        session_column: str,
     ) -> str:
         """Checks if the provided treatment_assignment_strategy is supported.
 
         Args:
             treatment_assignment_strategy (str): The treatment_assignment_strategy to be checked.
+            treatment_column (str): The column name containing information about the manually assigned treatments.
+            session_column (str): The column name containing the session information.
 
         Returns:
             str: The validated treatment_assignment_strategy.
 
         Raises:
             ValueError: If the provided treatment_assignment_strategy is not supported.
+            ValueError: If treatment_column is an empty string or not one of the columns in agent_demographics when using the manual treatment assignment strategy.
+            ValueError: If session_column is an empty string or not one of the columns in agent_demographics when using the manual treatment assignment strategy.
         """
-
-        if treatment_assignment_strategy not in SUPPORTED_ASSIGNMENT_STRATEGIES:
+        if (
+            treatment_assignment_strategy
+            not in SUPPORTED_TREATMENT_ASSIGNMENT_STRATEGIES
+        ):
             raise ValueError(
-                f"Unsupported treatment_assignment_strategy: {treatment_assignment_strategy}. Supported strategies are: {SUPPORTED_ASSIGNMENT_STRATEGIES}."
+                f"Unsupported treatment_assignment_strategy: {treatment_assignment_strategy}. Supported strategies are: {SUPPORTED_TREATMENT_ASSIGNMENT_STRATEGIES}."
             )
 
+        # Check that treatment_column and session_column can be found in agent_demographics when using manual treatment assignment
+        if treatment_assignment_strategy == "manual":
+            if (
+                treatment_column == ""
+                or treatment_column not in self.agent_demographics.columns
+            ):
+                raise ValueError(
+                    f"The argument 'treatment_column' cannot be an empty string and must be one of the columns in agent_demographics when performing manual treatment assignment."
+                )
+            if (
+                session_column == ""
+                or session_column not in self.agent_demographics.columns
+            ):
+                raise ValueError(
+                    f"The argument 'session_column' cannot be an empty string and must be one of the columns in agent_demographics when performing manual treatment assignment."
+                )
+
         return treatment_assignment_strategy
+
+    def check_agent_assignment_strategy(
+        self, agent_assignment_strategy: str, session_column: str
+    ) -> str:
+        """Checks if the provided agent_assignment_strategy is supported.
+
+        Args:
+            agent_assignment_strategy (str): The agent_assignment_strategy to be checked.
+            session_column (str): The column name containing the session information.
+
+        Returns:
+            str: The validated agent_assignment_strategy.
+
+        Raises:
+            ValueError: If the provided agent_assignment_strategy is not supported.
+            ValueError: If session_column is an empty string or not one of the columns in agent_demographics when using the manual agent assignment strategy.
+        """
+        if agent_assignment_strategy not in SUPPORTED_AGENT_ASSIGNMENT_STRATEGIES:
+            raise ValueError(
+                f"Unsupported agent_assignment_strategy: {agent_assignment_strategy}. Supported strategies are: {SUPPORTED_AGENT_ASSIGNMENT_STRATEGIES}."
+            )
+
+        # Check that session_column can be found in agent_demographics when using manual agent assignment
+        if agent_assignment_strategy == "manual":
+            if (
+                session_column == ""
+                or session_column not in self.agent_demographics.columns
+            ):
+                raise ValueError(
+                    f"The argument 'session_column' cannot be an empty string and must be one of the columns in agent_demographics when performing manual agent assignment."
+                )
+
+        return agent_assignment_strategy
 
     def check_agent_demographics(
         self, agent_demographics: pd.DataFrame
@@ -293,8 +365,8 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         num_agents_per_session (int): The number of agents per session.
         agent_roles (dict[str, str]): The roles assigned to agents.
         treatment_assignment (dict[int, str]): The assignment of treatments to agents.
-        session_id_list (list[int]): List of session IDs.
-        agent_assignment (dict[int, list[DemographicInfo]]): The assignment of agents to sessions.
+        session_id_list (List[int]): List of session IDs.
+        agent_assignment (dict[int, List[DemographicInfo]]): The assignment of agents to sessions.
     """
 
     def __init__(
@@ -308,6 +380,9 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         max_conversation_length: int = 10,
         treatments: dict[str, Any] = {},
         treatment_assignment_strategy: str = "simple_random",
+        agent_assignment_strategy: str = "random",
+        treatment_column: str = "",
+        session_column: str = "",
     ):
         super().__init__(
             model_info,
@@ -316,6 +391,9 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             max_conversation_length,
             treatments,
             treatment_assignment_strategy,
+            agent_assignment_strategy,
+            treatment_column,
+            session_column,
         )
 
         self.num_sessions = self.check_num_sessions(num_sessions)
@@ -323,8 +401,13 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             num_agents_per_session
         )
         self.agent_roles = self.check_agent_roles(agent_roles)
+
+        self.session_id_list = self.generate_session_id_list()
+
         self.treatment_assignment = self.assign_treatment()
-        self.session_id_list = list(self.treatment_assignment.keys())
+        if self.treatment_assignment_strategy == "manual":
+            self.check_manually_assigned_treatments()
+
         self.agent_assignment = self.assign_agents_to_session()
 
     def check_num_sessions(self, num_sessions: int) -> int:
@@ -388,6 +471,38 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             )
 
         return agent_roles
+    
+    def generate_session_id_list(self) -> List[Any]:
+        """Generates a list of session IDs.
+
+        If either the treatment assignment strategy or the agent assignment strategy is set to 'manual',
+        the function returns a list of unique session IDs from the agent demographics DataFrame.
+        Otherwise, it returns a list of sequential integers starting from 0 up to the number of sessions.
+
+        Returns:
+            List[Any]: A list of session IDs. If the assignment strategies are manual, the list contains unique session IDs
+                from the agent demographics DataFrame. Otherwise, it contains sequential integers starting from 0.
+        """
+        if self.treatment_assignment_strategy == "manual" or self.agent_assignment_strategy == "manual":
+            return list(self.agent_demographics[self.session_column].unique())
+        else:
+            return list(range(self.num_sessions))   
+
+    def check_manually_assigned_treatments(self) -> None:
+        """Checks if the manually defined treatments align with the treatment labels provided in self.treatments.
+
+        Raises:
+            ValueError: If the manually defined treatments do not align with the treatment labels provided in self.treatments.
+        """
+        treatment_label_set = set(self.treatments.keys())
+        manual_defined_treatments = set(self.treatment_assignment.values())
+
+        if not treatment_label_set.issuperset(manual_defined_treatments):
+            raise ValueError(
+                f"The treatment labels defined in 'treatments' ({list[treatment_label_set]}) is not a superset of the manually defined treatments in agent_demographics ({list[manual_defined_treatments]})."
+            )
+        else:
+            pass
 
     def get_num_sessions(self) -> int:
         """Return the num_sessions defined this experiment.
@@ -421,7 +536,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         """
         return self.treatment_assignment
 
-    def get_session_id_list(self) -> list[int]:
+    def get_session_id_list(self) -> List[int]:
         """Return the session_id_list of this experiment.
 
         Returns:
@@ -445,12 +560,12 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         """
         if self.treatment_assignment_strategy == "simple_random":
             treatment_labels = list(self.treatments.keys())
-            return simple_random_assignment_session(treatment_labels, self.num_sessions)
+            return simple_random_assignment_session(treatment_labels, self.session_id_list)
 
         elif self.treatment_assignment_strategy == "complete_random":
             treatment_labels = list(self.treatments.keys())
             return complete_random_assignment_session(
-                treatment_labels, self.num_sessions
+                treatment_labels, self.session_id_list
             )
 
         elif self.treatment_assignment_strategy == "full_factorial":
@@ -459,33 +574,60 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
                 inner_treatment_labels = list(inner_treatment_dict.keys())
                 treatment_labels.append(inner_treatment_labels)
             return full_factorial_assignment_session(
-                treatment_labels, self.num_sessions
+                treatment_labels, self.session_id_list
+            )
+
+        elif self.treatment_assignment_strategy == "manual":
+            return manual_assignment_session(
+                self.agent_demographics, self.treatment_column, self.session_column, self.session_id_list
             )
 
         else:
             raise ValueError(
-                f"Unsupported treatment_assignment_strategy: {self.treatment_assignment_strategy}. Supported strategies are: {SUPPORTED_ASSIGNMENT_STRATEGIES}."
+                f"Unsupported treatment_assignment_strategy: {self.treatment_assignment_strategy}. Supported strategies are: {SUPPORTED_TREATMENT_ASSIGNMENT_STRATEGIES}."
             )
 
-    def assign_agents_to_session(self) -> dict[int, list[DemographicInfo]]:
-        """Randomly assigns agents' demographics to each session based on the given number of agents per session.
+    def assign_agents_to_session(self) -> dict[int, List[DemographicInfo]]:
+        """Assigns agents' demographics to each session based on the given number of agents per session and agent assignment strategy.
+        However, if the agent_assignment_strategy is 'manual', then assign the agents to their respective sessions based on the
+        assignment defined in agent_demographics.
 
         Returns:
-            dict[int, list[DemographicInfo]]: A dictionary mapping session IDs to a list of agent demographic information.
+            dict[int, List[DemographicInfo]]: A dictionary mapping session IDs to a list of agent demographic information.
         """
-        randomised_agent_demographics = self.agent_demographics.sample(
-            frac=1
-        ).reset_index(drop=True)
+        if self.agent_assignment_strategy == "manual":
+            agent_to_session_assignment = {}
+            for i, session_id in enumerate(self.session_id_list):
+                session_participants = self.agent_demographics[
+                    self.agent_demographics[self.session_column] == session_id
+                ]
+                session_participants_filtered = session_participants.drop(
+                    columns=[self.session_column]
+                )
+                num_session_participants = len(session_participants_filtered)
+                if num_session_participants != self.num_agents_per_session:
+                    raise ValueError(
+                        f"Session {session_id} contains {num_session_participants} participants while the number of participants per session is supposed to be {self.num_agents_per_session}"
+                    )
 
-        agent_to_session_assignment = {}
-        for i, session_id in enumerate(self.session_id_list):
-            agent_to_session_assignment[session_id] = (
-                randomised_agent_demographics.iloc[
-                    i
-                    * self.num_agents_per_session : (i + 1)
-                    * self.num_agents_per_session
-                ].to_dict(orient="records")
-            )
+                agent_to_session_assignment[session_id] = (
+                    session_participants_filtered.to_dict(orient="records")
+                )
+
+        else:
+            randomised_agent_demographics = self.agent_demographics.sample(
+                frac=1
+            ).reset_index(drop=True)
+
+            agent_to_session_assignment = {}
+            for i, session_id in enumerate(self.session_id_list):
+                agent_to_session_assignment[session_id] = (
+                    randomised_agent_demographics.iloc[
+                        i
+                        * self.num_agents_per_session : (i + 1)
+                        * self.num_agents_per_session
+                    ].to_dict(orient="records")
+                )
 
         return agent_to_session_assignment
 
@@ -648,7 +790,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         num_agents_per_session (int): The number of agents per session.
         agent_roles (dict[str, str]): The roles assigned to agents.
         treatment_assignment (dict[int, str]): The assignment of treatments to agents.
-        session_id_list (list[int]): List of session IDs.
+        session_id_list (List[Any]): List of session IDs.
         agent_assignment (dict[int, list[DemographicInfo]]): The assignment of agents to sessions.
     """
 
@@ -663,6 +805,9 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         max_conversation_length: int = 10,
         treatments: dict[str, Any] = {},
         treatment_assignment_strategy: str = "simple_random",
+        agent_assignment_strategy: str = "random",
+        treatment_column: str = "",
+        session_column: str = "",
     ):
         super().__init__(
             model_info,
@@ -674,6 +819,9 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
             max_conversation_length,
             treatments,
             treatment_assignment_strategy,
+            agent_assignment_strategy,
+            treatment_column,
+            session_column,
         )
 
         self.num_agents_per_session = self.check_num_agents_per_session(
@@ -730,39 +878,61 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
 
         return agent_roles
 
-    def assign_agents_to_session(self) -> dict[int, list[DemographicInfo]]:
-        """Randomly assigns agents' demographics to each session based on the given number of agents per session minus the Interviewer agent.
+    def assign_agents_to_session(self) -> dict[int, List[DemographicInfo]]:
+        """Assigns agents' demographics to each session based on the given number of agents per session (minus the Interviewer agent) and agent assignment strategy.
+        However, if the agent_assignment_strategy is 'manual', then assign the agents to their respective sessions based on the
+        assignment defined in agent_demographics.
 
         Returns:
-            dict[int, list[DemographicInfo]]: A dictionary mapping session IDs to a list of agent demographic information.
+            dict[int, List[DemographicInfo]]: A dictionary mapping session IDs to a list of agent demographic information.
         """
-        randomised_agent_demographics = self.agent_demographics.sample(
-            frac=1
-        ).reset_index(drop=True)
+        if self.agent_assignment_strategy == "manual":
+            agent_to_session_assignment = {}
+            for i, session_id in enumerate(self.session_id_list):
+                session_participants = self.agent_demographics[
+                    self.agent_demographics[self.session_column] == session_id
+                ]
+                session_participants_filtered = session_participants.drop(
+                    columns=[self.session_column]
+                )
+                num_session_participants = len(session_participants_filtered)
+                if num_session_participants != self.num_agents_per_session - 1:
+                    raise ValueError(
+                        f"Session {session_id} contains {num_session_participants} participants while the number of participants per session is supposed to be {self.num_agents_per_session - 1}, excluding the Interviewer."
+                    )
 
-        num_interview_subjects_per_session = self.num_agents_per_session - 1
-        interview_subject_to_session_assignment = {}
-        for i, session_id in enumerate(self.session_id_list):
-            interview_subject_to_session_assignment[session_id] = (
-                randomised_agent_demographics.iloc[
-                    i
-                    * num_interview_subjects_per_session : (i + 1)
-                    * num_interview_subjects_per_session
-                ].to_dict(orient="records")
-            )
+                agent_to_session_assignment[session_id] = (
+                    session_participants_filtered.to_dict(orient="records")
+                )
+
+        else:
+            randomised_agent_demographics = self.agent_demographics.sample(
+                frac=1
+            ).reset_index(drop=True)
+
+            num_interview_subjects_per_session = self.num_agents_per_session - 1
+            interview_subject_to_session_assignment = {}
+            for i, session_id in enumerate(self.session_id_list):
+                interview_subject_to_session_assignment[session_id] = (
+                    randomised_agent_demographics.iloc[
+                        i
+                        * num_interview_subjects_per_session : (i + 1)
+                        * num_interview_subjects_per_session
+                    ].to_dict(orient="records")
+                )
 
         return interview_subject_to_session_assignment
 
     def initialize_agents(
         self, session_info: dict[str, Any]
-    ) -> list[ConversationalSyntheticAgent]:
+    ) -> List[ConversationalSyntheticAgent]:
         """Initializes and returns a list of ConversationalSyntheticAgent objects based on the provided session information.
 
         Args:
             session_info (dict[str, Any]): A dictionary containing session information, including agents' demographics, session ID, treatment, etc.
 
         Returns:
-            list[ConversationalSyntheticAgent]: A list of initialized ConversationalSyntheticAgent objects.
+            List[ConversationalSyntheticAgent]: A list of initialized ConversationalSyntheticAgent objects.
 
         Raises:
             AssertionError: If the number of agents' demographics does not match the number of agent roles (minus Interviewer role) when initializing agents.
