@@ -35,12 +35,18 @@ SUPPORTED_AGENT_ASSIGNMENT_STRATEGIES = [
 class Experiment:
     """A class for constructing the base experiment class.
 
+    Args:
+        experiment_id (str): The unique ID of the experiment.
+
     Attributes:
         experiment_id (str): The unique ID of the experiment.
     """
 
-    def __init__(self):
-        self.experiment_id = self.generate_experiment_id()
+    def __init__(self, experiment_id: str = None):
+        if experiment_id is None:
+            self.experiment_id = self.generate_experiment_id()
+        else:
+            self.experiment_id = experiment_id
 
     def generate_experiment_id(self) -> str:
         """Generates a unique ID for the experiment by concatenating the date and time information.
@@ -69,6 +75,7 @@ class AIConversationalExperiment(Experiment):
     specific to AI conversational experiments.
 
     Args:
+        experiment_id (str): The unique ID of the experiment.
         model_info (str): The information about the AI model used in the experiment.
         experiment_context (str): The context or purpose of the experiment.
         agent_demographics (pd.DataFrame): The demographic information of the agents participating in the experiment.
@@ -76,6 +83,12 @@ class AIConversationalExperiment(Experiment):
         treatments (dict[str, Any], optional): The treatments for the experiment. Defaults to an empty dictionary.
         treatment_assignment_strategy (str, optional): The strategy used for assigning treatments to agents.
             Defaults to "simple_random".
+        agent_assignment_strategy (str, optional): The strategy used for assigning agents to sessions.
+            Defaults to "random"
+        treatment_column (str, optional): The column in agent_demographics that contains the manually assigned treatments.
+            Defaults to ""
+        session_column (str, optional): The column in agent_demographics that contains the manually assigned sessions.
+            Defaults to ""
 
     Raises:
         ValueError: If the provided model_info is not supported.
@@ -85,16 +98,21 @@ class AIConversationalExperiment(Experiment):
         ValueError: If the provided treatment is not in the nested dictionary structure when treatment_assignment_strategy is 'full_factorial'.
 
     Attributes:
+        experiment_id (str): The unique ID of the experiment.
         model_info (str): The information about the AI model used in the experiment.
+        experiment_context (str): The context or purpose of the experiment.
         agent_demographics (pd.DataFrame): The demographic information of the agents participating in the experiment.
         max_conversation_length (int): The maximum length of a conversation.
         treatments (dict[str, Any]): The treatments for the experiment.
         treatment_assignment_strategy (str): The strategy used for assigning treatments to agents.
-        experiment_context (str): The context or purpose of the experiment.
+        agent_assignment_strategy (str, optional): The strategy used for assigning agents to sessions.
+        treatment_column (str, optional): The column in agent_demographics that contains the manually assigned treatments.
+        session_column (str, optional): The column in agent_demographics that contains the manually assigned sessions.
     """
 
     def __init__(
         self,
+        experiment_id: str,
         model_info: str,
         experiment_context: str,
         agent_demographics: pd.DataFrame,
@@ -105,7 +123,9 @@ class AIConversationalExperiment(Experiment):
         treatment_column: str = "",
         session_column: str = "",
     ):
-        super().__init__()
+        super().__init__(
+            experiment_id,
+        )
 
         self.model_info = self.check_model_info(model_info)
         self.agent_demographics = self.check_agent_demographics(agent_demographics)
@@ -343,6 +363,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
     specific to AI-to-AI conversational experiments.
 
     Args:
+        experiment_id (str): The unique ID of the experiment.
         model_info (str): The information about the AI model used in the experiment.
         experiment_context (str): The context or purpose of the experiment.
         agent_demographics (pd.DataFrame): The demographic information of the agents participating in the experiment.
@@ -351,8 +372,14 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         num_sessions (int, optional): Number of sessions. Defaults to 10.
         max_conversation_length (int, optional): Maximum length of a conversation. Defaults to 10.
         treatments (dict[str, Any], optional): The treatments for the experiment. Defaults to an empty dictionary.
-        treatment_assignment_strategy (str, optional): The strategy used for assigning treatments to agents.
+        treatment_assignment_strategy (str, optional): The strategy used for assigning treatments to sessions.
             Defaults to "simple_random".
+        agent_assignment_strategy (str, optional): The strategy used for assigning agents to sessions.
+            Defaults to "random"
+        treatment_column (str, optional): The column in agent_demographics that contains the manually assigned treatments.
+            Defaults to ""
+        session_column (str, optional): The column in agent_demographics that contains the manually assigned sessions.
+            Defaults to ""
 
     Raises:
         ValueError: If the provided num_sessions is not valid.
@@ -361,16 +388,27 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         ValueError: If the number of roles defined does not match the number of agents assigned to each session.
 
     Attributes:
-        num_sessions (int): The number of sessions in the experiment.
-        num_agents_per_session (int): The number of agents per session.
+        experiment_id (str): The unique ID of the experiment.
+        model_info (str): The information about the AI model used in the experiment.
+        experiment_context (str): The context or purpose of the experiment.
+        agent_demographics (pd.DataFrame): The demographic information of the agents participating in the experiment.
         agent_roles (dict[str, str]): The roles assigned to agents.
-        treatment_assignment (dict[int, str]): The assignment of treatments to agents.
+        num_agents_per_session (int): The number of agents per session.
+        num_sessions (int): The number of sessions in the experiment.
+        max_conversation_length (int): The maximum length of a conversation.
+        treatments (dict[str, Any]): The treatments for the experiment.
+        treatment_assignment_strategy (str, optional): The strategy used for assigning treatments to agents.
+        agent_assignment_strategy (str, optional): The strategy used for assigning agents to sessions.
+        treatment_column (str, optional): The column in agent_demographics that contains the manually assigned treatments.
+        session_column (str, optional): The column in agent_demographics that contains the manually assigned sessions.
         session_id_list (List[int]): List of session IDs.
+        treatment_assignment (dict[int, str]): The assignment of treatments to agents.
         agent_assignment (dict[int, List[DemographicInfo]]): The assignment of agents to sessions.
     """
 
     def __init__(
         self,
+        experiment_id: str,
         model_info: str,
         experiment_context: str,
         agent_demographics: pd.DataFrame,
@@ -385,6 +423,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         session_column: str = "",
     ):
         super().__init__(
+            experiment_id,
             model_info,
             experiment_context,
             agent_demographics,
@@ -471,7 +510,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             )
 
         return agent_roles
-    
+
     def generate_session_id_list(self) -> List[Any]:
         """Generates a list of session IDs.
 
@@ -483,10 +522,13 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             List[Any]: A list of session IDs. If the assignment strategies are manual, the list contains unique session IDs
                 from the agent demographics DataFrame. Otherwise, it contains sequential integers starting from 0.
         """
-        if self.treatment_assignment_strategy == "manual" or self.agent_assignment_strategy == "manual":
+        if (
+            self.treatment_assignment_strategy == "manual"
+            or self.agent_assignment_strategy == "manual"
+        ):
             return list(self.agent_demographics[self.session_column].unique())
         else:
-            return list(range(self.num_sessions))   
+            return list(range(self.num_sessions))
 
     def check_manually_assigned_treatments(self) -> None:
         """Checks if the manually defined treatments align with the treatment labels provided in self.treatments.
@@ -560,7 +602,9 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         """
         if self.treatment_assignment_strategy == "simple_random":
             treatment_labels = list(self.treatments.keys())
-            return simple_random_assignment_session(treatment_labels, self.session_id_list)
+            return simple_random_assignment_session(
+                treatment_labels, self.session_id_list
+            )
 
         elif self.treatment_assignment_strategy == "complete_random":
             treatment_labels = list(self.treatments.keys())
@@ -579,7 +623,10 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
 
         elif self.treatment_assignment_strategy == "manual":
             return manual_assignment_session(
-                self.agent_demographics, self.treatment_column, self.session_column, self.session_id_list
+                self.agent_demographics,
+                self.treatment_column,
+                self.session_column,
+                self.session_id_list,
             )
 
         else:
@@ -768,6 +815,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
     as the interviewer and will not be given a demographic profile.
 
     Args:
+        experiment_id (str): The unique ID of the experiment.
         model_info (str): The information about the AI model used in the experiment.
         experiment_context (str): The context or purpose of the experiment.
         agent_demographics (pd.DataFrame): The demographic information of the agents participating in the experiment.
@@ -778,6 +826,12 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         treatments (dict[str, Any], optional): The treatments for the experiment. Defaults to an empty dictionary.
         treatment_assignment_strategy (str, optional): The strategy used for assigning treatments to agents.
             Defaults to "simple_random".
+        agent_assignment_strategy (str, optional): The strategy used for assigning agents to sessions.
+            Defaults to "random"
+        treatment_column (str, optional): The column in agent_demographics that contains the manually assigned treatments.
+            Defaults to ""
+        session_column (str, optional): The column in agent_demographics that contains the manually assigned sessions.
+            Defaults to ""
 
     Raises:
         ValueError: If the provided num_sessions is not valid.
@@ -786,9 +840,19 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         ValueError: If the number of roles defined does not match the number of agents assigned to each session. Also if the first role is not Interviewer.
 
     Attributes:
-        num_sessions (int): The number of sessions in the experiment.
-        num_agents_per_session (int): The number of agents per session.
-        agent_roles (dict[str, str]): The roles assigned to agents.
+        experiment_id (str): The unique ID of the experiment.
+        model_info (str): The information about the AI model used in the experiment.
+        experiment_context (str): The context or purpose of the experiment.
+        agent_demographics (pd.DataFrame): The demographic information of the agents participating in the experiment.
+        agent_roles (dict[str, str]): Dictionary mapping agent roles to their descriptions.
+        num_agents_per_session (int, optional): Number of agents per session.
+        num_sessions (int, optional): Number of sessions.
+        max_conversation_length (int, optional): Maximum length of a conversation.
+        treatments (dict[str, Any], optional): The treatments for the experiment.
+        treatment_assignment_strategy (str, optional): The strategy used for assigning treatments to agents.
+        agent_assignment_strategy (str, optional): The strategy used for assigning agents to sessions.
+        treatment_column (str, optional): The column in agent_demographics that contains the manually assigned treatments.
+        session_column (str, optional): The column in agent_demographics that contains the manually assigned sessions.
         treatment_assignment (dict[int, str]): The assignment of treatments to agents.
         session_id_list (List[Any]): List of session IDs.
         agent_assignment (dict[int, list[DemographicInfo]]): The assignment of agents to sessions.
@@ -796,6 +860,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
 
     def __init__(
         self,
+        experiment_id: str,
         model_info: str,
         experiment_context: str,
         agent_demographics: pd.DataFrame,
@@ -810,6 +875,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         session_column: str = "",
     ):
         super().__init__(
+            experiment_id,
             model_info,
             experiment_context,
             agent_demographics,
@@ -911,9 +977,9 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
             ).reset_index(drop=True)
 
             num_interview_subjects_per_session = self.num_agents_per_session - 1
-            interview_subject_to_session_assignment = {}
+            agent_to_session_assignment = {}
             for i, session_id in enumerate(self.session_id_list):
-                interview_subject_to_session_assignment[session_id] = (
+                agent_to_session_assignment[session_id] = (
                     randomised_agent_demographics.iloc[
                         i
                         * num_interview_subjects_per_session : (i + 1)
@@ -921,7 +987,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                     ].to_dict(orient="records")
                 )
 
-        return interview_subject_to_session_assignment
+        return agent_to_session_assignment
 
     def initialize_agents(
         self, session_info: dict[str, Any]

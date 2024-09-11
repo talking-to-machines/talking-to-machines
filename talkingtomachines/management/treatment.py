@@ -76,7 +76,10 @@ def full_factorial_assignment_session(
 
 
 def manual_assignment_session(
-    agent_demographics: pd.DataFrame, treatment_column: str, session_column:str, session_id_list: List[Any]
+    agent_demographics: pd.DataFrame,
+    treatment_column: str,
+    session_column: str,
+    session_id_list: List[Any],
 ) -> dict[Any, str]:
     """Extract the session treatment dictionary pairs provided by the user.
 
@@ -91,12 +94,18 @@ def manual_assignment_session(
     """
     session_treatment_dict = {}
     for session_id in session_id_list:
-        session_treatment_set = set(agent_demographics[agent_demographics[session_column]==session_id][treatment_column].tolist())
+        session_treatment_set = set(
+            agent_demographics[agent_demographics[session_column] == session_id][
+                treatment_column
+            ].tolist()
+        )
 
         if len(session_treatment_set) == 1:
             session_treatment_dict[session_id] = session_treatment_set.pop()
         else:
-            raise ValueError(f"Session {session_id} is assigned different treatments: {session_treatment_set}")
+            raise ValueError(
+                f"Session {session_id} is assigned different treatments: {session_treatment_set}"
+            )
 
     return session_treatment_dict
 
