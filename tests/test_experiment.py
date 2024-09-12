@@ -79,15 +79,21 @@ def test_ai_conversational_experiment_check_treatment_assignment_strategy():
         treatment_assignment_strategy="simple_random",
     )
     assert (
-        experiment.check_treatment_assignment_strategy("simple_random")
+        experiment.check_treatment_assignment_strategy(
+            "simple_random", experiment.treatment_column, experiment.session_column
+        )
         == "simple_random"
     )
     assert (
-        experiment.check_treatment_assignment_strategy("full_factorial")
+        experiment.check_treatment_assignment_strategy(
+            "full_factorial", experiment.treatment_column, experiment.session_column
+        )
         == "full_factorial"
     )
     with pytest.raises(ValueError):
-        experiment.check_treatment_assignment_strategy("invalid_strategy")
+        experiment.check_treatment_assignment_strategy(
+            "invalid_strategy", experiment.treatment_column, experiment.session_column
+        )
 
 
 def test_ai_conversational_experiment_check_agent_demographics():

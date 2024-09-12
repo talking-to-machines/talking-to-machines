@@ -8,12 +8,12 @@ from itertools import product
 
 def test_simple_random_assignment_session():
     treatment_labels = ["A", "B", "C"]
-    num_sessions = 10
+    session_id_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-    assignments = simple_random_assignment_session(treatment_labels, num_sessions)
+    assignments = simple_random_assignment_session(treatment_labels, session_id_list)
 
     # Check if the number of sessions matches the expected number
-    assert len(assignments) == num_sessions
+    assert len(assignments) == len(session_id_list)
 
     # Check if all sessions have valid treatment labels
     for session, treatment in assignments.items():
@@ -25,20 +25,20 @@ def test_simple_random_assignment_session():
 
 def test_simple_random_assignment_session_empty_labels():
     treatment_labels = []
-    num_sessions = 10
+    session_id_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-    assignments = simple_random_assignment_session(treatment_labels, num_sessions)
+    assignments = simple_random_assignment_session(treatment_labels, session_id_list)
     assert assignments[0] == ""
 
 
 def test_complete_random_assignment_session():
     treatment_labels = ["A", "B", "C"]
-    num_sessions = 10
+    session_id_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-    assignments = complete_random_assignment_session(treatment_labels, num_sessions)
+    assignments = complete_random_assignment_session(treatment_labels, session_id_list)
 
     # Check if the number of sessions matches the expected number
-    assert len(assignments) == num_sessions
+    assert len(assignments) == len(session_id_list)
 
     # Check if all sessions have valid treatment labels
     for session, treatment in assignments.items():
@@ -48,23 +48,20 @@ def test_complete_random_assignment_session():
 
 def test_complete_random_assignment_session_empty_labels():
     treatment_labels = []
-    num_sessions = 10
+    session_id_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-    assignments = complete_random_assignment_session(treatment_labels, num_sessions)
+    assignments = complete_random_assignment_session(treatment_labels, session_id_list)
     for session, treatment in assignments.items():
         assert treatment == ""
 
 
 def test_full_factorial_assignment_session():
     treatment_labels = [["A", "B"], ["X", "Y", "Z"], ["1", "2", "3"]]
-    num_sessions = (
-        len(treatment_labels[0]) * len(treatment_labels[1]) * len(treatment_labels[2])
-    )
-
-    assignments = full_factorial_assignment_session(treatment_labels, num_sessions)
+    session_id_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    assignments = full_factorial_assignment_session(treatment_labels, session_id_list)
 
     # Check if the number of sessions matches the expected number
-    assert len(assignments) == num_sessions
+    assert len(assignments) == len(session_id_list)
 
     # Check if all sessions have valid treatment labels
     for session, treatment in assignments.items():
@@ -80,8 +77,8 @@ def test_full_factorial_assignment_session():
 
 def test_full_factorial_assignment_session_empty_labels():
     treatment_labels = []
-    num_sessions = 10
+    session_id_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-    assignments = full_factorial_assignment_session(treatment_labels, num_sessions)
+    assignments = full_factorial_assignment_session(treatment_labels, session_id_list)
     for session, treatment in assignments.items():
         assert treatment == ""
