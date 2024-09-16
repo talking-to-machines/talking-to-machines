@@ -11,13 +11,13 @@ def test_generate_demographic_prompt_valid_input():
         "How old are you?": "30",
         "Where do you live?": "Wonderland",
     }
-    expected_output = "1) Interviewer: What is your name? Me: Alice 2) Interviewer: How old are you? Me: 30 3) Interviewer: Where do you live? Me: Wonderland "
+    expected_output = "Your demographic profile: 1) Interviewer: What is your name? Me: Alice 2) Interviewer: How old are you? Me: 30 3) Interviewer: Where do you live? Me: Wonderland "
     assert generate_demographic_prompt(demographic_info) == expected_output
 
 
 def test_generate_demographic_prompt_empty_input():
     demographic_info = {}
-    expected_output = ""
+    expected_output = "Your demographic profile: "
     assert generate_demographic_prompt(demographic_info) == expected_output
 
 
@@ -38,7 +38,7 @@ def test_generate_conversational_agent_system_message_valid_input():
     treatment = "Treatment 1"
     role_description = "Interviewer"
     demographic_info = "Alice"
-    expected_output = "Experiment A\n\nTreatment 1\n\nInterviewer\n\nAlice"
+    expected_output = "Experiment A\n\nInterviewer\n\nAlice\n\nTreatment 1"
     assert (
         generate_conversational_agent_system_message(
             experiment_context, treatment, role_description, demographic_info

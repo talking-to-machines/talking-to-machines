@@ -8,9 +8,11 @@ def generate_demographic_prompt(demographic_info: dict) -> str:
         str: The formatted demographic information as a prompt.
     """
     try:
-        demographic_prompt = ""
+        demographic_prompt = "Your demographic profile: "
         counter = 1
         for question, response in demographic_info.items():
+            if question == "ID":
+                continue
             demographic_prompt += f"{counter}) Interviewer: {question} Me: {response} "
             counter += 1
         return demographic_prompt
@@ -40,7 +42,7 @@ def generate_conversational_agent_system_message(
     Returns:
         str: The constructed conversational system message.
     """
-    return f"{experiment_context}\n\n{treatment}\n\n{role_description}\n\n{demographic_info}"
+    return f"{experiment_context}\n\n{role_description}\n\n{demographic_info}\n\n{treatment}"
 
 
 def generate_conversational_session_system_message(

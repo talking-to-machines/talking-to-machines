@@ -26,6 +26,7 @@ class SyntheticAgent:
         experiment_context (str): The context of the experiment.
         session_id (int): The ID of the session.
         demographic_info (DemographicInfo): The demographic information of the user.
+        demographic_prompt (str): A prompt string containing the demographic information of the user.
         model_info (str): The information about the model used by the agent.
     """
 
@@ -43,7 +44,8 @@ class SyntheticAgent:
         self.experiment_id = experiment_id
         self.experiment_context = experiment_context
         self.session_id = session_id
-        self.demographic_info = demographic_prompt_generator(demographic_info)
+        self.demographic_info = demographic_info
+        self.demographic_prompt = demographic_prompt_generator(demographic_info)
         self.model_info = model_info
 
     def get_experiment_id(self) -> str:
@@ -70,13 +72,21 @@ class SyntheticAgent:
         """
         return self.session_id
 
-    def get_demographic_info(self) -> str:
+    def get_demographic_info(self) -> DemographicInfo:
         """Return the demographic information of the synthetic agent.
 
         Returns:
             str: The demographic information of the synthetic agent
         """
         return self.demographic_info
+
+    def get_demographic_prompt(self) -> str:
+        """Return the demographic prompt of the synthetic agent.
+
+        Returns:
+            str: The demographic prompt of the synthetic agent
+        """
+        return self.demographic_prompt
 
     def get_model_info(self) -> str:
         """Return the model information of the synthetic agent.
@@ -97,6 +107,7 @@ class SyntheticAgent:
             "experiment_context": self.experiment_context,
             "session_id": self.session_id,
             "demographic_info": self.demographic_info,
+            "demographic_prompt": self.demographic_prompt,
             "model_info": self.model_info,
         }
 
@@ -131,6 +142,12 @@ class ConversationalSyntheticAgent(SyntheticAgent):
             Defaults to generate_demographic_prompt.
 
     Attributes:
+        experiment_id (str): The ID of the experiment.
+        experiment_context (str): The context of the experiment.
+        session_id (int): The ID of the session.
+        demographic_info (DemographicInfo): The demographic information of the user.
+        demographic_prompt (str): A prompt string containing the demographic information of the user.
+        model_info (str): The information about the model used by the agent.
         role (str): The name of the role assigned to the agent.
         role_description (str): The description of the role assigned to the agent.
         treatment (str): The treatment assigned to the session.
@@ -167,7 +184,7 @@ class ConversationalSyntheticAgent(SyntheticAgent):
             experiment_context=self.experiment_context,
             treatment=self.treatment,
             role_description=self.role_description,
-            demographic_info=self.demographic_info,
+            demographic_info=self.demographic_prompt,
         )
         self.message_history = [
             {"role": "system", "content": self.system_message},
@@ -224,6 +241,7 @@ class ConversationalSyntheticAgent(SyntheticAgent):
             "experiment_context": self.experiment_context,
             "session_id": self.session_id,
             "demographic_info": self.demographic_info,
+            "demographic_prompt": self.demographic_prompt,
             "model_info": self.model_info,
             "role": self.role,
             "role_description": self.role_description,

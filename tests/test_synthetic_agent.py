@@ -25,8 +25,8 @@ def test_synthetic_agent():
     assert agent.get_experiment_context() == "context"
     assert agent.get_session_id() == 1
     assert (
-        agent.get_demographic_info()
-        == "1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
+        agent.get_demographic_prompt()
+        == "Your demographic profile: 1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
     )
     assert agent.get_model_info() == "model"
 
@@ -36,8 +36,8 @@ def test_synthetic_agent():
     assert agent_dict["experiment_context"] == "context"
     assert agent_dict["session_id"] == 1
     assert (
-        agent_dict["demographic_info"]
-        == "1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
+        agent_dict["demographic_prompt"]
+        == "Your demographic profile: 1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
     )
     assert agent_dict["model_info"] == "model"
 
@@ -67,8 +67,8 @@ def test_conversational_synthetic_agent():
     assert agent.get_experiment_context() == "context"
     assert agent.get_session_id() == 1
     assert (
-        agent.get_demographic_info()
-        == "1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
+        agent.get_demographic_prompt()
+        == "Your demographic profile: 1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
     )
     assert agent.get_model_info() == "model"
     assert agent.get_role() == "assistant"
@@ -81,8 +81,8 @@ def test_conversational_synthetic_agent():
     assert agent_dict["experiment_context"] == "context"
     assert agent_dict["session_id"] == 1
     assert (
-        agent_dict["demographic_info"]
-        == "1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
+        agent_dict["demographic_prompt"]
+        == "Your demographic profile: 1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
     )
     assert agent_dict["model_info"] == "model"
     assert agent_dict["role"] == "assistant"
