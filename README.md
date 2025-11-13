@@ -9,7 +9,7 @@ The `talkingtomachines` platform is developed to facilitate the design, conduct,
 
 * **CLI‑first Workflow** – Build and run large-scale experimental trials straight from your terminal.
 
-* **Python Package** – Use the same engine as a Python package in notebooks and pipelines.
+* **Python Package** – Use the same engine as a Python package in Juypter notebooks and Python pipelines.
 
 * **Multi‑Model Providers** – Built-in support for **OpenAI** chat models, **Hugging Face** Inference API, and OpenRouter.ai models.
 
@@ -95,9 +95,9 @@ Windows: [Video Walkthrough](https://www.loom.com/share/79969b38be6d4c2387d19ecc
 ## 🚀 Usage
 
 ### CLI Tool
-The `talkingtomachines` platform can be used as a CLI tool for non-technical users or users who are not familiar with Python. To use the CLI tool, you will need to populate a prompt template to define your experimental setup. Detailed instructions on how to properly set up a prompt template for your experiment can be found here: [`Prompt Template Instructions`](https://github.com/talking-to-machines/talking-to-machines/tree/main/talkingtomachines/interface/README.md)
+The `talkingtomachines` platform can be used as a CLI tool for non-technical users or users who are not familiar with Python. To use the CLI tool, you will need to populate a prompt template Excel workbook to define your experimental setup. Detailed instructions on how to properly set up a prompt template for your experiment can be found here: [`Prompt Template Instructions`](https://github.com/talking-to-machines/talking-to-machines/tree/main/talkingtomachines/interface/README.md)
 
-1. Set the API keys for OpenAI, Hugging Face, or OpenRouter.ai as environment variables on your terminal (for macOS) or Windows Powershell (for Windows):
+1. Set the API keys for OpenAI, Hugging Face, and OpenRouter.ai as environment variables on your terminal (for macOS) or Windows Powershell (for Windows):
 
 For macOS: 
 ```bash

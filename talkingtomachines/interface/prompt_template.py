@@ -519,7 +519,7 @@ def print_session_settings(
         Temperature: {temperature}
         Number of Subjects per Group (Excluding Special Roles like facilitator): {num_subjects_per_group}
         Number of Groups: {num_groups}
-        Maximum Conversation Length: {max_conversation_length}
+        Maximum Number of Rounds: {max_num_rounds}
         Treatments: {treatments}
         Treatment Assignment Strategy: {treatment_assignment_strategy}
         Treatment Column (Only valid when using manual assignment strategy): {treatment_column}
@@ -543,7 +543,7 @@ def print_session_settings(
             temperature=session.temperature,
             num_subjects_per_group=session.num_subjects_per_group,
             num_groups=session.num_groups,
-            max_conversation_length=session.max_conversation_length,
+            max_num_rounds=session.max_num_rounds,
             treatments=_format_dict_to_str(session.treatments),
             treatment_assignment_strategy=session.treatment_assignment_strategy,
             treatment_column=session.treatment_column,
@@ -681,7 +681,7 @@ def main():
 
     # Print out experimental settings for each session for user verification
     for session, constant_permutation in zip(session_list, constant_permutations):
-        print_session_settings(experiment, constant_permutation)
+        print_session_settings(session, constant_permutation)
 
     # Ask for user confirmation to run the experiment
     user_input = (

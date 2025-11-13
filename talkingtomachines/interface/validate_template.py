@@ -72,7 +72,7 @@ def validate_settings_sheet(settings: pd.DataFrame) -> None:
         "temperature",
         "num_subjects_per_group",
         "num_groups",
-        "max_conversation_length",
+        "max_num_rounds",
         "treatment_assignment_strategy",
         "treatment_column",
         "group_assignment_strategy",

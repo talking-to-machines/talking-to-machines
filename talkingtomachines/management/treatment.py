@@ -1,7 +1,6 @@
 import random
 import pandas as pd
 from typing import List, Any
-from itertools import product
 
 
 def simple_random_assignment_session(
@@ -58,31 +57,6 @@ def complete_random_assignment_session(
         else:
             treatment_assignment[group_id] = treatment_labels[i % num_treatments]
     return treatment_assignment
-
-
-# def full_factorial_assignment_session(
-#     treatment_labels: List[List[str]], session_id_list: List[Any], random_seed: int
-# ) -> dict[int, str]:
-#     """Assigns treatment labels to sessions using a full factorial design assignment strategy.
-
-#     Args:
-#         treatment_labels (List[List[str]]): A list of lists containing the treatment labels.
-#             Each inner list represents the possible labels for a specific treatment factor.
-#         session_id_list (List[Any]): The list of session IDs for assignment.
-#         random_seed (int): The random seed for reproducibility.
-
-#     Returns:
-#         dict[Any, str]: A dictionary where the keys represent the session id information and the values
-#             represent the assigned treatment labels.
-#     """
-#     if not treatment_labels:
-#         treatment_label_combinations = []
-#     else:
-#         treatment_label_combinations = list(product(*treatment_labels))
-
-#     return complete_random_assignment_session(
-#         treatment_labels=treatment_label_combinations, session_id_list=session_id_list, random_seed=random_seed
-#     )
 
 
 def manual_assignment_session(

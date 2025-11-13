@@ -121,9 +121,7 @@ def initialize_experiment(prompt_template_dict: dict) -> list:
             hf_inference_endpoint=rendered_prompt_template_dict[
                 "hf_inference_endpoint"
             ],
-            max_conversation_length=rendered_prompt_template_dict[
-                "max_conversation_length"
-            ],
+            max_num_rounds=rendered_prompt_template_dict["max_num_rounds"],
             treatments=rendered_prompt_template_dict["treatments"],
             treatment_assignment_strategy=rendered_prompt_template_dict[
                 "treatment_assignment_strategy"

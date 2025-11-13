@@ -124,7 +124,7 @@ def save_session_as_csv(file_name: str) -> None:
             else:
                 subject_id = message["subject_id"]
 
-            current_conv_length = message.get("current_conversation_length", "")
+            round_num = message.get("round_num", "")
 
             if (
                 message.get("round_id", "") == ""
@@ -133,44 +133,44 @@ def save_session_as_csv(file_name: str) -> None:
                 continue
 
             elif message.get("response_name", "") != "":
-                parsed_field = parse_json_field(json_field=message[role])
+                parsed_response = parse_json_field(json_field=message[role])
                 output_dict[subject_id][
-                    f"{message['response_name']}.{current_conv_length}"
-                ] = parsed_field
+                    f"{message['response_name']}.round{round_num}"
+                ] = parsed_response
 
-                if isinstance(parsed_field, dict):
-                    if parsed_field.get("response", "") != "":
+                if isinstance(parsed_response, dict):
+                    if parsed_response.get("response", "") != "":
                         output_dict[subject_id][
-                            f"{message['response_name']}.response.{current_conv_length}"
-                        ] = parsed_field.get("response")
-                    if parsed_field.get("reasoning", "") != "":
+                            f"{message['response_name']}.response.round{round_num}"
+                        ] = parsed_response.get("response")
+                    if parsed_response.get("reasoning", "") != "":
                         output_dict[subject_id][
-                            f"{message['response_name']}.reasoning.{current_conv_length}"
-                        ] = parsed_field.get("reasoning")
-                    if parsed_field.get("speculation_score", "") != "":
+                            f"{message['response_name']}.reasoning.round{round_num}"
+                        ] = parsed_response.get("reasoning")
+                    if parsed_response.get("speculation_score", "") != "":
                         output_dict[subject_id][
-                            f"{message['response_name']}.speculation_score.{current_conv_length}"
-                        ] = parsed_field.get("speculation_score")
+                            f"{message['response_name']}.speculation_score.round{round_num}"
+                        ] = parsed_response.get("speculation_score")
 
             else:
-                parsed_field = parse_json_field(json_field=message[role])
+                parsed_response = parse_json_field(json_field=message[role])
                 output_dict[subject_id][
-                    f"{message['round_id']}.{current_conv_length}"
-                ] = parsed_field
+                    f"{message['round_id']}.round{round_num}"
+                ] = parsed_response
 
-                if isinstance(parsed_field, dict):
-                    if parsed_field.get("response", "") != "":
+                if isinstance(parsed_response, dict):
+                    if parsed_response.get("response", "") != "":
                         output_dict[subject_id][
-                            f"{message['round_id']}.response.{current_conv_length}"
-                        ] = parsed_field.get("response")
-                    if parsed_field.get("reasoning", "") != "":
+                            f"{message['round_id']}.response.round{round_num}"
+                        ] = parsed_response.get("response")
+                    if parsed_response.get("reasoning", "") != "":
                         output_dict[subject_id][
-                            f"{message['round_id']}.reasoning.{current_conv_length}"
-                        ] = parsed_field.get("reasoning")
-                    if parsed_field.get("speculation_score", "") != "":
+                            f"{message['round_id']}.reasoning.round{round_num}"
+                        ] = parsed_response.get("reasoning")
+                    if parsed_response.get("speculation_score", "") != "":
                         output_dict[subject_id][
-                            f"{message['round_id']}.speculation_score.{current_conv_length}"
-                        ] = parsed_field.get("speculation_score")
+                            f"{message['round_id']}.speculation_score.round{round_num}"
+                        ] = parsed_response.get("speculation_score")
 
     output_df = pd.DataFrame.from_dict(output_dict, orient="index")
     output_df.reset_index(drop=False, inplace=True)

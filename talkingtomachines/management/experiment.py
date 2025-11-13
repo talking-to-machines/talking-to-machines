@@ -200,7 +200,7 @@ class AIConversationalExperiment(Experiment):
         experiment_context (str, optional): The context or purpose of the experiment. Defaults to an empty string
         session_id (str, optional): The unique ID of the session. Defaults to an empty string.
         hf_inference_endpoint (str, optional): The API inference endpoint for the HuggingFace model. Defaults to an empty string.
-        max_conversation_length (int, optional): The maximum length of a conversation. Defaults to 10.
+        max_num_rounds (int, optional): The maximum number of expected rounds conducted in a session. Defaults to 10.
         treatments (dict[str, Treatment], optional): The treatments for the experiment. Defaults to an empty dictionary.
         treatment_assignment_strategy (str, optional): The strategy used for assigning treatments to subjects. Defaults to "simple_random".
         treatment_column (str, optional): The column in profiles that contains the manually assigned treatments. Defaults to an empty string.
@@ -219,7 +219,7 @@ class AIConversationalExperiment(Experiment):
         ValueError: If the provided group_assignment_strategy is not supported.
         ValueError: If the provided role_assignment_strategy is not supported.
         ValueError: If the provided profiles is an empty DataFrame or does not contain a 'ID' column.
-        ValueError: If the provided max_conversation_length is lesser than 5.
+        ValueError: If the provided max_num_rounds is lesser than 1.
         ValueError: If build_profile_qna and build_profile_backstories are both set to False.
 
     Attributes:
@@ -229,7 +229,7 @@ class AIConversationalExperiment(Experiment):
         experiment_context (str): The context or purpose of the experiment.
         session_id (str): The unique session ID of the experiment.
         hf_inference_endpoint (str, optional): The API inference endpoint for the HuggingFace model.
-        max_conversation_length (int): The maximum length of a conversation.
+        max_num_rounds (int): The maximum number of expected rounds conducted in a session.
         treatments (dict[str, Treatment]): The treatment arms for the experiment.
         treatment_assignment_strategy (str): The strategy used for assigning treatments to subjects.
         treatment_column (str, optional): The column in profiles that contains the manually assigned treatments.
@@ -250,7 +250,7 @@ class AIConversationalExperiment(Experiment):
         experiment_context: str = "",
         session_id: str = "",
         hf_inference_endpoint: str = "",
-        max_conversation_length: int = 10,
+        max_num_rounds: int = 10,
         treatments: dict[str, Treatment] = {},
         treatment_assignment_strategy: str = "simple_random",
         treatment_column: str = "",
@@ -271,9 +271,7 @@ class AIConversationalExperiment(Experiment):
         self.experiment_context = experiment_context
         self.profiles = self._check_profiles(profiles=profiles)
         self.hf_inference_endpoint = hf_inference_endpoint
-        self.max_conversation_length = self._check_max_conversation_length(
-            max_conversation_length=max_conversation_length
-        )
+        self.max_num_rounds = self._check_max_num_rounds(max_num_rounds=max_num_rounds)
         self.treatments = self._check_treatments(treatments=treatments)
         self.treatment_assignment_strategy = self._check_treatment_assignment_strategy(
             treatment_assignment_strategy=treatment_assignment_strategy,
@@ -370,24 +368,28 @@ class AIConversationalExperiment(Experiment):
 
         return profiles
 
-    def _check_max_conversation_length(self, max_conversation_length: int) -> int:
-        """Checks if the provided max_conversation is an integer greater than or equal to 1.
+    def _check_max_num_rounds(self, max_num_rounds: int) -> int:
+        """
+        Validates the maximum number of rounds.
+
+        This method ensures that the provided `max_num_rounds` is an integer
+        greater than or equal to 1. If the value is invalid, a ValueError is raised.
 
         Args:
-            max_conversation_length (int): The max_conversation_length to be checked.
+            max_num_rounds (int): The maximum number of rounds to validate.
 
         Returns:
-            int: The validated max_conversation_length.
+            int: The validated maximum number of rounds.
 
         Raises:
-            ValueError: If the provided treatments is less than 1.
+            ValueError: If `max_num_rounds` is less than 1.
         """
-        if max_conversation_length < 1:
+        if max_num_rounds < 1:
             raise ValueError(
-                "Invalid value for max_conversation_length. Please ensure that max_conversation_length is an integer greater than or equal to 1."
+                "Invalid value for max_num_rounds. Please ensure that max_num_rounds is an integer greater than or equal to 1."
             )
 
-        return max_conversation_length
+        return max_num_rounds
 
     def _check_treatments(
         self, treatments: dict[str, Treatment]
@@ -550,7 +552,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         experiment_context (str, optional): The context or purpose of the experiment. Defaults to an empty string.
         session_id (str, optional): The unique session ID of the experiment. Defaults to an empty string.
         hf_inference_endpoint (str, optional): The API inference endpoint for the HuggingFace model. Defaults to an empty string.
-        max_conversation_length (int, optional): The maximum length of a conversation. Defaults to 10.
+        max_num_rounds (int, optional): The maximum number of expected rounds conducted in a session. Defaults to 10.
         treatments (dict[str, Treatment], optional): The treatments for the experiment. Defaults to an empty dictionary.
         treatment_assignment_strategy (str, optional): The strategy used for assigning treatments to subjects. Defaults to "simple_random".
         treatment_column (str, optional): The column in profiles that contains the manually assigned treatments. Defaults to an empty string.
@@ -569,7 +571,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         ValueError: If the provided group_assignment_strategy is not supported.
         ValueError: If the provided role_assignment_strategy is not supported.
         ValueError: If the provided profiles is an empty DataFrame or does not contain a 'ID' column.
-        ValueError: If the provided max_conversation_length is lesser than 5.
+        ValueError: If the provided max_num_rounds is lesser than 1.
         ValueError: If the provided num_groups is not valid.
         ValueError: If the provided num_subjects_per_group is less than 2 or will exceed the total number of profiles provided.
         ValueError: If the provided number of roles is not equal to num_subjects_per_group.
@@ -585,7 +587,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         experiment_context (str): The context or purpose of the experiment.
         session_id (str): The unique session ID of the experiment.
         hf_inference_endpoint (str, optional): The API inference endpoint for the HuggingFace model.
-        max_conversation_length (int): The maximum length of a conversation.
+        max_num_rounds (int): The maximum number of expected rounds conducted in a session.
         treatments (dict[str, Treatment]): The treatments for the experiment.
         treatment_assignment_strategy (str): The strategy used for assigning treatments to subjects.
         treatment_column (str, optional): The column in profiles that contains the manually assigned treatments.
@@ -613,7 +615,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         experiment_context: str = "",
         session_id: str = "",
         hf_inference_endpoint: str = "",
-        max_conversation_length: int = 10,
+        max_num_rounds: int = 10,
         treatments: dict[str, Treatment] = {},
         treatment_assignment_strategy: str = "simple_random",
         treatment_column: str = "",
@@ -632,7 +634,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             experiment_context,
             session_id,
             hf_inference_endpoint,
-            max_conversation_length,
+            max_num_rounds,
             treatments,
             treatment_assignment_strategy,
             treatment_column,
@@ -897,7 +899,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         Returns:
             dict[str, Any]: A dictionary containing the group ID and group information.
         """
-        if test_mode:  # Run one group from each treatment group
+        if test_mode:  # Run one random group from each treatment group
             group_id_list = []
             for treatment in list(self.treatments.keys()):
                 matching_groups = [
@@ -1011,7 +1013,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         """
         Executes a conversation session for a group of subjects, simulating a dialogue
         between a system and multiple subjects. The session continues until either the
-        "end_session" condition is met or the maximum conversation length is reached.
+        "end_session" condition is met or the maximum number of rounds is reached.
 
         Args:
             group_info (dict[str, Any]): A dictionary containing information about the group,
@@ -1028,20 +1030,20 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         """
         session_message_history = []
         subject_message_history = {}
-        conversation_length = 0
+        round_num = 0
         num_subjects = len(group_info["subjects"])
         subject_list = list(group_info["subjects"].values())
         response = group_info["session_system_message"]
         role = "system"
 
         while (
-            "end_session" not in response
-            and conversation_length < self.max_conversation_length
+            not re.compile(r"(?<!\w)end_session(?!\w)", re.IGNORECASE).search(response)
+            and round_num < self.max_num_rounds
         ):
-            if role == "system" and conversation_length == 0:
+            if role == "system" and round_num == 0:
                 message_dict = {
                     role: response,
-                    "round_id": conversation_length,
+                    "round_id": round_num,
                 }
                 for subject in subject_list:
                     subject_message_history[subject.role_label] = [message_dict]
@@ -1050,7 +1052,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
                 message_dict = {
                     role: response,
                     "subject_id": subject_id,
-                    "round_id": conversation_length,
+                    "round_id": round_num,
                 }
                 for subject in subject_list:
                     subject_message_history[subject.role_label].append(message_dict)
@@ -1062,19 +1064,19 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
                 print()
 
             # If no interview script is provided, the sequence of conversation will follow the sequence of subjects defined in self._initialize_subjects
-            subject = subject_list[conversation_length % num_subjects]
+            subject = subject_list[round_num % num_subjects]
             subject_id = subject.profile_info.get("ID", "")
             role = subject.role_label
             response = subject.respond(
                 latest_message_history=subject_message_history[role]
             )
             subject_message_history[role] = []
-            conversation_length += 1
+            round_num += 1
 
         message_dict = {
             role: response,
             "subject_id": subject_id,
-            "round_id": conversation_length,
+            "round_id": round_num,
         }
         session_message_history.append(message_dict)
         session_message_history.append({"system": "end_session"})
@@ -1118,7 +1120,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         experiment_context (str, optional): The context or purpose of the experiment. Defaults to an empty string.
         session_id (str, optional): The unique session ID of the experiment. Defaults to an empty string.
         hf_inference_endpoint (str, optional): The API inference endpoint for the HuggingFace model. Defaults to an empty string.
-        max_conversation_length (int, optional): The maximum length of a conversation. Defaults to 10.
+        max_num_rounds (int, optional): The maximum number of expected rounds conducted in a session. Defaults to 10.
         treatments (dict[str, Treatment], optional): The treatments for the experiment. Defaults to an empty dictionary.
         treatment_assignment_strategy (str, optional): The strategy used for assigning treatments to subjects. Defaults to "simple_random".
         treatment_column (str, optional): The column in profiles that contains the manually assigned treatments. Defaults to an empty string.
@@ -1139,7 +1141,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         ValueError: If the provided group_assignment_strategy is not supported.
         ValueError: If the provided role_assignment_strategy is not supported.
         ValueError: If the provided profiles is an empty DataFrame or does not contain a 'ID' column.
-        ValueError: If the provided max_conversation_length is lesser than 5.
+        ValueError: If the provided max_num_rounds is lesser than 1.
         ValueError: If the provided num_groups is not valid.
         ValueError: If the provided num_subjects_per_group is less than 1 or will exceed the total number of profile information provided.
         ValueError: If the provided number of user-defined roles is not equal to num_subjects_per_group.
@@ -1156,7 +1158,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         experiment_context (str): The context or purpose of the experiment.
         session_id (str): The unique session ID of the experiment.
         hf_inference_endpoint (str, optional): The API inference endpoint for the HuggingFace model.
-        max_conversation_length (int): The maximum length of a conversation.
+        max_num_rounds (int): The maximum number of expected rounds conducted in a session.
         treatments (dict[str, Treatment]): The treatments for the experiment.
         treatment_assignment_strategy (str): The strategy used for assigning treatments to subjects.
         treatment_column (str, optional): The column in profiles that contains the manually assigned treatments.
@@ -1186,7 +1188,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         experiment_context: str = "",
         session_id: str = "",
         hf_inference_endpoint: str = "",
-        max_conversation_length: int = 10,
+        max_num_rounds: int = 10,
         treatments: dict[str, Any] = {},
         treatment_assignment_strategy: str = "simple_random",
         treatment_column: str = "",
@@ -1210,7 +1212,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
             experiment_context,
             session_id,
             hf_inference_endpoint,
-            max_conversation_length,
+            max_num_rounds,
             treatments,
             treatment_assignment_strategy,
             treatment_column,
@@ -1726,7 +1728,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         # Sort the order of tasks based on the round_order field. If task order is repeated, then it is expected that the task order are randomised
         prompts = self._sort_tasks(prompts)
 
-        conversation_length = 0
+        round_num = 0
         for round in prompts:
             # facilitator is providing instructions/information to all subjects.
             if round["type"] in ["context", "discussion"]:
@@ -1760,6 +1762,14 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
 
                 if round["type"] == "context":
                     # Context setting only, no response required from subjects
+                    round_num += 1
+                    if round_num >= self.max_num_rounds:
+                        warnings.warn(
+                            "Maximum number of rounds reached. Terminating session prematurely."
+                        )
+                        group_info["message_history"] = session_message_history
+                        return group_info
+
                     continue
 
                 # Loop through each subject back-to-back and get their response during a discussion round
@@ -1778,7 +1788,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                         "subject_id": subject.profile_info.get("ID", ""),
                         "round_id": round.get("round_id", None),
                         "response_name": round.get("response_name", None),
-                        "current_conversation_length": conversation_length,
+                        "round_num": round_num,
                     }
                     for subject in subject_list:
                         subject_message_history[subject.role_label].append(message_dict)
@@ -1788,13 +1798,13 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                         print(message_dict)
                         print()
 
-                    conversation_length += 1
-                    if conversation_length >= self.max_conversation_length:
-                        warnings.warn(
-                            "Maximum conversation length reached. Ending session early."
-                        )
-                        group_info["message_history"] = session_message_history
-                        return group_info
+                round_num += 1
+                if round_num >= self.max_num_rounds:
+                    warnings.warn(
+                        "Maximum number of rounds reached. Terminating session prematurely."
+                    )
+                    group_info["message_history"] = session_message_history
+                    return group_info
 
             elif round["type"] in ["public_question", "repeat_public_question"]:
                 # facilitator is posing the same question to each subject and the subjects' responses are shown to all subjects during the round.
@@ -1849,7 +1859,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                             "subject_id": subject.profile_info.get("ID", ""),
                             "round_id": round.get("round_id", None),
                             "response_name": round.get("response_name", None),
-                            "current_conversation_length": conversation_length,
+                            "round_num": round_num,
                         }
                         for subject in subject_list:
                             subject_message_history[subject.role_label].append(
@@ -1861,13 +1871,13 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                             print(message_dict)
                             print()
 
-                        conversation_length += 1
-                        if conversation_length >= self.max_conversation_length:
-                            warnings.warn(
-                                "Maximum conversation length reached. Ending session early."
-                            )
-                            group_info["message_history"] = session_message_history
-                            return group_info
+                    round_num += 1
+                    if round_num >= self.max_num_rounds:
+                        warnings.warn(
+                            "Maximum number of rounds reached. Terminating session prematurely."
+                        )
+                        group_info["message_history"] = session_message_history
+                        return group_info
 
                     if round["type"] == "public_question":
                         break  # exit while loop after one full round of public_question
@@ -1938,7 +1948,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                             "subject_id": subject.profile_info.get("ID", ""),
                             "round_id": round.get("round_id", None),
                             "response_name": round.get("response_name", None),
-                            "current_conversation_length": conversation_length,
+                            "round_num": round_num,
                         }
 
                         session_message_history.append(message_dict)
@@ -1957,13 +1967,13 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                             print(message_dict)
                             print()
 
-                        conversation_length += 1
-                        if conversation_length >= self.max_conversation_length:
-                            warnings.warn(
-                                "Maximum conversation length reached. Ending session early."
-                            )
-                            group_info["message_history"] = session_message_history
-                            return group_info
+                    round_num += 1
+                    if round_num >= self.max_num_rounds:
+                        warnings.warn(
+                            "Maximum number of rounds reached. Terminating session prematurely."
+                        )
+                        group_info["message_history"] = session_message_history
+                        return group_info
 
                     if round["type"] == "private_question":
                         break  # exit while loop after one full round of private_question
