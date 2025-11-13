@@ -5,70 +5,78 @@ from talkingtomachines.generative.llm import query_llm
 
 def generate_profile_prompt(
     profile_info: dict,
-    include_backstories: bool,
+    build_profile_qna: bool,
+    build_profile_backstories: bool,
     llm_client: openai.OpenAI = None,
     model_info: str = None,
     temperature: float = None,
 ) -> str:
     """
-    Generates a demographic profile prompt based on the provided profile information.
+    Generates a profile prompt based on the provided profile information and options.
+    This function constructs a prompt string that can include a Q&A section, a backstory section,
+    or both, depending on the specified parameters. It uses an optional language model client
+    to generate backstories if required.
 
     Args:
-        profile_info (dict): A dictionary containing demographic profile questions as keys
-            and their corresponding responses as values. The key "ID" is ignored.
-        include_backstories (bool): A flag indicating whether to include a detailed backstory
-            in the generated prompt.
-        llm_client (openai.OpenAI, optional): An instance of the OpenAI client used to generate
-            backstories. Required if `include_backstories` is True.
-        model_info (str, optional): The model information to be used for generating backstories.
-            Required if `include_backstories` is True.
-        temperature (float, optional): The temperature setting for the language model when
-            generating backstories. Required if `include_backstories` is True.
+        profile_info (dict): A dictionary containing profile questions as keys and their
+            corresponding responses as values. Questions with the key "ID" or empty/NaN
+            responses are ignored.
+        build_profile_qna (bool): If True, includes a Q&A section in the generated prompt.
+        build_profile_backstories (bool): If True, generates and includes a backstory section
+            in the prompt using the language model client.
+        llm_client (openai.OpenAI, optional): The language model client used to generate
+            backstories. Required if `build_profile_backstories` is True.
+        model_info (str, optional): The model information for the language model client.
+            Required if `build_profile_backstories` is True.
+        temperature (float, optional): The temperature setting for the language model client.
+            Required if `build_profile_backstories` is True.
 
     Returns:
-        str: The generated demographic profile prompt. If `include_backstories` is True, the
-        prompt will include a detailed backstory. Returns an empty string in case of an error.
+        str: The generated profile prompt, which may include a Q&A section, a backstory section,
+            or both, depending on the specified parameters. Returns an empty string if no
+            sections are requested or if an error occurs.
 
     Raises:
-        ValueError: If `include_backstories` is True and any of `llm_client`, `model_info`, or
-        `temperature` is not provided.
-
-    Notes:
-        - The function assumes that the `generate_backstories` function is defined elsewhere
-          and is responsible for generating the backstory text.
-        - Any exceptions encountered during the process are logged, and an empty string is returned.
+        ValueError: If `build_profile_backstories` is True but `llm_client`, `model_info`, or
+            `temperature` is not provided.
     """
     try:
-        profile_prompt = "Prior to this study, you are asked to complete some interview questions about your demographic profile, which are provided below. Each question starts with 'Interviewer:', and your response is preceded by 'Me:'\n"
+        qna_profile_prompt = "Prior to this study, you are asked to complete some interview questions about your profile, which are provided below. Each question starts with 'Interviewer:', and your response is preceded by 'Me:'\n"
         counter = 1
         for question, response in profile_info.items():
             if question == "ID" or pd.isna(response) or not response:
                 continue
-            profile_prompt += f"{counter}) Interviewer: {question} Me: {response} "
+            qna_profile_prompt += f"{counter}) Interviewer: {question} Me: {response} "
             counter += 1
 
-        if include_backstories:
+        if build_profile_backstories:
             if llm_client is None or model_info is None or temperature is None:
                 raise ValueError(
-                    "llm_client, model_info, and temperature must be provided when include_backstories is True."
+                    "llm_client, model_info, and temperature must be provided when build_profile_backstories is set to True."
                 )
 
-            backstory_prompt = generate_backstories(
-                system_prompt=profile_prompt,
+            backstory_profile_prompt = generate_backstories(
+                system_prompt=qna_profile_prompt,
                 llm_client=llm_client,
                 model_info=model_info,
                 temperature=temperature,
             )
-            profile_prompt += (
-                f"\n\nThis is a detailed backstory about yourself:\n{backstory_prompt}"
-            )
 
-        return profile_prompt
+        if build_profile_qna and build_profile_backstories:
+            return f"{qna_profile_prompt}\n\nYou are also asked to provide a detailed backstory about yourself, which is provided below:\n{backstory_profile_prompt}"
+
+        elif build_profile_qna:
+            return qna_profile_prompt
+
+        elif build_profile_backstories:
+            return f"Prior to this study, you are asked to provide a detailed backstory about yourself, which is provided below:\n{backstory_profile_prompt}"
+
+        else:
+            return ""
 
     except Exception as e:
-        # Log the exception
         print(
-            f"Error encountered when generating demographic profile prompt: {e}. Returning empty string."
+            f"Error encountered when generating the subject's profile prompt: {e}. Returning an empty string."
         )
         return ""
 
@@ -107,21 +115,19 @@ def generate_backstories(
 
 
 def generate_subject_system_message(
-    treatment: str,
     role_description: str,
     profile_prompt: str,
 ) -> str:
-    """Constructs system message for subjects by combining role description, profile_prompt, treatment, in that order.
+    """Constructs system message for subjects by combining role description and profile_prompt, in that order.
 
     Args:
-        treatment (str): The treatment that is assigned to the session.
         role_description (str): A description of the subject's role.
-        profile_prompt (str): The demographic profile information of the synthetic subject generated by the generate_profile_prompt function.
+        profile_prompt (str): The profile information of the synthetic subject generated by the generate_profile_prompt function.
 
     Returns:
-        str: The constructed conversational system message.
+        str: The constructed conversational system message for the synthetic subject.
     """
-    return f"{role_description}\n\n{profile_prompt}\n\n{treatment}"
+    return f"{role_description}\n\n{profile_prompt}"
 
 
 def generate_session_system_message(experiment_context: str) -> str:

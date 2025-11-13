@@ -1,35 +1,35 @@
 import itertools
-from talkingtomachines.management.experiment import AItoAIInterviewExperiment
+from talkingtomachines.management.experiment import AItoAIInterviewExperiment, Constant
 from jinja2 import Template
 
 
-def render_dict_with_template(prompt_template_dict: dict, constants_dict: dict) -> dict:
-    """Renders a dictionary with prompt template strings using the provided constants.
+def render_dict_with_template(
+    prompt_template_dict: dict, constant_permutation: Constant
+) -> dict:
+    """
+    Renders a dictionary containing string templates using the provided constant values.
 
-    This function takes a dictionary where some values are prompt template strings
-    and another dictionary with constants to replace in the prompt template strings.
-    It processes the dictionary recursively, rendering all prompt template strings
-    with the provided constants.
+    This function processes a dictionary where the values can be strings, lists, or nested dictionaries.
+    String values are treated as templates and rendered using the `Template` class, with the `constant_permutation`
+    object providing the context for rendering. Lists and nested dictionaries are processed recursively.
 
     Args:
-        prompt_template_dict (dict): The dictionary containing prompt template strings.
-        constants_dict (dict): The dictionary containing constants to replace
-                               in the prompt template strings.
+        prompt_template_dict (dict): A dictionary containing string templates, lists, or nested dictionaries.
+        constant_permutation (Constant): An object providing the context for rendering string templates.
 
     Returns:
-        dict: A new dictionary with all prompt template strings rendered with the
-              provided constants.
+        dict: A new dictionary with all string templates rendered and other values preserved.
     """
     rendered_dict = {}
     for key, value in prompt_template_dict.items():
         if isinstance(value, dict):
             # Recursively process nested dictionaries
-            rendered_dict[key] = render_dict_with_template(value, constants_dict)
+            rendered_dict[key] = render_dict_with_template(value, constant_permutation)
 
         elif isinstance(value, str):
             # Render template for each string value
             template = Template(value)
-            rendered_value = template.render(constants_dict)
+            rendered_value = template.render(constant=constant_permutation)
             rendered_dict[key] = rendered_value
 
         elif isinstance(value, list):
@@ -39,13 +39,13 @@ def render_dict_with_template(prompt_template_dict: dict, constants_dict: dict) 
                 if isinstance(item, dict):
                     # Recursively process nested dictionaries
                     rendered_list.append(
-                        render_dict_with_template(item, constants_dict)
+                        render_dict_with_template(item, constant_permutation)
                     )
 
                 elif isinstance(item, str):
                     # Render template for each string value
                     template = Template(item)
-                    rendered_value = template.render(constants_dict)
+                    rendered_value = template.render(constant=constant_permutation)
                     rendered_list.append(rendered_value)
 
                 else:
@@ -60,24 +60,31 @@ def render_dict_with_template(prompt_template_dict: dict, constants_dict: dict) 
 
 
 def generate_permutations(constants: dict) -> list:
-    """Generate all possible permutations of the given list of constants.
+    """
+    Generate all possible permutations of a dictionary's values.
 
-    This function takes a dictionary of constants where the keys are the names of the constants
-    and the values are lists of possible values for those constants. It returns a list of dictionaries,
-    each representing a unique permutation of the constants.
+    This function takes a dictionary where the keys are constant names and the values
+    are iterables of possible values for those constants. It generates all possible
+    combinations (Cartesian product) of the values and returns a list of `Constant`
+    objects initialized with each combination.
 
     Args:
-        constants (dict): A dictionary where keys are constant names and values are lists of possible values.
+        constants (dict): A dictionary where keys are strings representing constant names
+                          and values are iterables of possible values for those constants.
 
     Returns:
-        list: A list of dictionaries, each containing a unique permutation of the constants.
+        list: A list of `Constant` objects, each initialized with a unique combination
+              of the input dictionary's values. If the input dictionary is empty, an
+              empty list is returned.
     """
     if constants:
         keys, values = zip(*constants.items())
-        constant_permutations = [dict(zip(keys, v)) for v in itertools.product(*values)]
+        constant_permutations = [
+            Constant(dict(zip(keys, v))) for v in itertools.product(*values)
+        ]
         return constant_permutations
     else:
-        return [{}]
+        return []
 
 
 def initialize_experiment(prompt_template_dict: dict) -> list:
@@ -85,7 +92,6 @@ def initialize_experiment(prompt_template_dict: dict) -> list:
 
     Args:
         prompt_template_dict (dict): A dictionary containing the prompt template data.
-                                     It should include a "constants" key with values to be permuted.
 
     Returns:
         list: A list of initialized AItoAIInterviewExperiment objects.
@@ -97,20 +103,21 @@ def initialize_experiment(prompt_template_dict: dict) -> list:
     for constant_permutation in constant_permutations:
         # For each permutation, apply constants to prompt template using Jjanja
         rendered_prompt_template_dict = render_dict_with_template(
-            prompt_template_dict, constant_permutation
+            prompt_template_dict=prompt_template_dict,
+            constant_permutation=constant_permutation,
         )
 
         # Initialise experiment based on rendered prompt template
         experiment = AItoAIInterviewExperiment(
             model_info=rendered_prompt_template_dict["model_info"],
             temperature=rendered_prompt_template_dict["temperature"],
-            demographic_profiles=rendered_prompt_template_dict["demographic_profiles"],
+            profiles=rendered_prompt_template_dict["profiles"],
             roles=rendered_prompt_template_dict["roles"],
-            num_subjects_per_session=rendered_prompt_template_dict[
-                "num_subjects_per_session"
+            num_subjects_per_group=rendered_prompt_template_dict[
+                "num_subjects_per_group"
             ],
-            num_sessions=rendered_prompt_template_dict["num_sessions"],
-            experiment_id=rendered_prompt_template_dict["experiment_id"],
+            num_groups=rendered_prompt_template_dict["num_groups"],
+            session_id=rendered_prompt_template_dict["session_id"],
             hf_inference_endpoint=rendered_prompt_template_dict[
                 "hf_inference_endpoint"
             ],
@@ -122,17 +129,21 @@ def initialize_experiment(prompt_template_dict: dict) -> list:
                 "treatment_assignment_strategy"
             ],
             treatment_column=rendered_prompt_template_dict["treatment_column"],
-            session_assignment_strategy=rendered_prompt_template_dict[
-                "session_assignment_strategy"
+            group_assignment_strategy=rendered_prompt_template_dict[
+                "group_assignment_strategy"
             ],
-            session_column=rendered_prompt_template_dict["session_column"],
+            group_column=rendered_prompt_template_dict["group_column"],
             role_assignment_strategy=rendered_prompt_template_dict[
                 "role_assignment_strategy"
             ],
             role_column=rendered_prompt_template_dict["role_column"],
             random_seed=rendered_prompt_template_dict["random_seed"],
-            include_backstories=rendered_prompt_template_dict["include_backstories"],
-            interview_prompts=rendered_prompt_template_dict["interview_prompts"],
+            build_profile_qna=rendered_prompt_template_dict["build_profile_qna"],
+            build_profile_backstories=rendered_prompt_template_dict[
+                "build_profile_backstories"
+            ],
+            prompts=rendered_prompt_template_dict["prompts"],
+            constants=constant_permutation.to_dict(),
         )
 
         experiments.append(experiment)

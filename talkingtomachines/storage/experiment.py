@@ -3,28 +3,28 @@ import pandas as pd
 import numpy as np
 from typing import Any
 from datetime import date, datetime
+from talkingtomachines.management.experiment import Role, Treatment, Constant
 
 
 def _json_serializer(obj):
     """
-    Serialize objects into JSON-compatible formats.
+    Serialize various object types into JSON-compatible formats.
 
-    This function is used to handle objects that are not serializable by the default
-    JSON encoder. It provides custom serialization for specific types, including
-    `datetime`, `date`, `numpy` arrays, and `numpy` generic types. For any other
-    unknown objects, it falls back to converting them to their string representation.
+    This function is designed to handle specific object types and convert them
+    into formats that can be serialized into JSON. The supported object types
+    and their conversions are as follows:
+
+    - `datetime` and `date`: Converted to ISO 8601 string format using `isoformat()`.
+    - `numpy.ndarray`: Converted to a Python list using `tolist()`.
+    - `numpy.generic`: Converted to a native Python scalar using `item()`.
+    - `Role`, `Treatment`, `Constant`: Converted to a dictionary representation using `to_dict()`.
+    - Other types: Converted to their string representation using `str()`.
 
     Args:
         obj: The object to be serialized.
 
     Returns:
-        A JSON-serializable representation of the input object.
-
-    Supported Types:
-        - `datetime` and `date`: Converted to ISO 8601 string format.
-        - `numpy.ndarray`: Converted to a Python list.
-        - `numpy.generic`: Converted to its scalar value.
-        - Any other object: Converted to its string representation.
+        A JSON-compatible representation of the input object.
     """
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
@@ -32,32 +32,30 @@ def _json_serializer(obj):
         return obj.tolist()
     if isinstance(obj, np.generic):
         return obj.item()
+    if isinstance(obj, (Role, Treatment, Constant)):
+        return obj.to_dict()
 
     return str(obj)
 
 
-def save_experiment(
-    experiment: dict[str, Any], save_results_as_csv: bool = False
-) -> None:
-    """Save an experiment to a local JSON file in the experiment_results folder at the root directory.
+def save_session(session: dict[str, Any], save_results_as_csv: bool = False) -> None:
+    """Save the outputs of a session to a local JSON file in the experiment_results folder at the root directory.
 
     Args:
-        experiment (dict[str, Any]): The experiment to be saved.
-        save_results_as_csv (bool, optional): Indicates whether the results of the experiment will be saved as CSV format.
+        session (dict[str, Any]): The session to be saved.
+        save_results_as_csv (bool, optional): Indicates whether the results of the session will be saved as CSV format.
                 Defaults to False
 
     Returns:
         None
     """
     os.makedirs("experiment_results", exist_ok=True)
-    json_file_path = f"experiment_results/{experiment['experiment_id']}.json"
+    json_file_path = f"experiment_results/{session['session_id']}.json"
     with open(json_file_path, "w", encoding="utf-8") as file:
-        json.dump(
-            experiment, file, default=_json_serializer, ensure_ascii=False, indent=2
-        )
+        json.dump(session, file, default=_json_serializer, ensure_ascii=False, indent=2)
 
     if save_results_as_csv:
-        save_experiment_as_csv(json_file_path)
+        save_session_as_csv(json_file_path)
 
 
 def parse_json_field(json_field: str):
@@ -85,91 +83,97 @@ def parse_json_field(json_field: str):
         return json_field
 
 
-def save_experiment_as_csv(file_name: str) -> None:
-    """Reads a JSON file containing experiment data, processes the data to extract relevant information,
+def save_session_as_csv(file_name: str) -> None:
+    """Reads a JSON file containing the outputs of a session, processes the data to extract relevant information,
     and saves the result as a CSV file.
 
     Args:
-        file_name (str): The path to the JSON file containing the experiment data.
+        file_name (str): The path to the JSON file containing the session data.
     """
     with open(file_name, "r", encoding="utf-8", errors="ignore") as file:
         json_output = json.load(file)
 
-    result_dict = {}
-    for _, session_info in json_output["sessions"].items():
+    output_dict = {}
+    for _, group_info in json_output["groups"].items():
 
-        for role, subject in session_info["subjects"].items():
-            if subject["role"] == "Facilitator":
-                continue
-
-            elif subject["role"] == "Summarizer":
-                subject_id = f"{role}_{session_info['session_id']}"
+        for role, subject in group_info["subjects"].items():
+            if role == "facilitator":
+                subject_id = f"{role}_{group_info['session_id']}"
 
             else:
                 subject_id = subject["profile_info"]["ID"]
 
-            result_dict[subject_id] = {
-                "experiment_id": subject["experiment_id"],
+            output_dict[subject_id] = {
                 "session_id": subject["session_id"],
+                "group_id": subject["group_id"],
                 "model_info": subject["model_info"],
                 "temperature": subject["temperature"],
                 "role": role,
-                "treatment_label": session_info["treatment_label"],
+                "treatment_label": group_info["treatment_label"],
                 "experiment_context": subject["experiment_context"],
                 "system_message": subject["system_message"],
+                "build_profile_qna": subject["build_profile_qna"],
+                "build_profile_backstories": subject["build_profile_backstories"],
+                "constants": group_info["constants"],
             }
 
-        for message in session_info["message_history"]:
-            role_label = list(message.keys())[0]
-            if role_label in ["Facilitator", "system"]:
-                continue
-
-            if role_label == "Summarizer":
-                subject_id = f"Summarizer_{session_info['session_id']}"
+        for message in group_info["message_history"]:
+            role = list(message.keys())[0]
+            if role == "facilitator":
+                subject_id = f"facilitator_{group_info['session_id']}"
             else:
                 subject_id = message["subject_id"]
 
-            if message.get("task_id", "") == "" and message.get("var_name", "") == "":
+            current_conv_length = message.get("current_conversation_length", "")
+
+            if (
+                message.get("round_id", "") == ""
+                and message.get("response_name", "") == ""
+            ):
                 continue
 
-            elif message.get("var_name", "") != "":
-                parsed_field = parse_json_field(json_field=message[role_label])
-                result_dict[subject_id][message["var_name"]] = parsed_field
+            elif message.get("response_name", "") != "":
+                parsed_field = parse_json_field(json_field=message[role])
+                output_dict[subject_id][
+                    f"{message['response_name']}.{current_conv_length}"
+                ] = parsed_field
 
                 if isinstance(parsed_field, dict):
                     if parsed_field.get("response", "") != "":
-                        result_dict[subject_id][f"{message['var_name']}.response"] = (
-                            parsed_field.get("response")
-                        )
+                        output_dict[subject_id][
+                            f"{message['response_name']}.response.{current_conv_length}"
+                        ] = parsed_field.get("response")
                     if parsed_field.get("reasoning", "") != "":
-                        result_dict[subject_id][f"{message['var_name']}.reasoning"] = (
-                            parsed_field.get("reasoning")
-                        )
+                        output_dict[subject_id][
+                            f"{message['response_name']}.reasoning.{current_conv_length}"
+                        ] = parsed_field.get("reasoning")
                     if parsed_field.get("speculation_score", "") != "":
-                        result_dict[subject_id][
-                            f"{message['var_name']}.speculation_score"
+                        output_dict[subject_id][
+                            f"{message['response_name']}.speculation_score.{current_conv_length}"
                         ] = parsed_field.get("speculation_score")
 
             else:
-                parsed_field = parse_json_field(json_field=message[role_label])
-                result_dict[subject_id][message["task_id"]] = parsed_field
+                parsed_field = parse_json_field(json_field=message[role])
+                output_dict[subject_id][
+                    f"{message['round_id']}.{current_conv_length}"
+                ] = parsed_field
 
                 if isinstance(parsed_field, dict):
                     if parsed_field.get("response", "") != "":
-                        result_dict[subject_id][f"{message['task_id']}.response"] = (
-                            parsed_field.get("response")
-                        )
+                        output_dict[subject_id][
+                            f"{message['round_id']}.response.{current_conv_length}"
+                        ] = parsed_field.get("response")
                     if parsed_field.get("reasoning", "") != "":
-                        result_dict[subject_id][f"{message['task_id']}.reasoning"] = (
-                            parsed_field.get("reasoning")
-                        )
+                        output_dict[subject_id][
+                            f"{message['round_id']}.reasoning.{current_conv_length}"
+                        ] = parsed_field.get("reasoning")
                     if parsed_field.get("speculation_score", "") != "":
-                        result_dict[subject_id][
-                            f"{message['task_id']}.speculation_score"
+                        output_dict[subject_id][
+                            f"{message['round_id']}.speculation_score.{current_conv_length}"
                         ] = parsed_field.get("speculation_score")
 
-    result_df = pd.DataFrame.from_dict(result_dict, orient="index")
-    result_df.reset_index(drop=False, inplace=True)
-    result_df.rename(columns={"index": "ID"}, inplace=True)
-    result_df.sort_values(by="session_id", ascending=True, inplace=True)
-    result_df.to_csv(file_name[:-5] + ".csv", index=False)
+    output_df = pd.DataFrame.from_dict(output_dict, orient="index")
+    output_df.reset_index(drop=False, inplace=True)
+    output_df.rename(columns={"index": "ID"}, inplace=True)
+    output_df.sort_values(by="group_id", ascending=True, inplace=True)
+    output_df.to_csv(file_name[:-5] + ".csv", index=False)

@@ -47,48 +47,49 @@ def validate_prompt_template_sheets(
         )
 
 
-def validate_experimental_settings_sheet(experimental_settings: pd.DataFrame) -> None:
+def validate_settings_sheet(settings: pd.DataFrame) -> None:
     """Validates the experimental settings worksheet to ensure it has the correct structure and required settings.
 
     Args:
-        experimental_settings (pd.DataFrame): A DataFrame containing the experimental settings.
-                                            It should have columns "experimental_setting" and "value".
+        settings (pd.DataFrame): A DataFrame containing the experimental settings.
+                                It should have columns "settings_label" and "value".
 
     Raises:
         AssertionError: If the columns of the DataFrame do not match the expected columns.
-        AssertionError: If any of the required experimental settings are missing from the "experimental_setting" column.
+        AssertionError: If any of the required settings are missing from the "settings_label" column.
     """
     # Validate the column headers
-    expected_columns = ["experimental_setting", "value"]
+    expected_columns = ["settings_label", "value"]
     assert (
-        list(experimental_settings.columns) == expected_columns
-    ), f"Invalid columns in experimental_settings sheet. Expected {expected_columns}, got {list(experimental_settings.columns)}"
+        list(settings.columns) == expected_columns
+    ), f"Invalid columns in settings sheet. Expected {expected_columns}, got {list(settings.columns)}"
 
     # Validate the experimental settings field
     valid_settings = [
-        "experiment_id",
+        "session_id",
         "model_info",
         "hf_inference_endpoint",
         "temperature",
-        "num_subjects_per_session",
-        "num_sessions",
+        "num_subjects_per_group",
+        "num_groups",
         "max_conversation_length",
         "treatment_assignment_strategy",
         "treatment_column",
-        "session_assignment_strategy",
-        "session_column",
+        "group_assignment_strategy",
+        "group_column",
         "role_assignment_strategy",
         "role_column",
         "random_seed",
-        "include_backstories",
+        "build_profile_qna",
+        "build_profile_backstories",
     ]
     for setting in valid_settings:
         assert (
-            setting in experimental_settings["experimental_setting"].tolist()
-        ), f"{setting} not found in experimental_setting worksheet."
+            setting in settings["settings_label"].tolist()
+        ), f"{setting} not found in the settings worksheet."
 
 
-def validate_treatments_sheet(treatments: pd.DataFrame) -> None:
+def validate_treatment_sheet(treatments: pd.DataFrame) -> None:
     """Validates the structure of the treatments worksheet.
 
     This function checks if the treatments DataFrame has the expected column headers.
@@ -101,14 +102,14 @@ def validate_treatments_sheet(treatments: pd.DataFrame) -> None:
         AssertionError: If the columns of the treatments DataFrame do not match the expected columns.
     """
     # Validate the column headers
-    expected_columns = ["treatment_label", "treatment_description"]
+    expected_columns = ["treatment_label", "value"]
     assert (
         list(treatments.columns) == expected_columns
     ), f"Invalid columns in treatments sheet. Expected {expected_columns}, got {list(treatments.columns)}"
 
 
-def validate_roles_sheet(roles: pd.DataFrame) -> None:
-    """Validates the structure of the roles worksheet.
+def validate_role_sheet(roles: pd.DataFrame) -> None:
+    """Validates the structure of the role worksheet.
 
     This function checks if the provided DataFrame has the expected column headers.
     It raises an assertion error if the columns do not match the expected structure.
@@ -120,13 +121,13 @@ def validate_roles_sheet(roles: pd.DataFrame) -> None:
         AssertionError: If the columns of the DataFrame do not match the expected columns.
     """
     # Validate the column headers
-    expected_columns = ["role_label", "role_description"]
+    expected_columns = ["role_label", "value"]
     assert (
         list(roles.columns) == expected_columns
-    ), f"Invalid columns in roles sheet. Expected {expected_columns}, got {list(roles.columns)}"
+    ), f"Invalid columns in role sheet. Expected {expected_columns}, got {list(roles.columns)}"
 
 
-def validate_prompts_sheet(prompts: pd.DataFrame) -> None:
+def validate_prompt_sheet(prompts: pd.DataFrame) -> None:
     """Validates the structure of a prompts_template worksheet containing prompt data.
 
     This function checks if the DataFrame has the expected column headers.
@@ -140,14 +141,14 @@ def validate_prompts_sheet(prompts: pd.DataFrame) -> None:
     """
     # Validate the column headers
     expected_columns = [
-        "task_id",
+        "round_id",
         "type",
-        "task_order",
+        "round_order",
         "is_adapted",
         "human_text",
         "llm_text",
-        "var_name",
-        "var_type",
+        "response_name",
+        "response_type",
         "response_options",
         "randomize_response_order",
         "validate_response",
@@ -159,10 +160,10 @@ def validate_prompts_sheet(prompts: pd.DataFrame) -> None:
     ), f"Invalid columns in prompts_template sheet. Expected {expected_columns}, got {list(prompts.columns)}"
 
 
-def validate_constants_sheet(constants: pd.DataFrame) -> None:
+def validate_constant_sheet(constants: pd.DataFrame) -> None:
     """Validates the structure of the constants worksheet.
 
-    This function checks that the DataFrame has the expected column headers: "name" and "value".
+    This function checks that the DataFrame has the expected column headers: "constant_label" and "value".
     If the columns do not match the expected headers, an assertion error is raised.
 
     Args:
@@ -172,7 +173,7 @@ def validate_constants_sheet(constants: pd.DataFrame) -> None:
         AssertionError: If the DataFrame does not have the expected columns.
     """
     # Validate the column headers
-    expected_columns = ["name", "value"]
+    expected_columns = ["constant_label", "value"]
     assert (
         list(constants.columns) == expected_columns
     ), f"Invalid columns in constants sheet. Expected {expected_columns}, got {list(constants.columns)}"

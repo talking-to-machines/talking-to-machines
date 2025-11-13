@@ -12,6 +12,7 @@ class Config:
     QUALTRICS_API_KEY = os.getenv("QUALTRICS_API_KEY", "")
     OTREE_API_KEY = os.getenv("OTREE_API_KEY", "")
     HF_API_KEY = os.getenv("HF_API_KEY", "")
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 
 
 class DevelopmentConfig(Config):

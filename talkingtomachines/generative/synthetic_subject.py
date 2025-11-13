@@ -6,6 +6,7 @@ from talkingtomachines.generative.prompt import (
 )
 from talkingtomachines.generative.llm import query_llm
 from talkingtomachines.config import DevelopmentConfig
+from talkingtomachines.management.experiment import Role, Treatment
 
 ProfileInfo = dict[str, Any]
 NUM_RETRY = 3
@@ -34,71 +35,78 @@ class SyntheticSubject:
     """A class for constructing the base synthetic subject.
 
     Args:
-        experiment_id (str): The ID of the experiment.
+        session_id (str): The session ID of the experiment.
         experiment_context (str): The context of the experiment.
-        session_id (Any): The ID of the session.
+        group_id (Any): The group ID of the session.
         profile_info (ProfileInfo): The profile information of the subject.
         model_info (str): The information about the model used by the subject.
         temperature (float): The model temperature setting for the subject.
-        include_backstories (bool): Whether to include backstories in the profile prompt.
+        build_profile_qna (bool): Whether to build the subject profiles using Q&A format.
+        build_profile_backstories (bool): Whether to build the subject profiles using backstories.
         hf_inference_endpoint (str, optional): API inference endpoint to the LLM model hosted externally in HuggingFace.
-        profile_prompt_generator (Callable[[ProfileInfo, bool, openai.OpenAI, str, float], str], optional):
+        profile_prompt_generator (Callable[[ProfileInfo, bool, bool, openai.OpenAI, str, float], str], optional):
             A function that generates a profile prompt based on the profile information.
             Defaults to generate_profile_prompt.
 
     Attributes:
-        experiment_id (str): The ID of the experiment.
+        session_id (str): The session ID of the experiment.
         experiment_context (str): The context of the experiment.
-        session_id (Any): The ID of the session.
+        group_id (Any): The group ID of the session.
         profile_info (ProfileInfo): The profile information of the subject.
         profile_prompt (str): A prompt string containing the profile information of the subject.
         model_info (str): The information about the model used by the subject.
         temperature (float): The model temperature setting for the subject.
-        include_backstories (bool): Whether to include backstories in the profile prompt.
+        build_profile_qna (bool): Whether to build the subject profiles using Q&A format.
+        build_profile_backstories (bool): Whether to build the subject profiles using backstories.
         hf_inference_endpoint (str): API inference endpoint to the LLM model hosted externally in HuggingFace.
         llm_client (openai.OpenAI): The LLM client.
     """
 
     def __init__(
         self,
-        experiment_id: str,
+        session_id: str,
         experiment_context: str,
-        session_id: Any,
+        group_id: Any,
         profile_info: ProfileInfo,
         model_info: str,
         temperature: float,
-        include_backstories: bool,
+        build_profile_qna: bool,
+        build_profile_backstories: bool,
         hf_inference_endpoint: str = "",
         profile_prompt_generator: Callable[
-            [ProfileInfo, bool, openai.OpenAI, str, float], str
+            [ProfileInfo, bool, bool, openai.OpenAI, str, float], str
         ] = generate_profile_prompt,
     ):
-        self.experiment_id = experiment_id
-        self.experiment_context = experiment_context
         self.session_id = session_id
+        self.experiment_context = experiment_context
+        self.group_id = group_id
         self.profile_info = profile_info
         self.model_info = model_info
         self.temperature = temperature
-        self.include_backstories = include_backstories
+        self.build_profile_qna = build_profile_qna
+        self.build_profile_backstories = build_profile_backstories
         self.hf_inference_endpoint = hf_inference_endpoint
         self.llm_client = self._initialise_llm_client()
         self.profile_prompt = profile_prompt_generator(
             self.profile_info,
-            self.include_backstories,
+            self.build_profile_qna,
+            self.build_profile_backstories,
             self.llm_client,
             self.model_info,
             self.temperature,
         )
 
     def _initialise_llm_client(self):
-        """Initialise a language model client based on the provided model information and API endpoint.
+        """
+        Initializes and returns an instance of the OpenAI client based on the specified model information.
+        This method determines the appropriate API client configuration based on the `model_info` attribute.
+        It supports OpenAI models, Hugging Face inference models, and OpenRouter-supported models.
 
         Returns:
-            openai.OpenAI: An instance of the openai.OpenAI client configured with the appropriate API key
-                and endpoint based on the model information.
+            openai.OpenAI: An instance of the OpenAI client configured for the specified model.
 
         Raises:
-            ValueError: If the provided model_info is not supported.
+            None
         """
         if self.model_info in OPENAI_MODELS:
             return openai.OpenAI(api_key=DevelopmentConfig.OPENAI_API_KEY)
@@ -111,9 +119,12 @@ class SyntheticSubject:
 
         else:
             warnings.warn(
-                f"{self.model_info} is not 'hf-inference' and not one of the openai.OpenAI instruct models ({OPENAI_MODELS}). Defaulting to loading import openai.OpenAI configurations."
+                f"Since {self.model_info} is not 'hf-inference' and not one of the openai.OpenAI instruct models ({OPENAI_MODELS}), {self.model_info} is assumed to be an Openrouter.ai supported model."
             )
-            return openai.OpenAI(api_key=DevelopmentConfig.OPENAI_API_KEY)
+            return openai.OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=DevelopmentConfig.OPENROUTER_API_KEY,
+            )
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the SyntheticSubject object to a dictionary.
@@ -122,15 +133,16 @@ class SyntheticSubject:
             dict[str, Any]: A dictionary representation of the SyntheticSubject object.
         """
         return {
-            "experiment_id": self.experiment_id,
-            "experiment_context": self.experiment_context,
             "session_id": self.session_id,
+            "experiment_context": self.experiment_context,
+            "group_id": self.group_id,
             "profile_info": self.profile_info,
-            "profile_prompt": self.profile_prompt,
             "model_info": self.model_info,
             "temperature": self.temperature,
-            "include_backstories": self.include_backstories,
+            "build_profile_qna": self.build_profile_qna,
+            "build_profile_backstories": self.build_profile_backstories,
             "hf_inference_endpoint": self.hf_inference_endpoint,
+            "profile_prompt": self.profile_prompt,
         }
 
     def respond(self) -> str:
@@ -151,35 +163,36 @@ class ConversationalSyntheticSubject(SyntheticSubject):
     """A synthetic subject that interacts with users in a conversational system. Inherits from the SyntheticSubject base class.
 
     Args:
-        experiment_id (str): The ID of the experiment.
+        session_id (str): The session ID of the experiment.
         experiment_context (str): The context of the experiment.
-        session_id (Any): The ID of the session.
+        group_id (Any): The group ID of the session.
         profile_info (ProfileInfo): The profile information of the subject.
         model_info (str): The information about the model used by the subject.
         temperature (float): The model temperature setting for the subject.
-        include_backstories (bool): Whether to include backstories in the profile prompt.
+        build_profile_qna (bool): Whether to build the subject profiles using Q&A format.
+        build_profile_backstories (bool): Whether to build the subject profiles using backstories.
         hf_inference_endpoint (str, optional): API inference endpoint to the LLM model hosted externally in HuggingFace.
-        role (str): The name of the role assigned to the subject.
-        role_description (str): The description of the role assigned to the subject.
-        treatment (str): The treatment assigned to the session.
-        include_backstories (bool): Whether to include backstories in the profile prompt.
-        profile_prompt_generator (Callable[[ProfileInfo, bool, openai.OpenAI, str, float], str], optional):
+        role_label (str): The name of the role assigned to the subject.
+        role (Role): The Role object assigned to the subject.
+        treatment (Treatment): The Treatment object assigned to the subject.
+        profile_prompt_generator (Callable[[ProfileInfo, bool, bool, openai.OpenAI, str, float], str], optional):
             A function that generates a profile prompt based on the profile information.
             Defaults to generate_profile_prompt.
 
     Attributes:
-        experiment_id (str): The ID of the experiment.
+        session_id (str): The session ID of the experiment.
         experiment_context (str): The context of the experiment.
-        session_id (Any): The ID of the session.
+        group_id (Any): The group ID of the session.
         profile_info (ProfileInfo): The profile information of the subject.
         profile_prompt (str): A prompt string containing the profile information of the subject.
         model_info (str): The information about the model used by the subject.
         temperature (float): The model temperature setting for the subject.
-        include_backstories (bool): Whether to include backstories in the profile prompt.
+        build_profile_qna (bool): Whether to build the subject profiles using Q&A format.
+        build_profile_backstories (bool): Whether to build the subject profiles using backstories.
         hf_inference_endpoint (str): API inference endpoint to the LLM model hosted externally in HuggingFace.
-        role (str): The name of the role assigned to the subject.
-        role_description (str): The description of the role assigned to the subject.
-        treatment (str): The treatment assigned to the session.
+        role_label (str): The Role object assigned to the subject.
+        role (Role): The description of the role assigned to the subject.
+        treatment (Treatment): The Treatment object assigned to the subject.
         system_message (str): The system message generated for the conversation.
         llm_client (openai.OpenAI): The LLM client.
         message_history (List[dict]): The history of the conversation with the synthetic subject.
@@ -187,39 +200,39 @@ class ConversationalSyntheticSubject(SyntheticSubject):
 
     def __init__(
         self,
-        experiment_id: str,
+        session_id: str,
         experiment_context: str,
-        session_id: Any,
+        group_id: Any,
         profile_info: ProfileInfo,
         model_info: str,
         temperature: float,
-        include_backstories: bool,
+        build_profile_qna: bool,
+        build_profile_backstories: bool,
         hf_inference_endpoint: str,
-        role: str,
-        role_description: str,
-        treatment: str,
+        role_label: str,
+        role: Role,
+        treatment: Treatment,
         profile_prompt_generator: Callable[
-            [ProfileInfo, bool, openai.OpenAI, str, float], str
+            [ProfileInfo, bool, bool, openai.OpenAI, str, float], str
         ] = generate_profile_prompt,
     ):
         super().__init__(
-            experiment_id,
-            experiment_context,
             session_id,
+            experiment_context,
+            group_id,
             profile_info,
             model_info,
             temperature,
-            include_backstories,
+            build_profile_qna,
+            build_profile_backstories,
             hf_inference_endpoint,
             profile_prompt_generator,
         )
+        self.role_label = role_label
         self.role = role
-        self.role_description = role_description
         self.treatment = treatment
-        self.include_backstories = include_backstories
         self.system_message = generate_subject_system_message(
-            treatment=self.treatment,
-            role_description=self.role_description,
+            role_description=self.role.description,
             profile_prompt=self.profile_prompt,
         )
         self.message_history = [{"role": "system", "content": self.system_message}]
@@ -231,36 +244,38 @@ class ConversationalSyntheticSubject(SyntheticSubject):
             dict[str, Any]: A dictionary representation of the ConversationalSyntheticSubject object.
         """
         return {
-            "experiment_id": self.experiment_id,
-            "experiment_context": self.experiment_context,
             "session_id": self.session_id,
+            "experiment_context": self.experiment_context,
+            "group_id": self.group_id,
             "profile_info": self.profile_info,
             "profile_prompt": self.profile_prompt,
             "model_info": self.model_info,
             "temperature": self.temperature,
-            "include_backstories": self.include_backstories,
+            "build_profile_qna": self.build_profile_qna,
+            "build_profile_backstories": self.build_profile_backstories,
             "hf_inference_endpoint": self.hf_inference_endpoint,
-            "role": self.role,
-            "role_description": self.role_description,
-            "treatment": self.treatment,
+            "role_label": self.role_label,
+            "role": self.role.to_dict(),
+            "treatment": self.treatment.to_dict(),
             "system_message": self.system_message,
             "message_history": self.message_history,
         }
 
     def _build_message_history(self, message_history: list[dict]) -> list[dict]:
-        """Builds and formats the message history for a conversational synthetic subject.
+        """
+        Builds and formats a message history for a conversational AI system.
 
         Args:
-            message_history (list[dict]): A list of dictionaries representing the
-                message history. Each dictionary contains a single key-value pair
-                where the key is the role (e.g., "user", "assistant", or other
-                participants) and the value is the message content.
+            message_history (list[dict]): A list of dictionaries representing the message history.
+                Each dictionary contains a single key-value pair where the key is the role
+                (e.g., "system", "assistant", or a user-defined role) and the value is the
+                corresponding message content.
 
         Returns:
-            list[dict]: A formatted list of dictionaries representing the message
-                history. The returned list includes system messages and reformatted
-                user/assistant messages. Messages from other participants are
-                prefixed with their role in the content.
+            list[dict]: A list of formatted message dictionaries. Each dictionary contains:
+                - "role": The role of the message sender (e.g., "system", "assistant", or "user").
+                - "content": The formatted message content, which may include rendered templates
+                  based on the treatment and role information.
         """
         formatted_message_history = []
 
@@ -321,7 +336,7 @@ class ConversationalSyntheticSubject(SyntheticSubject):
         Appends a formatting instruction to the most recent facilitator message in the message history,
         based on the specified flags.
 
-        If the last message in `self.message_history` starts with "Facilitator", this method modifies its
+        If the last message in `self.message_history` starts with "facilitator", this method modifies its
         content by appending a formatting instruction according to the following logic:
 
         - If both `generate_speculation_score` and `format_response` are True, instructs to reply with a
@@ -340,7 +355,7 @@ class ConversationalSyntheticSubject(SyntheticSubject):
             None
         """
         # Only alter the most recent facilitator message.
-        if not self.message_history[-1]["content"].startswith("Facilitator"):
+        if not self.message_history[-1]["content"].startswith("facilitator"):
             return None
 
         if generate_speculation_score and format_response:
