@@ -1,9 +1,12 @@
+from __future__ import annotations
 import os, json
 import pandas as pd
 import numpy as np
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from datetime import date, datetime
-from talkingtomachines.management.experiment import Role, Treatment, Constant
+
+if TYPE_CHECKING:
+    from talkingtomachines.management.experiment import Role, Treatment, Constant
 
 
 def _json_serializer(obj):
@@ -98,7 +101,7 @@ def save_session_as_csv(file_name: str) -> None:
 
         for role, subject in group_info["subjects"].items():
             if role == "facilitator":
-                subject_id = f"{role}_{group_info['session_id']}"
+                subject_id = f"facilitator_group{subject['group_id']}"
 
             else:
                 subject_id = subject["profile_info"]["ID"]
@@ -119,13 +122,14 @@ def save_session_as_csv(file_name: str) -> None:
 
         for message in group_info["message_history"]:
             role = list(message.keys())[0]
-            if role == "facilitator":
-                subject_id = f"facilitator_{group_info['session_id']}"
+            if role == "system":
+                continue
+            elif role == "facilitator":
+                subject_id = f"facilitator_group{group_info['group_id']}"
             else:
-                subject_id = message["subject_id"]
+                subject_id = group_info["subjects"][role]["profile_info"]["ID"]
 
-            round_num = message.get("round_num", "")
-
+            round_num = message.get("round_num", None)
             if (
                 message.get("round_id", "") == ""
                 and message.get("response_name", "") == ""
@@ -135,45 +139,98 @@ def save_session_as_csv(file_name: str) -> None:
             elif message.get("response_name", "") != "":
                 parsed_response = parse_json_field(json_field=message[role])
                 output_dict[subject_id][
-                    f"{message['response_name']}.round{round_num}"
+                    (
+                        f"{message['response_name']}.raw.round{round_num}"
+                        if round_num
+                        else f"{message['response_name']}.raw"
+                    )
                 ] = parsed_response
 
                 if isinstance(parsed_response, dict):
                     if parsed_response.get("response", "") != "":
                         output_dict[subject_id][
-                            f"{message['response_name']}.response.round{round_num}"
+                            (
+                                f"{message['response_name']}.response.round{round_num}"
+                                if round_num
+                                else f"{message['response_name']}.response"
+                            )
                         ] = parsed_response.get("response")
                     if parsed_response.get("reasoning", "") != "":
                         output_dict[subject_id][
-                            f"{message['response_name']}.reasoning.round{round_num}"
+                            (
+                                f"{message['response_name']}.reasoning.round{round_num}"
+                                if round_num
+                                else f"{message['response_name']}.reasoning"
+                            )
                         ] = parsed_response.get("reasoning")
                     if parsed_response.get("speculation_score", "") != "":
                         output_dict[subject_id][
-                            f"{message['response_name']}.speculation_score.round{round_num}"
+                            (
+                                f"{message['response_name']}.speculation_score.round{round_num}"
+                                if round_num
+                                else f"{message['response_name']}.speculation_score"
+                            )
                         ] = parsed_response.get("speculation_score")
 
             else:
                 parsed_response = parse_json_field(json_field=message[role])
                 output_dict[subject_id][
-                    f"{message['round_id']}.round{round_num}"
+                    (
+                        f"{message['round_id']}.raw.round{round_num}"
+                        if round_num
+                        else f"{message['round_id']}.raw"
+                    )
                 ] = parsed_response
 
                 if isinstance(parsed_response, dict):
                     if parsed_response.get("response", "") != "":
                         output_dict[subject_id][
-                            f"{message['round_id']}.response.round{round_num}"
+                            (
+                                f"{message['round_id']}.response.round{round_num}"
+                                if round_num
+                                else f"{message['round_id']}.response"
+                            )
                         ] = parsed_response.get("response")
                     if parsed_response.get("reasoning", "") != "":
                         output_dict[subject_id][
-                            f"{message['round_id']}.reasoning.round{round_num}"
+                            (
+                                f"{message['round_id']}.reasoning.round{round_num}"
+                                if round_num
+                                else f"{message['round_id']}.reasoning"
+                            )
                         ] = parsed_response.get("reasoning")
                     if parsed_response.get("speculation_score", "") != "":
                         output_dict[subject_id][
-                            f"{message['round_id']}.speculation_score.round{round_num}"
+                            (
+                                f"{message['round_id']}.speculation_score.round{round_num}"
+                                if round_num
+                                else f"{message['round_id']}.speculation_score"
+                            )
                         ] = parsed_response.get("speculation_score")
 
     output_df = pd.DataFrame.from_dict(output_dict, orient="index")
     output_df.reset_index(drop=False, inplace=True)
     output_df.rename(columns={"index": "ID"}, inplace=True)
     output_df.sort_values(by="group_id", ascending=True, inplace=True)
+
+    # Reorder output columns
+    preferred_prefix_order = [
+        "ID",
+        "session_id",
+        "group_id",
+        "model_info",
+        "temperature",
+        "role",
+        "treatment_label",
+        "system_message",
+        "experiment_context",
+        "build_profile_qna",
+        "build_profile_backstories",
+        "constants",
+    ]
+    cols = list(output_df.columns)
+    prefix_column_order = [c for c in preferred_prefix_order if c in cols]
+    remaining_column_order = sorted([c for c in cols if c not in prefix_column_order])
+    final_column_order = prefix_column_order + remaining_column_order
+    output_df = output_df[final_column_order]
     output_df.to_csv(file_name[:-5] + ".csv", index=False)

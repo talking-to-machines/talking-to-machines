@@ -1,6 +1,7 @@
 import argparse, warnings, ast, concurrent.futures, json
 import pandas as pd
 from tqdm import tqdm
+from typing import Any
 from importlib.metadata import version, PackageNotFoundError
 from talkingtomachines.interface.validate_template import (
     validate_prompt_template_path,
@@ -142,7 +143,9 @@ def extract_treatments(file_path: str, sheet_name: str) -> dict:
                 if not isinstance(attr_dict, dict):
                     attr_dict = {"description": str(attr_dict)}
             except json.JSONDecodeError:
-                # Treat as plain description text
+                warnings.warn(
+                    f"Error parsing treatment label '{label}' as a Python dictionary. The treatment value will be treated as a plain string and assigned to the description field."
+                )
                 attr_dict = {"description": raw_value}
 
         elif pd.isna(raw_value):
@@ -200,6 +203,9 @@ def extract_roles(file_path: str, sheet_name: str) -> dict:
                 if not isinstance(attr_dict, dict):
                     attr_dict = {"description": str(attr_dict)}
             except json.JSONDecodeError:
+                warnings.warn(
+                    f"Error parsing role label '{label}' as a Python dictionary. The role value will be treated as a plain string and assigned to the description field."
+                )
                 # Treat as plain description text
                 attr_dict = {"description": raw_value}
 
@@ -517,22 +523,25 @@ def print_session_settings(
         Model Info: {model_info}
         HF Inference Endpoint (Only applicable when using Hugging Face Models): {hf_inference_endpoint}
         Temperature: {temperature}
-        Number of Subjects per Group (Excluding Special Roles like facilitator): {num_subjects_per_group}
+        Number of Subjects per Group (Excluding Special Roles like 'facilitator'): {num_subjects_per_group}
         Number of Groups: {num_groups}
         Maximum Number of Rounds: {max_num_rounds}
         Treatments: {treatments}
         Treatment Assignment Strategy: {treatment_assignment_strategy}
-        Treatment Column (Only valid when using manual assignment strategy): {treatment_column}
+        Treatment Column (Only valid when using manual treatment assignment strategy): {treatment_column}
         Group Assignment Strategy: {group_assignment_strategy}
-        Group Column (Only valid when using manual assignment strategy): {group_column}
+        Group Column (Only valid when using manual group assignment strategy): {group_column}
         Role Assignment Strategy: {role_assignment_strategy}
-        Role Column (Only valid when using manual assignment strategy): {role_column}
+        Role Column (Only valid when using manual role assignment strategy): {role_column}
         Random Seed: {random_seed}
-        Build Profiles using QnA Format: {build_profile_qna}
+        Build Profiles using Q&A Format: {build_profile_qna}
         Build Profiles using Backstories: {build_profile_backstories}
         Constant Permutation: {constant_permutation}
+
         Roles: {roles}
-        Prompts: {prompts}
+        Prompts: 
+        {prompts}
+
         Constants: {constants}
 
         """.format(

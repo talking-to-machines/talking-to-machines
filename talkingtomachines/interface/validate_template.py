@@ -14,7 +14,7 @@ def validate_prompt_template_path(file_path: str) -> None:
     # Validate the provided directory path
     if not os.path.isfile(file_path):
         raise ValueError(
-            f"The prompt template cannot be found in the path you provided: {file_path}"
+            f"The prompt template workbook cannot be found in the path you provided: {file_path}"
         )
 
     # Check if the file has a valid Excel extension
@@ -43,7 +43,7 @@ def validate_prompt_template_sheets(
     ]
     if missing_sheets:
         raise ValueError(
-            f"The following sheets are missing from the prompt template: {', '.join(missing_sheets)}"
+            f"The following sheets are missing from the prompt template workbook: {', '.join(missing_sheets)}"
         )
 
 
@@ -62,7 +62,7 @@ def validate_settings_sheet(settings: pd.DataFrame) -> None:
     expected_columns = ["settings_label", "value"]
     assert (
         list(settings.columns) == expected_columns
-    ), f"Invalid columns in settings sheet. Expected {expected_columns}, got {list(settings.columns)}"
+    ), f"Invalid columns in the 'settings' worksheet. Expected {expected_columns}, got {list(settings.columns)}"
 
     # Validate the experimental settings field
     valid_settings = [
@@ -86,7 +86,7 @@ def validate_settings_sheet(settings: pd.DataFrame) -> None:
     for setting in valid_settings:
         assert (
             setting in settings["settings_label"].tolist()
-        ), f"{setting} not found in the settings worksheet."
+        ), f"{setting} not found in the 'settings' worksheet."
 
 
 def validate_treatment_sheet(treatments: pd.DataFrame) -> None:
@@ -105,7 +105,7 @@ def validate_treatment_sheet(treatments: pd.DataFrame) -> None:
     expected_columns = ["treatment_label", "value"]
     assert (
         list(treatments.columns) == expected_columns
-    ), f"Invalid columns in treatments sheet. Expected {expected_columns}, got {list(treatments.columns)}"
+    ), f"Invalid columns in 'treatment' worksheet. Expected {expected_columns}, got {list(treatments.columns)}"
 
 
 def validate_role_sheet(roles: pd.DataFrame) -> None:
@@ -124,7 +124,7 @@ def validate_role_sheet(roles: pd.DataFrame) -> None:
     expected_columns = ["role_label", "value"]
     assert (
         list(roles.columns) == expected_columns
-    ), f"Invalid columns in role sheet. Expected {expected_columns}, got {list(roles.columns)}"
+    ), f"Invalid columns in 'role' worksheet. Expected {expected_columns}, got {list(roles.columns)}"
 
 
 def validate_prompt_sheet(prompts: pd.DataFrame) -> None:
@@ -157,7 +157,7 @@ def validate_prompt_sheet(prompts: pd.DataFrame) -> None:
     ]
     assert (
         list(prompts.columns) == expected_columns
-    ), f"Invalid columns in prompts_template sheet. Expected {expected_columns}, got {list(prompts.columns)}"
+    ), f"Invalid columns in the 'prompt' worksheet. Expected {expected_columns}, got {list(prompts.columns)}"
 
 
 def validate_constant_sheet(constants: pd.DataFrame) -> None:
@@ -176,4 +176,4 @@ def validate_constant_sheet(constants: pd.DataFrame) -> None:
     expected_columns = ["constant_label", "value"]
     assert (
         list(constants.columns) == expected_columns
-    ), f"Invalid columns in constants sheet. Expected {expected_columns}, got {list(constants.columns)}"
+    ), f"Invalid columns in the 'constant' worksheet. Expected {expected_columns}, got {list(constants.columns)}"

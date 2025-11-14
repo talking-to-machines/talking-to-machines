@@ -1,27 +1,23 @@
 import itertools
-from talkingtomachines.management.experiment import AItoAIInterviewExperiment, Constant
+from talkingtomachines.management.experiment import (
+    AItoAIInterviewExperiment,
+    Constant,
+    Treatment,
+    Role,
+)
 from jinja2 import Template
 
 
 def render_dict_with_template(
     prompt_template_dict: dict, constant_permutation: Constant
 ) -> dict:
-    """
-    Renders a dictionary containing string templates using the provided constant values.
-
-    This function processes a dictionary where the values can be strings, lists, or nested dictionaries.
-    String values are treated as templates and rendered using the `Template` class, with the `constant_permutation`
-    object providing the context for rendering. Lists and nested dictionaries are processed recursively.
-
-    Args:
-        prompt_template_dict (dict): A dictionary containing string templates, lists, or nested dictionaries.
-        constant_permutation (Constant): An object providing the context for rendering string templates.
-
-    Returns:
-        dict: A new dictionary with all string templates rendered and other values preserved.
-    """
     rendered_dict = {}
     for key, value in prompt_template_dict.items():
+        if key == "llm_text":
+            # Skip rendering for 'llm_text' key as they will be rendered later during the session
+            rendered_dict[key] = value
+            continue
+
         if isinstance(value, dict):
             # Recursively process nested dictionaries
             rendered_dict[key] = render_dict_with_template(value, constant_permutation)
@@ -29,7 +25,19 @@ def render_dict_with_template(
         elif isinstance(value, str):
             # Render template for each string value
             template = Template(value)
-            rendered_value = template.render(constant=constant_permutation)
+            rendered_value = template.render(constant=constant_permutation.to_dict())
+            rendered_dict[key] = rendered_value
+
+        elif isinstance(value, Treatment):
+            rendered_value = Treatment(
+                **render_dict_with_template(value.to_dict(), constant_permutation)
+            )
+            rendered_dict[key] = rendered_value
+
+        elif isinstance(value, Role):
+            rendered_value = Role(
+                **render_dict_with_template(value.to_dict(), constant_permutation)
+            )
             rendered_dict[key] = rendered_value
 
         elif isinstance(value, list):
@@ -45,8 +53,26 @@ def render_dict_with_template(
                 elif isinstance(item, str):
                     # Render template for each string value
                     template = Template(item)
-                    rendered_value = template.render(constant=constant_permutation)
-                    rendered_list.append(rendered_value)
+                    rendered_item = template.render(
+                        constant=constant_permutation.to_dict()
+                    )
+                    rendered_list.append(rendered_item)
+
+                elif isinstance(item, Treatment):
+                    rendered_item = Treatment(
+                        **render_dict_with_template(
+                            item.to_dict(), constant_permutation
+                        )
+                    )
+                    rendered_list.append(rendered_item)
+
+                elif isinstance(item, Role):
+                    rendered_item = Role(
+                        **render_dict_with_template(
+                            item.to_dict(), constant_permutation
+                        )
+                    )
+                    rendered_list.append(rendered_item)
 
                 else:
                     rendered_list.append(item)
@@ -80,7 +106,8 @@ def generate_permutations(constants: dict) -> list:
     if constants:
         keys, values = zip(*constants.items())
         constant_permutations = [
-            Constant(dict(zip(keys, v))) for v in itertools.product(*values)
+            Constant(**permutation)
+            for permutation in [dict(zip(keys, v)) for v in itertools.product(*values)]
         ]
         return constant_permutations
     else:

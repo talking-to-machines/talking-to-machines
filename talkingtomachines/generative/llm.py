@@ -82,9 +82,6 @@ def query_llm(
             temperature=temperature,
         )
     else:
-        warnings.warn(
-            f"Since {model_info} is not 'hf-inference' and not one of the openai.OpenAI instruct models ({OPENAI_MODELS}), {model_info} is assumed to be an Openrouter.ai supported model."
-        )
         return query_openrouter_ai(
             llm_client=llm_client,
             model_info=model_info,
@@ -414,6 +411,7 @@ def query_openrouter_ai(
     Raises:
         Exception: If the API call fails after the maximum number of retries.
     """
+    attempt = 0
     while attempt < MAX_RETRIES:
         attempt += 1
         try:

@@ -1,12 +1,15 @@
+from __future__ import annotations
 import re, warnings, openai, json
-from typing import Any, Callable
+from typing import Any, Callable, TYPE_CHECKING
 from talkingtomachines.generative.prompt import (
     generate_subject_system_message,
     generate_profile_prompt,
 )
 from talkingtomachines.generative.llm import query_llm
 from talkingtomachines.config import DevelopmentConfig
-from talkingtomachines.management.experiment import Role, Treatment
+
+if TYPE_CHECKING:
+    from talkingtomachines.management.experiment import Role, Treatment
 
 ProfileInfo = dict[str, Any]
 NUM_RETRY = 3
@@ -288,7 +291,20 @@ class ConversationalSyntheticSubject(SyntheticSubject):
                     {"role": "system", "content": role_response}
                 )
 
-            elif role == self.role:
+            elif role == self.role_label and role == "facilitator":
+                if (
+                    message.get("round_id", "") == ""
+                    and message.get("response_name", "") == ""
+                ):  # Questions posed by facilitator agent
+                    formatted_message_history.append(
+                        {"role": "user", "content": f"{role}: {role_response}"}
+                    )
+                else:  # Responses from facilitator agent
+                    formatted_message_history.append(
+                        {"role": "assistant", "content": role_response}
+                    )
+
+            elif role == self.role_label and role != "facilitator":
                 formatted_message_history.append(
                     {"role": "assistant", "content": role_response}
                 )
@@ -392,11 +408,31 @@ class ConversationalSyntheticSubject(SyntheticSubject):
         # Update the facilitator’s instruction with additional formatting instructions.
         self.message_history[-1]["content"] += formatting_instruction
 
+    def update_message_history(self, latest_message_history: list[dict]) -> None:
+        """
+        Updates the message history with the latest messages.
+
+        This method takes a list of dictionaries representing the latest messages,
+        formats them using the `_build_message_history` method, and appends the
+        formatted messages to the existing message history.
+
+        Args:
+            latest_message_history (list[dict]): A list of dictionaries representing
+                the latest messages to be added to the message history.
+
+        Returns:
+            None
+        """
+        formatted_latest_messages = self._build_message_history(
+            message_history=latest_message_history
+        )
+        self.message_history.extend(formatted_latest_messages)
+
     def respond(
         self,
         latest_message_history: list[dict],
         validate_response: bool = False,
-        response_options: Any = [],
+        response_options: Any = "",
         generate_speculation_score: bool = False,
         format_response: bool = False,
     ) -> str:
@@ -406,7 +442,7 @@ class ConversationalSyntheticSubject(SyntheticSubject):
         Args:
             latest_message_history (list[dict]): The latest history of messages exchanged in the conversation.
             validate_response (bool, optional): If True, validates the generated response against the provided response_options. Defaults to False.
-            response_options (Any, optional): Options to validate the response against. Defaults to [].
+            response_options (Any, optional): Options to validate the response against. Defaults to an empty string.
             generate_speculation_score (bool, optional): If True, includes instructions to generate a speculation score in the response. Defaults to False.
             format_response (bool, optional): If True, formats the response according to specific instructions. Defaults to False.
             is_full_message_history (bool, optional): If True, treats the input from message_history as the full message history; otherwise, appends the input from message_history to

@@ -14,7 +14,7 @@ from talkingtomachines.management.treatment import (
     manual_assignment_session,
 )
 from talkingtomachines.generative.prompt import (
-    generate_session_system_message,
+    generate_group_system_message,
 )
 from talkingtomachines.storage.experiment import save_session
 
@@ -308,9 +308,8 @@ class AIConversationalExperiment(Experiment):
         """
         if model_info not in SUPPORTED_MODELS:
             warnings.warn(
-                f"{model_info} is not one of the supported models ({SUPPORTED_MODELS}). Defaulting to querying OpenAI model {SUPPORTED_MODELS[0]}."
+                f"Since {model_info} is not 'hf-inference' and not one of the OpenAI instruct models ({SUPPORTED_MODELS}), '{model_info}' is assumed to be an OpenRouter.ai supported model."
             )
-            return SUPPORTED_MODELS[0]
 
         return model_info
 
@@ -924,7 +923,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             group_info["group_id"] = group_id
             group_info["random_seed"] = self.random_seed
             group_info["treatment_label"] = self.treatment_assignment[group_id]
-            group_info["session_system_message"] = generate_session_system_message(
+            group_info["group_system_message"] = generate_group_system_message(
                 experiment_context=self.experiment_context
             )
             group_info["profiles"] = self.group_assignment[group_id]
@@ -991,10 +990,12 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
                 session_id=self.session_id,
                 experiment_context=self.experiment_context,
                 group_id=group_info["group_id"],
-                profile_info=group_info["profiles"][i].drop(
-                    index=[self.treatment_column, self.role_column, self.group_column],
-                    errors="ignore",
-                ),
+                profile_info={
+                    k: v
+                    for k, v in group_info["profiles"][i].items()
+                    if k
+                    not in [self.treatment_column, self.role_column, self.group_column]
+                },
                 model_info=self.model_info,
                 temperature=self.temperature,
                 build_profile_qna=self.build_profile_qna,
@@ -1020,7 +1021,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
                 including subjects and the initial system message. Expected keys:
                 - "subjects": A dictionary of subject objects, where each subject has a
                   `role`, `role_label`, and `profile_info`.
-                - "session_system_message": The initial message from the system.
+                - "group_system_message": The initial message from the system.
             test_mode (bool, optional): If True, prints the message history for debugging
                 purposes. Defaults to False.
 
@@ -1033,7 +1034,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         round_num = 0
         num_subjects = len(group_info["subjects"])
         subject_list = list(group_info["subjects"].values())
-        response = group_info["session_system_message"]
+        response = group_info["group_system_message"]
         role = "system"
 
         while (
@@ -1152,7 +1153,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         model_info (str): The information about the LLM used in the experiment.
         temperature (float): The temperature setting that will be applied to the LLM.
         profiles (pd.DataFrame): The profile information of the subjects participating in the experiment.
-        roles (dict[str, str]): The roles assigned to subjects.
+        roles (dict[str, Role]): The roles assigned to subjects.
         num_subjects_per_group (int): The number of subjects per group.
         num_groups (int): The number of groups in the experiment.
         experiment_context (str): The context or purpose of the experiment.
@@ -1182,14 +1183,14 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         model_info: str,
         temperature: float,
         profiles: pd.DataFrame,
-        roles: dict[str, str],
+        roles: dict[str, Role],
         num_subjects_per_group: int = 1,
         num_groups: int = 1,
         experiment_context: str = "",
         session_id: str = "",
         hf_inference_endpoint: str = "",
         max_num_rounds: int = 10,
-        treatments: dict[str, Any] = {},
+        treatments: dict[str, Treatment] = {},
         treatment_assignment_strategy: str = "simple_random",
         treatment_column: str = "",
         group_assignment_strategy: str = "random",
@@ -1524,9 +1525,20 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
             group_info["random_seed"] = self.random_seed
             group_info["constants"] = self.constants
             group_info["treatment_label"] = self.treatment_assignment[group_id]
-            group_info["session_system_message"] = generate_session_system_message(
-                experiment_context=self.experiment_context,
+
+            experiment_context_template = Template(self.experiment_context)
+            rendered_experiment_context = experiment_context_template.render(
+                treatment=self.treatments[
+                    self.treatment_assignment[group_id]
+                ].to_dict(),
+                role=self.roles["facilitator"].to_dict(),
+                constant=self.constants,
             )
+            self.experiment_context = rendered_experiment_context
+            group_info["group_system_message"] = generate_group_system_message(
+                experiment_context=rendered_experiment_context,
+            )
+
             group_info["profiles"] = self.group_assignment[group_id]
             group_subject_ids = [profile["ID"] for profile in group_info["profiles"]]
             group_info["roles"] = {
@@ -1617,10 +1629,12 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                 session_id=self.session_id,
                 experiment_context=self.experiment_context,
                 group_id=group_info["group_id"],
-                profile_info=group_info["profiles"][i].drop(
-                    index=[self.treatment_column, self.role_column, self.group_column],
-                    errors="ignore",
-                ),
+                profile_info={
+                    k: v
+                    for k, v in group_info["profiles"][i].items()
+                    if k
+                    not in [self.treatment_column, self.role_column, self.group_column]
+                },
                 model_info=self.model_info,
                 temperature=self.temperature,
                 build_profile_qna=self.build_profile_qna,
@@ -1712,7 +1726,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
     ) -> dict[str, Any]:
         session_message_history = []
         subject_message_history = {}
-        response = group_info["session_system_message"]
+        response = group_info["group_system_message"]
         role = "system"
         message_dict = {role: response}
 
@@ -1736,20 +1750,18 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                 input_prompt = round["llm_text"]["facilitator"]
                 input_prompt_template = Template(input_prompt)
                 formatted_response_options = self._format_response_options(
-                    response_options=round["response_options"]["facilitator"],
+                    response_options=round["response_options"].get("facilitator", ""),
                     randomize_response_order=round["randomize_response_order"],
                 )
                 rendered_input_prompt = input_prompt_template.render(
                     treatment=self.treatments[group_info["treatment_label"]].to_dict(),
                     role=self.roles["facilitator"].to_dict(),
-                    constant=group_info["constants"].to_dict(),
+                    constant=group_info["constants"],
                     response_options=formatted_response_options,
                 )
 
                 message_dict = {
                     "facilitator": rendered_input_prompt,
-                    "round_id": round.get("round_id", None),
-                    "response_name": round.get("response_name", None),
                 }
 
                 for subject in subject_list:
@@ -1788,7 +1800,6 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                         "subject_id": subject.profile_info.get("ID", ""),
                         "round_id": round.get("round_id", None),
                         "response_name": round.get("response_name", None),
-                        "round_num": round_num,
                     }
                     for subject in subject_list:
                         subject_message_history[subject.role_label].append(message_dict)
@@ -1809,13 +1820,14 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
             elif round["type"] in ["public_question", "repeat_public_question"]:
                 # facilitator is posing the same question to each subject and the subjects' responses are shown to all subjects during the round.
                 response = ""
+                num_repeated = 0
                 while not re.compile(r"(?<!\w)end_round(?!\w)", re.IGNORECASE).search(
                     response
                 ):
                     for role, question in round["llm_text"].items():
                         question_template = Template(question)
                         formatted_response_options = self._format_response_options(
-                            response_options=round["response_options"][role],
+                            response_options=round["response_options"].get(role, ""),
                             randomize_response_order=round["randomize_response_order"],
                         )
                         rendered_question = question_template.render(
@@ -1823,14 +1835,16 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                                 group_info["treatment_label"]
                             ].to_dict(),
                             role=self.roles[role].to_dict(),
-                            constant=group_info["constants"].to_dict(),
+                            constant=group_info["constants"],
                             response_options=formatted_response_options,
                         )
+                        if round["type"] == "repeat_public_question":
+                            rendered_question = (
+                                f"Round {num_repeated + 1}: {rendered_question}"
+                            )
 
                         message_dict = {
                             "facilitator": rendered_question,
-                            "round_id": round.get("round_id", None),
-                            "response_name": round.get("response_name", None),
                         }
                         for subject in subject_list:
                             subject_message_history[subject.role_label].append(
@@ -1846,7 +1860,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                         response = subject.respond(
                             latest_message_history=subject_message_history[role],
                             validate_response=round["validate_response"],
-                            response_options=round["response_options"].get(role, []),
+                            response_options=round["response_options"].get(role, ""),
                             generate_speculation_score=round[
                                 "generate_speculation_score"
                             ],
@@ -1859,8 +1873,10 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                             "subject_id": subject.profile_info.get("ID", ""),
                             "round_id": round.get("round_id", None),
                             "response_name": round.get("response_name", None),
-                            "round_num": round_num,
                         }
+                        if round["type"] == "repeat_public_question":
+                            message_dict["round_num"] = num_repeated + 1
+
                         for subject in subject_list:
                             subject_message_history[subject.role_label].append(
                                 message_dict
@@ -1872,6 +1888,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                             print()
 
                     round_num += 1
+                    num_repeated += 1
                     if round_num >= self.max_num_rounds:
                         warnings.warn(
                             "Maximum number of rounds reached. Terminating session prematurely."
@@ -1882,16 +1899,17 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                     if round["type"] == "public_question":
                         break  # exit while loop after one full round of public_question
 
-            elif round["type"] == "private_question":
+            elif round["type"] in ["private_question", "repeat_private_question"]:
                 # facilitator is posing the same question to each subject but the subjects' responses are not shown to other subjects during the round
                 response = ""
+                num_repeated = 0
                 while not re.compile(r"(?<!\w)end_round(?!\w)", re.IGNORECASE).search(
                     response
                 ):
                     for role, question in round["llm_text"].items():
                         question_template = Template(question)
                         formatted_response_options = self._format_response_options(
-                            response_options=round["response_options"][role],
+                            response_options=round["response_options"].get(role, ""),
                             randomize_response_order=round["randomize_response_order"],
                         )
                         rendered_question = question_template.render(
@@ -1899,14 +1917,16 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                                 group_info["treatment_label"]
                             ].to_dict(),
                             role=self.roles[role].to_dict(),
-                            constant=group_info["constants"].to_dict(),
+                            constant=group_info["constants"],
                             response_options=formatted_response_options,
                         )
+                        if round["type"] == "repeat_private_question":
+                            rendered_question = (
+                                f"Round {num_repeated + 1}: {rendered_question}"
+                            )
 
                         message_dict = {
                             "facilitator": rendered_question,
-                            "round_id": round.get("round_id", None),
-                            "response_name": round.get("response_name", None),
                         }
 
                         session_message_history.append(message_dict)
@@ -1926,7 +1946,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                                 latest_message_history=subject_message_history[role],
                                 validate_response=round["validate_response"],
                                 response_options=round["response_options"].get(
-                                    role, []
+                                    role, ""
                                 ),
                                 generate_speculation_score=round[
                                     "generate_speculation_score"
@@ -1948,8 +1968,9 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                             "subject_id": subject.profile_info.get("ID", ""),
                             "round_id": round.get("round_id", None),
                             "response_name": round.get("response_name", None),
-                            "round_num": round_num,
                         }
+                        if round["type"] == "repeat_private_question":
+                            message_dict["round_num"] = num_repeated + 1
 
                         session_message_history.append(message_dict)
                         if role != "facilitator":
@@ -1958,16 +1979,16 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
 
                         else:
                             for subject in subject_list:
-                                if subject.role_label != "facilitator":
-                                    subject_message_history[subject.role_label].append(
-                                        message_dict
-                                    )
+                                subject_message_history[subject.role_label].append(
+                                    message_dict
+                                )
 
                         if test_mode:
                             print(message_dict)
                             print()
 
                     round_num += 1
+                    num_repeated += 1
                     if round_num >= self.max_num_rounds:
                         warnings.warn(
                             "Maximum number of rounds reached. Terminating session prematurely."
@@ -1982,6 +2003,11 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                 raise ValueError(
                     f"Invalid prompt type: {round['type']}. The type of prompt for each round should one of these options: {SUPPORTED_PROMPT_TYPES}"
                 )
+
+        for subject in subject_list:
+            subject.update_message_history(
+                latest_message_history=subject_message_history[subject.role_label]
+            )
 
         session_message_history.append({"system": "end_session"})
         if test_mode:
