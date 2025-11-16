@@ -35,8 +35,8 @@
 | `role_assignment_strategy` | **Yes** | The strategy used for assigning roles to subjects. Expected values: `random`, `manual`. |
 | `role_column` | **Optional** | In the case that the role assignment strategy is `manual`, provide the column name from the `profile` worksheet that contains the assigned roles. |
 | `random_seed` | **Optional** | The random seed for reproducibility. Defaults to `42` if not provided. |
-| `build_profile_qna` | **Yes** | A boolean flag for representing the subject's profile information in Q&A format in the system message. Expected values: `True` or `False`. |
-| `build_profile_backstories` | **Yes** | A boolean flag for representing the subject's profile information as first-person backstories in the system message. Expected values: `True` or `False`. |
+| `build_profile_qna` | **Yes** | A boolean flag for representing the subject's profile information in Q&A format in the system message. Expected values: `True` or `False`. If `build_profile_qna` is set to `True`, the subject’s profile is formatted as a Q&A snippet, where each profile-related question is prefixed with “Interviewer:” and the subject's response with “Me:”. This snippet is inserted into the LLM-powered subject’s system message to give the LLM context about the subject's profile. |
+| `build_profile_backstories` | **Yes** | A boolean flag for representing the subject's profile information as first-person backstories in the system message. Expected values: `True` or `False`. If `build_profile_backstories` is set to `True`, a first-person narrated backstory will be generated based on the subject's responses and inserted into the LLM-powered subject’s system message to give the LLM context about the subject's profile. If both `build_profile_qna` and `build_profile_backstories` is set to `False`, the LLM will not be provided any profile-related information about the subject. |
 
 ---
 
@@ -45,7 +45,7 @@
 | Column | **Required** | Description |
 | - | - | - |
 | `treatment_label` | **Yes (Unique)** | A short, concise label for each treatment arm. In the case that the treatment assignment strategy is `manual`, the treatment labels in this worksheet should be a superset of the treatment labels provided in the `profile` worksheet.|
-| `value` | **Yes** | A full description of the treatment arm. Users can define the treatment arm as a Python dictionary with any attributes needed (e.g., description, other_treatment_attribute). Example: ```{"description":"Description of the treatment arm", "other_treatment_attribute":"Description of another attribute related to treatment arm."}```. In the `prompt` worksheet, you can reference these attributes with Jinja dot notation to control when/where the treatment is introduced in your experiment, e.g. ```{{ treatment.description }}```. If a plain string is provided instead of a Python dictionary, it will automatically be placed into the `description` field. The `description` field is a compulsary field. |
+| `value` | **Yes** | A full description of the treatment arm. Users can define the treatment arm as a Python dictionary with any attributes needed (e.g., description, other_treatment_attribute). Example: ```{"description":"Description of the treatment arm", "other_treatment_attribute":"Description of another attribute related to treatment arm."}```. In the `prompt` worksheet, you can reference these attributes with Jinja dot notation to control when/where the treatment is introduced in your experiment, e.g. ```{{ treatment.description }}```. If a plain string is provided instead of a Python dictionary, it will automatically be placed into the `description` field. The `description` field is a compulsory field. |
 
 *Extra columns will be rejected. Each row refers to a unique treatment arm.*
 
@@ -56,7 +56,7 @@
 | Column | **Required** | Description |
 | - | - | - |
 | `role_label` | **Yes (Unique)** | A short, concise label for each role. If the role assignment strategy is `manual`, the role labels in the `role` worksheet should be a superset of the role labels provided in the `profile` worksheet. A special role, `facilitator`, is required for every experiment and must be defined in the `role` worksheet. This role is used to orchestrate the flow of the experiment, and can perform other user-defined functions, such as performing intermediate payoff calculations during interactive experiments and evaluating terminating conditions for `repeat_private_question` or `repeat_public_question` type questions. The [`public goods experiment demo example`](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/public_good_experiment) provides a useful reference on how the `facilitator` role can be leveraged to perform intermediate payoff calculations and evaluate terminating conditions for `repeat_private_question`-type questions. |
-| `value` | **Yes** | A full description of the role. Users can define the role as a Python dictionary with any attributes needed (e.g., description, other_role_attribute). Example: ```{"description":"Description of the role", "other_role_attribute":"Description of another attribute related to role."}```. The role's description is automatically included as part of the LLM-powered subject's system message. Other than that, these role attributes can also be referenced in the `prompt` worksheet using Jinja dot notation, e.g. ```{{ role.description }}```. If a plain string is provided instead of a Python dictionary, it will automatically be placed into the `description` field. The `description` field is a compulsary field. |
+| `value` | **Yes** | A full description of the role. Users can define the role as a Python dictionary with any attributes needed (e.g., description, other_role_attribute). Example: ```{"description":"Description of the role", "other_role_attribute":"Description of another attribute related to role."}```. The role's description is automatically included as part of the LLM-powered subject's system message. Other than that, these role attributes can also be referenced in the `prompt` worksheet using Jinja dot notation, e.g. ```{{ role.description }}```. If a plain string is provided instead of a Python dictionary, it will automatically be placed into the `description` field. The `description` field is a compulsory field. |
 
 *Extra columns will be rejected. Each row refers to a unique agent role.*
 
@@ -90,9 +90,7 @@
 * **Row 2:** The actual wording used when asking the profile-related question. *Must be non‑blank and human-readable.*
 * **Row 3 … n:** The subjects' profile data, where each row represent the profile of a unique subject and each column refers to the response provided by the subject for each profile-related question.
 * There must be a column named 'ID' representing a unique identifier for each subject that will be participanting in the experiment. This must be satisfied even if you do not intend to provide any profile information for your subjects.
-* If `build_profile_qna` is set to `True`, the subject’s profile is formatted as a Q&A snippet, where each profile-related question is prefixed with “Interviewer:” and the subject's response with “Me:”. This snippet is inserted into the LLM-powered subject’s system message to give the LLM context about the subject's profile.
-* If `build_profile_backstories` is set to `True`, a first-person narrated backstory will be generated based on the subject's responses and inserted into the LLM-powered subject’s system message to give the LLM context about the subject's profile.
-* If both `build_profile_qna` and `build_profile_backstories` is set to `False`, the LLM will not be provided any profile-related information about the subject.
+* Depending on whether `build_profile_qna` and `build_profile_backstories` in the `settings` worksheet is set to `True` or `False`, the subject's responses will be formatted accordingly and passed into the system message to provide the LLM context about the subject’s profile.
 
 ---
 
@@ -120,4 +118,4 @@ You may also explore these example experimental designs and their accompanying p
 ---
 
 ## 📹 Video Walkthrough
-A video walkthrough on how to populate the prompt template workbook based on a simple public goods experiment can be found here: [Video Walkthrough](https://www.loom.com/share/ba5c913979344fd384fd769c64c01cf4?sid=7e2a8981-4826-4230-858d-e1fd63894157)
+A video walkthrough on how to populate the prompt template workbook based on a simple public goods experiment can be found here: [Video Walkthrough](https://www.loom.com/share/2a9c02bfb9094afcbe7767d168179dfd)
