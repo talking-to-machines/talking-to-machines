@@ -9,6 +9,7 @@ def test_query_llm_supported_models(mocker):
     )
 
     supported_models = [
+        "gpt-5.1",
         "gpt-5",
         "gpt-5-mini",
         "gpt-5-nano",

@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath("../../talkingtomachines/"))
 project = "talking-to-machines"
 copyright = "2025, Raymond Low, Tommaso Batistoni, Ray Duch"
 author = "Raymond Low, Tommaso Batistoni, Ray Duch"
-release = "0.2.6"
+release = "0.2.7"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

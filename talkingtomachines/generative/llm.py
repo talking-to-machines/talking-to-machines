@@ -1,4 +1,7 @@
-import time, warnings, openai, re
+import truststore
+
+truststore.inject_into_ssl()
+import time, openai, re
 from typing import List, Any, Optional
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 
@@ -6,6 +9,7 @@ from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 RETRY_DELAY = 300
 MAX_RETRIES = 5
 OPENAI_MODELS = [
+    "gpt-5.1",
     "gpt-5",
     "gpt-5-mini",
     "gpt-5-nano",
@@ -25,6 +29,7 @@ OPENAI_MODELS = [
     "o4-mini",
 ]
 NO_TEMPERATURE_MODELS = [
+    "gpt-5.1",
     "gpt-5",
     "gpt-5-mini",
     "gpt-5-nano",

@@ -3,7 +3,7 @@ import os, json
 import pandas as pd
 import numpy as np
 from typing import Any, TYPE_CHECKING
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 if TYPE_CHECKING:
     from talkingtomachines.management.experiment import Role, Treatment, Constant
@@ -53,7 +53,10 @@ def save_session(session: dict[str, Any], save_results_as_csv: bool = False) -> 
         None
     """
     os.makedirs("experiment_results", exist_ok=True)
-    json_file_path = f"experiment_results/{session['session_id']}.json"
+
+    now_utc = datetime.now(timezone.utc)
+    datetime_str = now_utc.strftime("%d-%m-%Y:%H:%M") + "Z"
+    json_file_path = f"experiment_results/{session['session_id']}_{datetime_str}.json"
     with open(json_file_path, "w", encoding="utf-8") as file:
         json.dump(session, file, default=_json_serializer, ensure_ascii=False, indent=2)
 
@@ -97,6 +100,7 @@ def save_session_as_csv(file_name: str) -> None:
         json_output = json.load(file)
 
     output_dict = {}
+    profile_columns = set()
     for _, group_info in json_output["groups"].items():
 
         for role, subject in group_info["subjects"].items():
@@ -119,6 +123,13 @@ def save_session_as_csv(file_name: str) -> None:
                 "build_profile_backstories": subject["build_profile_backstories"],
                 "constants": group_info["constants"],
             }
+
+            output_dict[subject_id].update(
+                {k: v for k, v in subject["profile_info"].items() if k != "ID"}
+            )
+            profile_columns.update(
+                k for k in subject["profile_info"].keys() if k != "ID"
+            )
 
         for message in group_info["message_history"]:
             role = list(message.keys())[0]
@@ -211,7 +222,7 @@ def save_session_as_csv(file_name: str) -> None:
     output_df = pd.DataFrame.from_dict(output_dict, orient="index")
     output_df.reset_index(drop=False, inplace=True)
     output_df.rename(columns={"index": "ID"}, inplace=True)
-    output_df.sort_values(by="group_id", ascending=True, inplace=True)
+    output_df.sort_values(by=["group_id", "ID"], ascending=True, inplace=True)
 
     # Reorder output columns
     preferred_prefix_order = [
@@ -227,7 +238,7 @@ def save_session_as_csv(file_name: str) -> None:
         "build_profile_qna",
         "build_profile_backstories",
         "constants",
-    ]
+    ] + sorted(profile_columns)
     cols = list(output_df.columns)
     prefix_column_order = [c for c in preferred_prefix_order if c in cols]
     remaining_column_order = sorted([c for c in cols if c not in prefix_column_order])

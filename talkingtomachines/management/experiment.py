@@ -1,4 +1,4 @@
-import datetime, random, warnings, concurrent.futures, re
+import datetime, random, warnings, concurrent.futures, re, math
 import pandas as pd
 from collections import defaultdict
 from typing import Any, List
@@ -19,6 +19,7 @@ from talkingtomachines.generative.prompt import (
 from talkingtomachines.storage.experiment import save_session
 
 SUPPORTED_MODELS = [
+    "gpt-5.1",
     "gpt-5",
     "gpt-5-mini",
     "gpt-5-nano",
@@ -221,6 +222,7 @@ class AIConversationalExperiment(Experiment):
         ValueError: If the provided profiles is an empty DataFrame or does not contain a 'ID' column.
         ValueError: If the provided max_num_rounds is lesser than 1.
         ValueError: If build_profile_qna and build_profile_backstories are both set to False.
+        ValueError: If the provided random_seed is not an integer value.
 
     Attributes:
         model_info (str): The information about the LLM used in the experiment.
@@ -288,7 +290,7 @@ class AIConversationalExperiment(Experiment):
             role_assignment_strategy=role_assignment_strategy, role_column=role_column
         )
         self.role_column = role_column
-        self.random_seed = random_seed
+        self.random_seed = self._check_random_seed(random_seed)
         self.build_profile_qna = build_profile_qna
         self.build_profile_backstories = self._check_build_profile_backstories(
             build_profile_backstories, build_profile_qna
@@ -507,6 +509,46 @@ class AIConversationalExperiment(Experiment):
                 )
 
         return role_assignment_strategy
+
+    def _check_random_seed(self, random_seed: int) -> int:
+        """
+        Validates and processes the `random_seed` parameter to ensure it is an integer
+        suitable for reproducibility in experiments.
+
+        Args:
+            random_seed (int): The random seed value to validate. It can be an integer,
+                a float (which will be converted to an integer), or None.
+
+        Returns:
+            int: A valid integer random seed. Defaults to 42 if the input is None or NaN.
+
+        Raises:
+            ValueError: If the `random_seed` is not an integer or cannot be converted
+                to an integer.
+        """
+        if random_seed is None:
+            warnings.warn(
+                "The random_seed field contains a None value; defaulting to 42."
+            )
+            return 42
+
+        if isinstance(random_seed, float):
+            if math.isnan(random_seed):
+                warnings.warn(
+                    "The random_seed field contains a NaN value; defaulting to 42."
+                )
+                return 42
+            warnings.warn(
+                f"The random_seed field contains a float value ({random_seed}); converting to integer value ({int(random_seed)})."
+            )
+            random_seed = int(random_seed)
+
+        if not isinstance(random_seed, int):
+            raise ValueError(
+                f"The random_seed field ({random_seed}) must be an integer value to ensure that the experiment is reproducible."
+            )
+
+        return random_seed
 
     def _check_build_profile_backstories(
         self, build_profile_backstories: bool, build_profile_qna: bool
@@ -1286,7 +1328,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         # Ensure that number of user-defined roles multiplied by the number of groups is less than or equal to the number of profiles provided
         if self.num_groups * len(user_defined_roles) > len(self.profiles):
             raise ValueError(
-                f"Total number of subjects required for session ({self.num_groups * len(user_defined_roles)}) larger than the number of profiles provided in profiles ({len(self.profiles)})."
+                f"Total number of subjects required for session ({self.num_groups * len(user_defined_roles)}) larger than the number of profiles provided ({len(self.profiles)})."
             )
 
         return num_subjects_per_group
@@ -1525,14 +1567,13 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
             group_info["random_seed"] = self.random_seed
             group_info["constants"] = self.constants
             group_info["treatment_label"] = self.treatment_assignment[group_id]
+            group_info["treatment"] = self.treatments[group_info["treatment_label"]]
 
             experiment_context_template = Template(self.experiment_context)
             rendered_experiment_context = experiment_context_template.render(
-                treatment=self.treatments[
-                    self.treatment_assignment[group_id]
-                ].to_dict(),
+                treatment=group_info["treatment"].to_dict(),
                 role=self.roles["facilitator"].to_dict(),
-                constant=self.constants,
+                constant=group_info["constants"],
             )
             self.experiment_context = rendered_experiment_context
             group_info["group_system_message"] = generate_group_system_message(
@@ -1611,7 +1652,8 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
             hf_inference_endpoint=self.hf_inference_endpoint,
             role_label="facilitator",
             role=self.roles["facilitator"],
-            treatment=self.treatments[group_info["treatment_label"]],
+            treatment=group_info["treatment"],
+            constants=group_info["constants"],
         )
 
         # Initialise user-defined subjects based on sequence defined in roles
@@ -1642,7 +1684,8 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                 hf_inference_endpoint=self.hf_inference_endpoint,
                 role_label=role_label,
                 role=self.roles[role_label],
-                treatment=self.treatments[group_info["treatment_label"]],
+                treatment=group_info["treatment"],
+                constants=group_info["constants"],
             )
 
         return subject_dict
@@ -1754,7 +1797,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                     randomize_response_order=round["randomize_response_order"],
                 )
                 rendered_input_prompt = input_prompt_template.render(
-                    treatment=self.treatments[group_info["treatment_label"]].to_dict(),
+                    treatment=group_info["treatment"].to_dict(),
                     role=self.roles["facilitator"].to_dict(),
                     constant=group_info["constants"],
                     response_options=formatted_response_options,
@@ -1831,13 +1874,12 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                             randomize_response_order=round["randomize_response_order"],
                         )
                         rendered_question = question_template.render(
-                            treatment=self.treatments[
-                                group_info["treatment_label"]
-                            ].to_dict(),
+                            treatment=group_info["treatment"].to_dict(),
                             role=self.roles[role].to_dict(),
                             constant=group_info["constants"],
                             response_options=formatted_response_options,
                         )
+
                         if round["type"] == "repeat_public_question":
                             rendered_question = (
                                 f"Round {num_repeated + 1}: {rendered_question}"
@@ -1887,8 +1929,8 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                             print(message_dict)
                             print()
 
-                    round_num += 1
                     num_repeated += 1
+                    round_num += 1
                     if round_num >= self.max_num_rounds:
                         warnings.warn(
                             "Maximum number of rounds reached. Terminating session prematurely."
@@ -1913,13 +1955,12 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                             randomize_response_order=round["randomize_response_order"],
                         )
                         rendered_question = question_template.render(
-                            treatment=self.treatments[
-                                group_info["treatment_label"]
-                            ].to_dict(),
+                            treatment=group_info["treatment"].to_dict(),
                             role=self.roles[role].to_dict(),
                             constant=group_info["constants"],
                             response_options=formatted_response_options,
                         )
+
                         if round["type"] == "repeat_private_question":
                             rendered_question = (
                                 f"Round {num_repeated + 1}: {rendered_question}"
@@ -1987,8 +2028,8 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                             print(message_dict)
                             print()
 
-                    round_num += 1
                     num_repeated += 1
+                    round_num += 1
                     if round_num >= self.max_num_rounds:
                         warnings.warn(
                             "Maximum number of rounds reached. Terminating session prematurely."

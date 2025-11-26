@@ -2,87 +2,88 @@ import itertools
 from talkingtomachines.management.experiment import (
     AItoAIInterviewExperiment,
     Constant,
-    Treatment,
-    Role,
+    # Treatment,
+    # Role,
 )
-from jinja2 import Template
+
+# from jinja2 import Template
 
 
-def render_dict_with_template(
-    prompt_template_dict: dict, constant_permutation: Constant
-) -> dict:
-    rendered_dict = {}
-    for key, value in prompt_template_dict.items():
-        if key == "llm_text":
-            # Skip rendering for 'llm_text' key as they will be rendered later during the session
-            rendered_dict[key] = value
-            continue
+# def render_dict_with_template(
+#     prompt_template_dict: dict, constant_permutation: Constant
+# ) -> dict:
+#     rendered_dict = {}
+#     for key, value in prompt_template_dict.items():
+#         if key == "llm_text":
+#             # Skip rendering for 'llm_text' key as they will be rendered later during the session
+#             rendered_dict[key] = value
+#             continue
 
-        if isinstance(value, dict):
-            # Recursively process nested dictionaries
-            rendered_dict[key] = render_dict_with_template(value, constant_permutation)
+#         if isinstance(value, dict):
+#             # Recursively process nested dictionaries
+#             rendered_dict[key] = render_dict_with_template(value, constant_permutation)
 
-        elif isinstance(value, str):
-            # Render template for each string value
-            template = Template(value)
-            rendered_value = template.render(constant=constant_permutation.to_dict())
-            rendered_dict[key] = rendered_value
+#         elif isinstance(value, str):
+#             # Render template for each string value
+#             template = Template(value)
+#             rendered_value = template.render(constant=constant_permutation.to_dict())
+#             rendered_dict[key] = rendered_value
 
-        elif isinstance(value, Treatment):
-            rendered_value = Treatment(
-                **render_dict_with_template(value.to_dict(), constant_permutation)
-            )
-            rendered_dict[key] = rendered_value
+#         elif isinstance(value, Treatment):
+#             rendered_value = Treatment(
+#                 **render_dict_with_template(value.to_dict(), constant_permutation)
+#             )
+#             rendered_dict[key] = rendered_value
 
-        elif isinstance(value, Role):
-            rendered_value = Role(
-                **render_dict_with_template(value.to_dict(), constant_permutation)
-            )
-            rendered_dict[key] = rendered_value
+#         elif isinstance(value, Role):
+#             rendered_value = Role(
+#                 **render_dict_with_template(value.to_dict(), constant_permutation)
+#             )
+#             rendered_dict[key] = rendered_value
 
-        elif isinstance(value, list):
-            # Render template for each item in the list
-            rendered_list = []
-            for item in value:
-                if isinstance(item, dict):
-                    # Recursively process nested dictionaries
-                    rendered_list.append(
-                        render_dict_with_template(item, constant_permutation)
-                    )
+#         elif isinstance(value, list):
+#             # Render template for each item in the list
+#             rendered_list = []
+#             for item in value:
+#                 if isinstance(item, dict):
+#                     # Recursively process nested dictionaries
+#                     rendered_list.append(
+#                         render_dict_with_template(item, constant_permutation)
+#                     )
 
-                elif isinstance(item, str):
-                    # Render template for each string value
-                    template = Template(item)
-                    rendered_item = template.render(
-                        constant=constant_permutation.to_dict()
-                    )
-                    rendered_list.append(rendered_item)
+#                 elif isinstance(item, str):
+#                     # Render template for each string value
+#                     template = Template(item)
+#                     rendered_item = template.render(
+#                         constant=constant_permutation.to_dict()
+#                     )
+#                     rendered_list.append(rendered_item)
 
-                elif isinstance(item, Treatment):
-                    rendered_item = Treatment(
-                        **render_dict_with_template(
-                            item.to_dict(), constant_permutation
-                        )
-                    )
-                    rendered_list.append(rendered_item)
+#                 elif isinstance(item, Treatment):
+#                     rendered_item = Treatment(
+#                         **render_dict_with_template(
+#                             item.to_dict(), constant_permutation
+#                         )
+#                     )
+#                     rendered_list.append(rendered_item)
 
-                elif isinstance(item, Role):
-                    rendered_item = Role(
-                        **render_dict_with_template(
-                            item.to_dict(), constant_permutation
-                        )
-                    )
-                    rendered_list.append(rendered_item)
+#                 elif isinstance(item, Role):
+#                     rendered_item = Role(
+#                         **render_dict_with_template(
+#                             item.to_dict(), constant_permutation
+#                         )
+#                     )
+#                     rendered_list.append(rendered_item)
 
-                else:
-                    rendered_list.append(item)
+#                 else:
+#                     rendered_list.append(item)
 
-            rendered_dict[key] = rendered_list
+#             rendered_dict[key] = rendered_list
 
-        else:
-            rendered_dict[key] = value
+#         else:
+#             rendered_dict[key] = value
 
-    return rendered_dict
+#     return rendered_dict
 
 
 def generate_permutations(constants: dict) -> list:
@@ -111,7 +112,7 @@ def generate_permutations(constants: dict) -> list:
         ]
         return constant_permutations
     else:
-        return []
+        return [Constant()]
 
 
 def initialize_experiment(prompt_template_dict: dict) -> list:
@@ -128,46 +129,36 @@ def initialize_experiment(prompt_template_dict: dict) -> list:
 
     experiments = []
     for constant_permutation in constant_permutations:
-        # For each permutation, apply constants to prompt template using Jjanja
-        rendered_prompt_template_dict = render_dict_with_template(
-            prompt_template_dict=prompt_template_dict,
-            constant_permutation=constant_permutation,
-        )
+        # # For each permutation, apply constants to prompt template using Jjanja
+        # rendered_prompt_template_dict = render_dict_with_template(
+        #     prompt_template_dict=prompt_template_dict,
+        #     constant_permutation=constant_permutation,
+        # )
 
         # Initialise experiment based on rendered prompt template
         experiment = AItoAIInterviewExperiment(
-            model_info=rendered_prompt_template_dict["model_info"],
-            temperature=rendered_prompt_template_dict["temperature"],
-            profiles=rendered_prompt_template_dict["profiles"],
-            roles=rendered_prompt_template_dict["roles"],
-            num_subjects_per_group=rendered_prompt_template_dict[
-                "num_subjects_per_group"
-            ],
-            num_groups=rendered_prompt_template_dict["num_groups"],
-            session_id=rendered_prompt_template_dict["session_id"],
-            hf_inference_endpoint=rendered_prompt_template_dict[
-                "hf_inference_endpoint"
-            ],
-            max_num_rounds=rendered_prompt_template_dict["max_num_rounds"],
-            treatments=rendered_prompt_template_dict["treatments"],
-            treatment_assignment_strategy=rendered_prompt_template_dict[
+            model_info=prompt_template_dict["model_info"],
+            temperature=prompt_template_dict["temperature"],
+            profiles=prompt_template_dict["profiles"],
+            roles=prompt_template_dict["roles"],
+            num_subjects_per_group=prompt_template_dict["num_subjects_per_group"],
+            num_groups=prompt_template_dict["num_groups"],
+            session_id=prompt_template_dict["session_id"],
+            hf_inference_endpoint=prompt_template_dict["hf_inference_endpoint"],
+            max_num_rounds=prompt_template_dict["max_num_rounds"],
+            treatments=prompt_template_dict["treatments"],
+            treatment_assignment_strategy=prompt_template_dict[
                 "treatment_assignment_strategy"
             ],
-            treatment_column=rendered_prompt_template_dict["treatment_column"],
-            group_assignment_strategy=rendered_prompt_template_dict[
-                "group_assignment_strategy"
-            ],
-            group_column=rendered_prompt_template_dict["group_column"],
-            role_assignment_strategy=rendered_prompt_template_dict[
-                "role_assignment_strategy"
-            ],
-            role_column=rendered_prompt_template_dict["role_column"],
-            random_seed=rendered_prompt_template_dict["random_seed"],
-            build_profile_qna=rendered_prompt_template_dict["build_profile_qna"],
-            build_profile_backstories=rendered_prompt_template_dict[
-                "build_profile_backstories"
-            ],
-            prompts=rendered_prompt_template_dict["prompts"],
+            treatment_column=prompt_template_dict["treatment_column"],
+            group_assignment_strategy=prompt_template_dict["group_assignment_strategy"],
+            group_column=prompt_template_dict["group_column"],
+            role_assignment_strategy=prompt_template_dict["role_assignment_strategy"],
+            role_column=prompt_template_dict["role_column"],
+            random_seed=prompt_template_dict["random_seed"],
+            build_profile_qna=prompt_template_dict["build_profile_qna"],
+            build_profile_backstories=prompt_template_dict["build_profile_backstories"],
+            prompts=prompt_template_dict["prompts"],
             constants=constant_permutation.to_dict(),
         )
 

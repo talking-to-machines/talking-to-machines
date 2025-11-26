@@ -1,5 +1,5 @@
 from __future__ import annotations
-import re, warnings, openai, json
+import re, warnings, openai, json, copy
 from typing import Any, Callable, TYPE_CHECKING
 from talkingtomachines.generative.prompt import (
     generate_subject_system_message,
@@ -7,6 +7,7 @@ from talkingtomachines.generative.prompt import (
 )
 from talkingtomachines.generative.llm import query_llm
 from talkingtomachines.config import DevelopmentConfig
+from jinja2 import Template
 
 if TYPE_CHECKING:
     from talkingtomachines.management.experiment import Role, Treatment
@@ -14,6 +15,7 @@ if TYPE_CHECKING:
 ProfileInfo = dict[str, Any]
 NUM_RETRY = 3
 OPENAI_MODELS = [
+    "gpt-5.1",
     "gpt-5",
     "gpt-5-mini",
     "gpt-5-nano",
@@ -178,6 +180,7 @@ class ConversationalSyntheticSubject(SyntheticSubject):
         role_label (str): The name of the role assigned to the subject.
         role (Role): The Role object assigned to the subject.
         treatment (Treatment): The Treatment object assigned to the subject.
+        constants (dict[str, Any]): A dictionary of constant values applied to the experiment.
         profile_prompt_generator (Callable[[ProfileInfo, bool, bool, openai.OpenAI, str, float], str], optional):
             A function that generates a profile prompt based on the profile information.
             Defaults to generate_profile_prompt.
@@ -196,6 +199,7 @@ class ConversationalSyntheticSubject(SyntheticSubject):
         role_label (str): The Role object assigned to the subject.
         role (Role): The description of the role assigned to the subject.
         treatment (Treatment): The Treatment object assigned to the subject.
+        constants (dict[str, Any]): A dictionary of constant values applied to the experiment.
         system_message (str): The system message generated for the conversation.
         llm_client (openai.OpenAI): The LLM client.
         message_history (List[dict]): The history of the conversation with the synthetic subject.
@@ -215,6 +219,7 @@ class ConversationalSyntheticSubject(SyntheticSubject):
         role_label: str,
         role: Role,
         treatment: Treatment,
+        constants: dict[str, Any],
         profile_prompt_generator: Callable[
             [ProfileInfo, bool, bool, openai.OpenAI, str, float], str
         ] = generate_profile_prompt,
@@ -234,11 +239,105 @@ class ConversationalSyntheticSubject(SyntheticSubject):
         self.role_label = role_label
         self.role = role
         self.treatment = treatment
+        self.constants = constants
+        self.render_role_and_treatment_templates()  # Render templates in role and treatment recursively
         self.system_message = generate_subject_system_message(
             role_description=self.role.description,
             profile_prompt=self.profile_prompt,
         )
         self.message_history = [{"role": "system", "content": self.system_message}]
+
+    def _render_value_recursive(self, value: Any, context: dict[str, Any]) -> Any:
+        """
+        Recursively renders a value using a provided context.
+
+        This method processes the input `value` and replaces placeholders
+        in strings with their corresponding values from the `context` dictionary.
+        It supports nested structures such as dictionaries, lists, and tuples.
+
+        Args:
+            value (Any): The value to be rendered. It can be a string, dictionary,
+                         list, tuple, or any other type.
+            context (dict[str, Any]): A dictionary containing the context for
+                                      rendering placeholders in strings.
+
+        Returns:
+            Any: The rendered value. If the input is a string, placeholders are
+                 replaced with their corresponding values from the context. If the
+                 input is a dictionary, list, or tuple, the method is applied
+                 recursively to their elements. Other types are returned as-is.
+        """
+        if isinstance(value, str):
+            try:
+                return Template(value).render(**context)
+            except Exception:
+                return value
+        if isinstance(value, dict):
+            return {
+                k: self._render_value_recursive(v, context) for k, v in value.items()
+            }
+        if isinstance(value, (list, tuple)):
+            rendered = [self._render_value_recursive(v, context) for v in value]
+            return type(value)(rendered)
+        return value
+
+    def render_role_and_treatment_templates(self, max_iter: int = 5) -> None:
+        """
+        Renders templates for the `role` and `treatment` attributes by recursively
+        resolving their values using a rendering context. The rendering process
+        iterates until the values converge or the maximum number of iterations is reached.
+
+        Args:
+            max_iter (int, optional): The maximum number of iterations to attempt
+                before stopping the rendering process. Defaults to 5.
+
+        Raises:
+            UserWarning: If the maximum number of iterations is reached without
+                achieving convergence.
+        """
+        role_dict = self.role.to_dict()
+        treatment_dict = self.treatment.to_dict()
+        constants_dict = self.constants
+
+        for _ in range(max_iter):
+            prev_role = copy.deepcopy(role_dict)
+            prev_treatment = copy.deepcopy(treatment_dict)
+
+            # build rendering context that templates can access
+            context_for_role = {
+                "role": role_dict,
+                "treatment": treatment_dict,
+                "constant": constants_dict,
+            }
+            context_for_treatment = {
+                "role": role_dict,
+                "treatment": treatment_dict,
+                "constant": constants_dict,
+            }
+
+            role_dict = self._render_value_recursive(role_dict, context_for_role)
+            treatment_dict = self._render_value_recursive(
+                treatment_dict, context_for_treatment
+            )
+
+            if role_dict == prev_role and treatment_dict == prev_treatment:
+                break
+        else:
+            warnings.warn(
+                "The function: render_role_and_treatment_templates reached max iterations without convergence."
+            )
+
+        if hasattr(self.role, "__dict__"):
+            for k, v in role_dict.items():
+                setattr(self.role, k, v)
+        else:
+            self.role = Role(**role_dict)
+
+        if hasattr(self.treatment, "__dict__"):
+            for k, v in treatment_dict.items():
+                setattr(self.treatment, k, v)
+        else:
+            self.treatment = Treatment(**treatment_dict)
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the ConversationalSyntheticSubject object to a dictionary.
@@ -260,6 +359,7 @@ class ConversationalSyntheticSubject(SyntheticSubject):
             "role_label": self.role_label,
             "role": self.role.to_dict(),
             "treatment": self.treatment.to_dict(),
+            "constants": self.constants,
             "system_message": self.system_message,
             "message_history": self.message_history,
         }

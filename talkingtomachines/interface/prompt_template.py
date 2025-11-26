@@ -1,7 +1,6 @@
 import argparse, warnings, ast, concurrent.futures, json
 import pandas as pd
 from tqdm import tqdm
-from typing import Any
 from importlib.metadata import version, PackageNotFoundError
 from talkingtomachines.interface.validate_template import (
     validate_prompt_template_path,
