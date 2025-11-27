@@ -33,7 +33,6 @@ scikit-learn==1.6.1
 scipy==1.15.3
 six==1.17.0
 sniffio==1.3.1
--e git+https://github.com/talking-to-machines/talkingtomachines.git@6ed6404309d7581bcee93bd03563e25744f2886d#egg=talkingtomachines
 threadpoolctl==3.6.0
 tomli==2.3.0
 tqdm==4.67.1
