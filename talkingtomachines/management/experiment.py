@@ -1,4 +1,4 @@
-import datetime, random, warnings, concurrent.futures, re, math
+import datetime, random, warnings, concurrent.futures, re, math, copy
 import pandas as pd
 from collections import defaultdict
 from typing import Any, List
@@ -12,9 +12,6 @@ from talkingtomachines.management.treatment import (
     simple_random_assignment_session,
     complete_random_assignment_session,
     manual_assignment_session,
-)
-from talkingtomachines.generative.prompt import (
-    generate_group_system_message,
 )
 from talkingtomachines.storage.experiment import save_session
 
@@ -268,11 +265,11 @@ class AIConversationalExperiment(Experiment):
             session_id,
         )
 
+        self.hf_inference_endpoint = hf_inference_endpoint
         self.model_info = self._check_model_info(model_info=model_info)
         self.temperature = self._check_temperature(temperature=temperature)
         self.experiment_context = experiment_context
         self.profiles = self._check_profiles(profiles=profiles)
-        self.hf_inference_endpoint = hf_inference_endpoint
         self.max_num_rounds = self._check_max_num_rounds(max_num_rounds=max_num_rounds)
         self.treatments = self._check_treatments(treatments=treatments)
         self.treatment_assignment_strategy = self._check_treatment_assignment_strategy(
@@ -313,41 +310,74 @@ class AIConversationalExperiment(Experiment):
                 f"Since {model_info} is not 'hf-inference' and not one of the OpenAI instruct models ({SUPPORTED_MODELS}), '{model_info}' is assumed to be an OpenRouter.ai supported model."
             )
 
+        if model_info == "hf-inference" and (
+            self.hf_inference_endpoint == ""
+            or self.hf_inference_endpoint is None
+            or pd.isna(self.hf_inference_endpoint)
+        ):
+            raise ValueError(
+                "When setting 'model_info' as 'hf-inference', a valid hf_inference_endpoint must be provided."
+            )
+
         return model_info
 
     def _check_temperature(self, temperature: float) -> float:
-        """Validates and adjusts the provided temperature value.
-        This method ensures that the temperature is a numeric value (either an integer or a float).
-        If the temperature is below 0, it issues a warning and sets the temperature to 0.0.
-        If the temperature is above 2, it issues a warning and sets the temperature to 2.0.
-        Otherwise, it returns the provided temperature as a float.
+        """
+        Validates and adjusts the provided temperature value.
+
+        This method ensures that the temperature value is within the acceptable range
+        of 0 to 2 (inclusive). If the value is None, NaN, below 0, or above 2, it will
+        be adjusted to a default value with a warning. If the value is not a float or
+        integer, a ValueError is raised.
 
         Args:
-            temperature (float): The temperature value to validate and adjust.
+            temperature (float): The temperature value to validate.
 
         Returns:
-            float: The validated and adjusted temperature value.
+            float: A valid temperature value within the range [0, 2].
+
+        Raises:
+            ValueError: If the temperature is not a float or integer.
+
+        Warnings:
+            - If the temperature is None, it defaults to 0.
+            - If the temperature is NaN, it defaults to 0.
+            - If the temperature is below 0, it is set to 0.
+            - If the temperature is above 2, it is set to 2.
         """
+        if temperature is None:
+            warnings.warn(
+                "The temperature field contains a None value; defaulting to 0."
+            )
+            return 0
+
         # Ensure that temperature is a number (float or int)
-        if not isinstance(temperature, (int, float)):
+        if isinstance(temperature, (int, float)):
+            if math.isnan(temperature):
+                warnings.warn(
+                    "The temperature field contains a NaN value; defaulting to 0."
+                )
+                return 0
+
+            # If temperature is below 0, warn and set to 0
+            if temperature < 0:
+                warnings.warn(
+                    f"Provided temperature {temperature} is below 0. Setting temperature to 0..."
+                )
+                return 0
+
+            # If temperature is above 2, warn and set to 2
+            if temperature > 2:
+                warnings.warn(
+                    f"Provided temperature {temperature} is greater than 2. Setting temperature to 2..."
+                )
+                return 2
+
+            # Otherwise, return the provided temperature as is
+            return temperature
+
+        else:
             raise ValueError("The temperature field must be a float or integer value.")
-
-        # If temperature is below 0, warn and set to 0
-        if temperature < 0:
-            warnings.warn(
-                f"Provided temperature {temperature} is below 0. Setting temperature to 0..."
-            )
-            return 0.0
-
-        # If temperature is above 2, warn and set to 2
-        if temperature > 2:
-            warnings.warn(
-                f"Provided temperature {temperature} is greater than 2. Setting temperature to 2..."
-            )
-            return 2.0
-
-        # Otherwise, return the provided temperature as a float
-        return float(temperature)
 
     def _check_profiles(self, profiles: pd.DataFrame) -> pd.DataFrame:
         """Checks to ensure that provided profiles is not empty and contains a ID column.
@@ -371,26 +401,45 @@ class AIConversationalExperiment(Experiment):
 
     def _check_max_num_rounds(self, max_num_rounds: int) -> int:
         """
-        Validates the maximum number of rounds.
-
-        This method ensures that the provided `max_num_rounds` is an integer
-        greater than or equal to 1. If the value is invalid, a ValueError is raised.
+        Validates and processes the `max_num_rounds` parameter.
+        This method ensures that the `max_num_rounds` parameter is a valid integer
+        greater than or equal to 1. If the parameter is `None`, it defaults to 10
+        with a warning. If the parameter is a NaN value, it also defaults to 10
+        with a warning. If the parameter is invalid, a `ValueError` is raised.
 
         Args:
             max_num_rounds (int): The maximum number of rounds to validate.
 
         Returns:
-            int: The validated maximum number of rounds.
+            int: A valid integer value for `max_num_rounds`.
 
         Raises:
-            ValueError: If `max_num_rounds` is less than 1.
+            ValueError: If `max_num_rounds` is less than 1 or not a numeric type.
         """
-        if max_num_rounds < 1:
-            raise ValueError(
-                "Invalid value for max_num_rounds. Please ensure that max_num_rounds is an integer greater than or equal to 1."
+        if max_num_rounds is None:
+            warnings.warn(
+                "The max_num_rounds field contains a None value; defaulting to 10."
             )
+            return 10
 
-        return max_num_rounds
+        if isinstance(max_num_rounds, (int, float)):
+            if math.isnan(max_num_rounds):
+                warnings.warn(
+                    "The max_num_rounds field contains a NaN value; defaulting to 10."
+                )
+                return 10
+
+            if max_num_rounds < 1:
+                raise ValueError(
+                    "Invalid value for max_num_rounds. Please ensure that max_num_rounds is an integer greater than or equal to 1."
+                )
+
+            return max_num_rounds
+
+        else:
+            raise ValueError(
+                "The max_num_rounds field must be either an integer or float value."
+            )
 
     def _check_treatments(
         self, treatments: dict[str, Treatment]
@@ -512,19 +561,23 @@ class AIConversationalExperiment(Experiment):
 
     def _check_random_seed(self, random_seed: int) -> int:
         """
-        Validates and processes the `random_seed` parameter to ensure it is an integer
-        suitable for reproducibility in experiments.
+        Validates and returns a random seed value.
+        This method checks the provided `random_seed` value and ensures it is a valid
+        integer or float. If the value is `None` or `NaN`, it defaults to 42 and issues
+        a warning. If the value is not an integer or float, it raises a ValueError.
 
         Args:
-            random_seed (int): The random seed value to validate. It can be an integer,
-                a float (which will be converted to an integer), or None.
+            random_seed (int): The random seed value to validate.
 
         Returns:
-            int: A valid integer random seed. Defaults to 42 if the input is None or NaN.
+            int: A valid random seed value.
 
         Raises:
-            ValueError: If the `random_seed` is not an integer or cannot be converted
-                to an integer.
+            ValueError: If `random_seed` is not an integer or float.
+
+        Warnings:
+            UserWarning: If `random_seed` is `None` or `NaN`, a warning is issued and
+            the value defaults to 42.
         """
         if random_seed is None:
             warnings.warn(
@@ -532,23 +585,19 @@ class AIConversationalExperiment(Experiment):
             )
             return 42
 
-        if isinstance(random_seed, float):
+        if isinstance(random_seed, (int, float)):
             if math.isnan(random_seed):
                 warnings.warn(
                     "The random_seed field contains a NaN value; defaulting to 42."
                 )
                 return 42
-            warnings.warn(
-                f"The random_seed field contains a float value ({random_seed}); converting to integer value ({int(random_seed)})."
-            )
-            random_seed = int(random_seed)
 
-        if not isinstance(random_seed, int):
+            return random_seed
+
+        else:
             raise ValueError(
-                f"The random_seed field ({random_seed}) must be an integer value to ensure that the experiment is reproducible."
+                "The random_seed field must be either an integer or float value."
             )
-
-        return random_seed
 
     def _check_build_profile_backstories(
         self, build_profile_backstories: bool, build_profile_qna: bool
@@ -651,7 +700,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         temperature: float,
         profiles: pd.DataFrame,
         roles: dict[str, Role],
-        num_subjects_per_group: int = 2,
+        num_subjects_per_group: int = 1,
         num_groups: int = 1,
         experiment_context: str = "",
         session_id: str = "",
@@ -703,49 +752,105 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             self._check_manually_assigned_roles()
 
     def _check_num_subjects_per_group(self, num_subjects_per_group: int) -> int:
-        """Checks if the provided num_subjects_per_group is 2 or more and matches with the number of profiles provided.
+        """
+        Validates and processes the `num_subjects_per_group` parameter for an experiment.
 
         Args:
-            num_subjects_per_group (int): The num_subjects_per_group to be checked.
+            num_subjects_per_group (int): The number of subjects per group. Can be an integer or float.
+                If None, defaults to 2. If NaN, also defaults to 2.
 
         Returns:
-            int: The validated num_subjects_per_group.
+            int: The validated and processed number of subjects per group.
 
         Raises:
-            ValueError: If the provided num_subjects_per_group is not valid.
+            ValueError: If `num_subjects_per_group` is less than 2.
+            ValueError: If the total number of subjects required for the experiment
+                (calculated as `self.num_groups * num_subjects_per_group`) does not match
+                the number of profiles provided (`len(self.profiles)`).
+            ValueError: If `num_subjects_per_group` is not a float or integer.
+
+        Warnings:
+            - If `num_subjects_per_group` is None, a warning is issued, and the value defaults to 2.
+            - If `num_subjects_per_group` is NaN, a warning is issued, and the value defaults to 2.
         """
-        # Check if number of subjects per group is 2 or more
-        if num_subjects_per_group < 2:
-            raise ValueError(
-                f"Invalid num_subjects_per_group: {num_subjects_per_group}. For AI-AI conversation-based experiments, num_subjects_per_group should be an integer that is equal to or greater than 2."
+        if num_subjects_per_group is None:
+            warnings.warn(
+                "The num_subjects_per_group field contains a None value; defaulting to 2."
             )
+            return 2
 
-        # Check if number of subjects per group multipled by the number of groups is less than the number of profiles provided
-        if self.num_groups * num_subjects_per_group != len(self.profiles):
+        # Ensure that num_subjects_per_group is a number (float or int)
+        if isinstance(num_subjects_per_group, (int, float)):
+            if math.isnan(num_subjects_per_group):
+                warnings.warn(
+                    "The num_subjects_per_group field contains a NaN value; defaulting to 2."
+                )
+                return 2
+
+            # Check if number of subjects per group is 2 or more
+            if num_subjects_per_group < 2:
+                raise ValueError(
+                    f"Invalid num_subjects_per_group: {num_subjects_per_group}. For AI-AI conversation-based experiments, num_subjects_per_group should be an integer that is equal to or greater than 2."
+                )
+
+            # Check if number of subjects per group multipled by the number of groups is less than the number of profiles provided
+            if self.num_groups * num_subjects_per_group != len(self.profiles):
+                raise ValueError(
+                    f"Total number of subjects required for experiment ({self.num_groups * num_subjects_per_group}) does not match with the number of profiles provided ({len(self.profiles)})."
+                )
+
+            # Otherwise, return the provided num_subjects_per_group as is
+            return num_subjects_per_group
+
+        else:
             raise ValueError(
-                f"Total number of subjects required for experiment ({self.num_groups * num_subjects_per_group}) does not match with the number of profiles provided ({len(self.profiles)})."
+                "The num_subjects_per_group field must be a float or integer value."
             )
-
-        return num_subjects_per_group
 
     def _check_num_groups(self, num_groups: int) -> int:
-        """Checks if the provided num_groups is greater than or equal to 1.
+        """
+        Validates and processes the `num_groups` parameter.
+        This method ensures that the `num_groups` parameter is a valid number
+        (integer or float) and meets the required conditions. If `num_groups`
+        is `None` or `NaN`, it defaults to 1. If `num_groups` is less than 1,
+        a `ValueError` is raised. If the input is valid, the method returns
+        the provided value.
 
         Args:
-            num_groups (int): The num_groups to be checked.
+            num_groups (int): The number of groups to validate.
 
         Returns:
-            int: The validated num_groups.
+            int: The validated number of groups.
 
         Raises:
-            ValueError: If the provided num_groups is not valid.
+            ValueError: If `num_groups` is not a float or integer, or if it is
+                        less than 1.
         """
-        if num_groups < 1:
-            raise ValueError(
-                f"Invalid value for num_groups: {num_groups}. num_groups should be an integer that is equal to or greater than 1."
+        if num_groups is None:
+            warnings.warn(
+                "The num_groups field contains a None value; defaulting to 1."
             )
+            return 1
 
-        return num_groups
+        # Ensure that num_groups is a number (float or int)
+        if isinstance(num_groups, (int, float)):
+            if math.isnan(num_groups):
+                warnings.warn(
+                    "The num_groups field contains a NaN value; defaulting to 1."
+                )
+                return 1
+
+            # Check if number of groups is 1 or more
+            if num_groups < 1:
+                raise ValueError(
+                    f"Invalid value for num_groups: {num_groups}. num_groups should be an integer that is equal to or greater than 1."
+                )
+
+            # Otherwise, return the provided num_subjects_per_group as is
+            return num_groups
+
+        else:
+            raise ValueError("The num_groups field must be a float or integer value.")
 
     def _generate_group_id_list(self) -> List[Any]:
         """Generates a list of group IDs.
@@ -965,9 +1070,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
             group_info["group_id"] = group_id
             group_info["random_seed"] = self.random_seed
             group_info["treatment_label"] = self.treatment_assignment[group_id]
-            group_info["group_system_message"] = generate_group_system_message(
-                experiment_context=self.experiment_context
-            )
+            group_info["experiment_context"] = self.experiment_context
             group_info["profiles"] = self.group_assignment[group_id]
             group_subject_ids = [profile["ID"] for profile in group_info["profiles"]]
             group_info["roles"] = {
@@ -1063,7 +1166,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
                 including subjects and the initial system message. Expected keys:
                 - "subjects": A dictionary of subject objects, where each subject has a
                   `role`, `role_label`, and `profile_info`.
-                - "group_system_message": The initial message from the system.
+                - "experiment_context": The initial message about the experimental context.
             test_mode (bool, optional): If True, prints the message history for debugging
                 purposes. Defaults to False.
 
@@ -1076,7 +1179,7 @@ class AItoAIConversationalExperiment(AIConversationalExperiment):
         round_num = 0
         num_subjects = len(group_info["subjects"])
         subject_list = list(group_info["subjects"].values())
-        response = group_info["group_system_message"]
+        response = group_info["experiment_context"]
         role = "system"
 
         while (
@@ -1299,39 +1402,70 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         return roles
 
     def _check_num_subjects_per_group(self, num_subjects_per_group: int) -> int:
-        """Checks if the provided num_subjects_per_group is 1 or more and matches with the number of profiles provided.
+        """
+        Validates and processes the `num_subjects_per_group` parameter.
+        This method ensures that the number of subjects per group is valid and consistent
+        with the experiment's configuration, including the number of user-defined roles
+        and the total number of profiles provided.
 
         Args:
-            num_subjects_per_group (int): The num_subjects_per_group to be checked.
+            num_subjects_per_group (int): The number of subjects assigned to each group.
+                This value must be an integer or float that is equal to or greater than 1.
 
         Returns:
-            int: The validated num_subjects_per_group.
+            int: The validated number of subjects per group. If the input is `None` or `NaN`,
+            the method defaults to 1.
 
         Raises:
-            ValueError: If the provided num_subjects_per_group is not valid.
+            ValueError: If `num_subjects_per_group` is less than 1, not a number, or if it
+            does not align with the number of user-defined roles and profiles provided.
+
+        Warnings:
+            - If `num_subjects_per_group` is `None`, a warning is issued, and the value defaults to 1.
+            - If `num_subjects_per_group` is `NaN`, a warning is issued, and the value defaults to 1.
         """
-        # Ensure that number of subjects per group is 1 or more
-        if num_subjects_per_group < 1:
-            raise ValueError(
-                f"Invalid num_subjects_per_group: {num_subjects_per_group}. For AI-AI interview-based experiments, num_subjects_per_group should be an integer that is equal to or greater than 1."
+        if num_subjects_per_group is None:
+            warnings.warn(
+                "The num_subjects_per_group field contains a None value; defaulting to 1."
             )
+            return 1
 
-        # Ensure that number of subjects per group matches with the number of profiles provided
-        user_defined_roles = [
-            role for role in list(self.roles.keys()) if role not in SPECIAL_ROLES
-        ]
-        if len(user_defined_roles) != num_subjects_per_group:
+        # Ensure that num_subjects_per_group is a number (float or int)
+        if isinstance(num_subjects_per_group, (int, float)):
+            if math.isnan(num_subjects_per_group):
+                warnings.warn(
+                    "The num_subjects_per_group field contains a NaN value; defaulting to 1."
+                )
+                return 1
+
+            # Check if number of subjects per group is 1 or more
+            if num_subjects_per_group < 1:
+                raise ValueError(
+                    f"Invalid num_subjects_per_group: {num_subjects_per_group}. For AI-AI interview-based experiments, num_subjects_per_group should be an integer that is equal to or greater than 1."
+                )
+
+            # Ensure that number of subjects per group matches with the number of profiles provided
+            user_defined_roles = [
+                role for role in list(self.roles.keys()) if role not in SPECIAL_ROLES
+            ]
+            if len(user_defined_roles) != num_subjects_per_group:
+                raise ValueError(
+                    f"Number of user-defined roles ({len(user_defined_roles)}) does not match the number of subjects assigned to each group ({num_subjects_per_group})."
+                )
+
+            # Ensure that number of user-defined roles multiplied by the number of groups is less than or equal to the number of profiles provided
+            if self.num_groups * len(user_defined_roles) != len(self.profiles):
+                raise ValueError(
+                    f"Total number of subjects required for session ({self.num_groups * len(user_defined_roles)}) does not match the number of profiles provided ({len(self.profiles)})."
+                )
+
+            # Otherwise, return the provided num_subjects_per_group as is
+            return num_subjects_per_group
+
+        else:
             raise ValueError(
-                f"Number of user-defined roles ({len(user_defined_roles)}) does not match the number of subjects assigned to each group ({num_subjects_per_group})."
+                "The num_subjects_per_group field must be a float or integer value."
             )
-
-        # Ensure that number of user-defined roles multiplied by the number of groups is less than or equal to the number of profiles provided
-        if self.num_groups * len(user_defined_roles) > len(self.profiles):
-            raise ValueError(
-                f"Total number of subjects required for session ({self.num_groups * len(user_defined_roles)}) larger than the number of profiles provided ({len(self.profiles)})."
-            )
-
-        return num_subjects_per_group
 
     def _assign_group(self, random_seed: int) -> dict[int, List[ProfileInfo]]:
         """Assigns profiles to each group based on the given number of subjects per group (excluding the special roles) and group assignment strategy.
@@ -1558,7 +1692,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
             "session_id": f"{self.session_id}_{version}",
             "groups": {},
         }
-        self.experiment_context = self.prompts.pop(0)["llm_text"]["facilitator"]
+        self.experiment_context = self.prompts.pop(0)["llm_text"]
 
         # Helper function to process a single group.
         def process_group(group_id: Any) -> tuple[Any, dict]:
@@ -1568,18 +1702,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
             group_info["constants"] = self.constants
             group_info["treatment_label"] = self.treatment_assignment[group_id]
             group_info["treatment"] = self.treatments[group_info["treatment_label"]]
-
-            experiment_context_template = Template(self.experiment_context)
-            rendered_experiment_context = experiment_context_template.render(
-                treatment=group_info["treatment"].to_dict(),
-                role=self.roles["facilitator"].to_dict(),
-                constant=group_info["constants"],
-            )
-            self.experiment_context = rendered_experiment_context
-            group_info["group_system_message"] = generate_group_system_message(
-                experiment_context=rendered_experiment_context,
-            )
-
+            group_info["experiment_context"] = self.experiment_context
             group_info["profiles"] = self.group_assignment[group_id]
             group_subject_ids = [profile["ID"] for profile in group_info["profiles"]]
             group_info["roles"] = {
@@ -1642,7 +1765,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         # First, initialise facilitator
         subject_dict["facilitator"] = ConversationalSyntheticSubject(
             session_id=self.session_id,
-            experiment_context=self.experiment_context,
+            experiment_context="",
             group_id=group_info["group_id"],
             profile_info={},
             model_info=self.model_info,
@@ -1669,7 +1792,7 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
             role_label = group_info["roles"][subject_id]
             subject_dict[role_label] = ConversationalSyntheticSubject(
                 session_id=self.session_id,
-                experiment_context=self.experiment_context,
+                experiment_context=self.experiment_context[role_label],
                 group_id=group_info["group_id"],
                 profile_info={
                     k: v
@@ -1769,42 +1892,85 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
     ) -> dict[str, Any]:
         session_message_history = []
         subject_message_history = {}
-        response = group_info["group_system_message"]
-        role = "system"
-        message_dict = {role: response}
 
-        subject_list = list(group_info["subjects"].values())
-        for subject in subject_list:
-            subject_message_history[subject.role_label] = [message_dict]
-        session_message_history.append(message_dict)
+        # Set initial experiment context for each user-defined role
+        for role, experiment_context in group_info["experiment_context"].items():
+            experiment_context_template = Template(experiment_context)
+            rendered_experiment_context = experiment_context_template.render(
+                treatment=group_info["subjects"][role].treatment.to_dict(),
+                role=group_info["subjects"][role].role.to_dict(),
+                constant=group_info["subjects"][role].constants,
+                response_options={},
+            )
+            message_dict = {"system": f"{role}: {rendered_experiment_context}"}
+            subject_message_history[role] = [message_dict]
+            session_message_history.append(message_dict)
 
-        if test_mode:
-            print(message_dict)
-            print()
+            if test_mode:
+                print(message_dict)
+                print()
 
-        # Sort the order of tasks based on the round_order field. If task order is repeated, then it is expected that the task order are randomised
+        subject_message_history["facilitator"] = []
+
+        # Sort the order of rounds based on the round_order field. If round order is repeated, then it is expected that the round order are randomised
         prompts = self._sort_tasks(prompts)
 
+        subject_list = list(group_info["subjects"].values())
         round_num = 0
         for round in prompts:
             # facilitator is providing instructions/information to all subjects.
-            if round["type"] in ["context", "discussion"]:
-                # Format context/discussion question
-                input_prompt = round["llm_text"]["facilitator"]
-                input_prompt_template = Template(input_prompt)
+            if round["type"] == "context":
+                # Format context for each role
+                for role, context_prompt in round["llm_text"].items():
+                    context_prompt_template = Template(context_prompt)
+                    formatted_response_options = self._format_response_options(
+                        response_options=round["response_options"].get(role, ""),
+                        randomize_response_order=round["randomize_response_order"],
+                    )
+                    rendered_context_prompt = context_prompt_template.render(
+                        treatment=group_info["subjects"][role].treatment.to_dict(),
+                        role=group_info["subjects"][role].role.to_dict(),
+                        constant=group_info["subjects"][role].constants,
+                        response_options=formatted_response_options,
+                    )
+
+                    message_dict = {
+                        "facilitator": rendered_context_prompt,
+                    }
+
+                    subject_message_history[role].append(message_dict)
+                    session_message_history.append(message_dict)
+
+                    if test_mode:
+                        print(message_dict)
+                        print()
+
+                # Context setting only, no response required from subjects
+                round_num += 1
+                if round_num >= self.max_num_rounds:
+                    warnings.warn(
+                        "Maximum number of rounds reached. Terminating session prematurely."
+                    )
+                    group_info["message_history"] = session_message_history
+                    return group_info
+
+            elif round["type"] == "discussion":
+                # Format discussion question
+                discussion_prompt = round["llm_text"]["facilitator"]
+                discussion_prompt_template = Template(discussion_prompt)
                 formatted_response_options = self._format_response_options(
                     response_options=round["response_options"].get("facilitator", ""),
                     randomize_response_order=round["randomize_response_order"],
                 )
-                rendered_input_prompt = input_prompt_template.render(
-                    treatment=group_info["treatment"].to_dict(),
-                    role=self.roles["facilitator"].to_dict(),
-                    constant=group_info["constants"],
+                rendered_discussion_prompt = discussion_prompt_template.render(
+                    treatment=group_info["subjects"]["facilitator"].treatment.to_dict(),
+                    role=group_info["subjects"]["facilitator"].role.to_dict(),
+                    constant=group_info["subjects"]["facilitator"].constants,
                     response_options=formatted_response_options,
                 )
 
                 message_dict = {
-                    "facilitator": rendered_input_prompt,
+                    "facilitator": rendered_discussion_prompt,
                 }
 
                 for subject in subject_list:
@@ -1814,18 +1980,6 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                 if test_mode:
                     print(message_dict)
                     print()
-
-                if round["type"] == "context":
-                    # Context setting only, no response required from subjects
-                    round_num += 1
-                    if round_num >= self.max_num_rounds:
-                        warnings.warn(
-                            "Maximum number of rounds reached. Terminating session prematurely."
-                        )
-                        group_info["message_history"] = session_message_history
-                        return group_info
-
-                    continue
 
                 # Loop through each subject back-to-back and get their response during a discussion round
                 for role, subject in group_info["subjects"].items():
@@ -1874,9 +2028,9 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                             randomize_response_order=round["randomize_response_order"],
                         )
                         rendered_question = question_template.render(
-                            treatment=group_info["treatment"].to_dict(),
-                            role=self.roles[role].to_dict(),
-                            constant=group_info["constants"],
+                            treatment=group_info["subjects"][role].treatment.to_dict(),
+                            role=group_info["subjects"][role].role.to_dict(),
+                            constant=group_info["subjects"][role].constants,
                             response_options=formatted_response_options,
                         )
 
@@ -1955,9 +2109,9 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
                             randomize_response_order=round["randomize_response_order"],
                         )
                         rendered_question = question_template.render(
-                            treatment=group_info["treatment"].to_dict(),
-                            role=self.roles[role].to_dict(),
-                            constant=group_info["constants"],
+                            treatment=group_info["subjects"][role].treatment.to_dict(),
+                            role=group_info["subjects"][role].role.to_dict(),
+                            constant=group_info["subjects"][role].constants,
                             response_options=formatted_response_options,
                         )
 

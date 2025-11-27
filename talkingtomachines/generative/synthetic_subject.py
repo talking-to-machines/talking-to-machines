@@ -83,7 +83,7 @@ class SyntheticSubject:
         ] = generate_profile_prompt,
     ):
         self.session_id = session_id
-        self.experiment_context = experiment_context
+        self.experiment_context = copy.deepcopy(experiment_context)
         self.group_id = group_id
         self.profile_info = profile_info
         self.model_info = model_info
@@ -237,8 +237,8 @@ class ConversationalSyntheticSubject(SyntheticSubject):
             profile_prompt_generator,
         )
         self.role_label = role_label
-        self.role = role
-        self.treatment = treatment
+        self.role = copy.deepcopy(role)
+        self.treatment = copy.deepcopy(treatment)
         self.constants = constants
         self.render_role_and_treatment_templates()  # Render templates in role and treatment recursively
         self.system_message = generate_subject_system_message(
@@ -310,7 +310,6 @@ class ConversationalSyntheticSubject(SyntheticSubject):
                 "constant": constants_dict,
             }
             context_for_treatment = {
-                "role": role_dict,
                 "treatment": treatment_dict,
                 "constant": constants_dict,
             }
@@ -338,6 +337,15 @@ class ConversationalSyntheticSubject(SyntheticSubject):
                 setattr(self.treatment, k, v)
         else:
             self.treatment = Treatment(**treatment_dict)
+
+        # Render experiment context
+        experiment_context_template = Template(self.experiment_context)
+        rendered_experiment_context = experiment_context_template.render(
+            treatment=self.treatment.to_dict(),
+            role=self.role.to_dict(),
+            constant=self.constants,
+        )
+        self.experiment_context = rendered_experiment_context
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the ConversationalSyntheticSubject object to a dictionary.

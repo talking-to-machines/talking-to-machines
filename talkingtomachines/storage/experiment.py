@@ -5,9 +5,6 @@ import numpy as np
 from typing import Any, TYPE_CHECKING
 from datetime import date, datetime, timezone
 
-if TYPE_CHECKING:
-    from talkingtomachines.management.experiment import Role, Treatment, Constant
-
 
 def _json_serializer(obj):
     """
@@ -29,6 +26,8 @@ def _json_serializer(obj):
     Returns:
         A JSON-compatible representation of the input object.
     """
+    from talkingtomachines.management.experiment import Role, Treatment, Constant
+
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
     if isinstance(obj, np.ndarray):
@@ -55,7 +54,7 @@ def save_session(session: dict[str, Any], save_results_as_csv: bool = False) -> 
     os.makedirs("experiment_results", exist_ok=True)
 
     now_utc = datetime.now(timezone.utc)
-    datetime_str = now_utc.strftime("%d-%m-%Y:%H:%M") + "Z"
+    datetime_str = now_utc.strftime("%Y%m%dT%H%M%SZ")
     json_file_path = f"experiment_results/{session['session_id']}_{datetime_str}.json"
     with open(json_file_path, "w", encoding="utf-8") as file:
         json.dump(session, file, default=_json_serializer, ensure_ascii=False, indent=2)

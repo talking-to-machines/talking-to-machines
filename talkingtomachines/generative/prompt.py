@@ -128,15 +128,3 @@ def generate_subject_system_message(
         str: The constructed conversational system message for the synthetic subject.
     """
     return f"{role_description}\n\n{profile_prompt}"
-
-
-def generate_group_system_message(experiment_context: str) -> str:
-    """Constructs system message for groups by providing the experiment context.
-
-    Args:
-        experiment_context (str): The context of the experiment.
-
-    Returns:
-        str: The constructed conversational system message.
-    """
-    return f"{experiment_context}"

@@ -260,6 +260,7 @@ def parse_prompt_text_field(
         "private_question",
         "repeat_public_question",
         "repeat_private_question",
+        "context",
     ]:
         # If the text starts with "{" and ends with "}", assume it's a dictionary literal.
         if text_field.startswith("{") and text_field.endswith("}"):
@@ -286,7 +287,7 @@ def parse_prompt_text_field(
             else:
                 return {role: text_field for role in user_defined_roles}
 
-    elif prompt_type in ["context", "discussion"]:
+    elif prompt_type == "discussion":
         if is_response_options:
             try:
                 return {"facilitator": ast.literal_eval(text_field)}
@@ -525,19 +526,20 @@ def print_session_settings(
         Number of Subjects per Group (Excluding Special Roles like 'facilitator'): {num_subjects_per_group}
         Number of Groups: {num_groups}
         Maximum Number of Rounds: {max_num_rounds}
-        Treatments: {treatments}
         Treatment Assignment Strategy: {treatment_assignment_strategy}
         Treatment Column (Only valid when using manual treatment assignment strategy): {treatment_column}
+        Treatments: {treatments}
+
         Group Assignment Strategy: {group_assignment_strategy}
         Group Column (Only valid when using manual group assignment strategy): {group_column}
         Role Assignment Strategy: {role_assignment_strategy}
         Role Column (Only valid when using manual role assignment strategy): {role_column}
+        Roles: {roles}
+
         Random Seed: {random_seed}
         Build Profiles using Q&A Format: {build_profile_qna}
         Build Profiles using Backstories: {build_profile_backstories}
         Constant Permutation: {constant_permutation}
-
-        Roles: {roles}
         Prompts: 
         {prompts}
 

@@ -2,88 +2,7 @@ import itertools
 from talkingtomachines.management.experiment import (
     AItoAIInterviewExperiment,
     Constant,
-    # Treatment,
-    # Role,
 )
-
-# from jinja2 import Template
-
-
-# def render_dict_with_template(
-#     prompt_template_dict: dict, constant_permutation: Constant
-# ) -> dict:
-#     rendered_dict = {}
-#     for key, value in prompt_template_dict.items():
-#         if key == "llm_text":
-#             # Skip rendering for 'llm_text' key as they will be rendered later during the session
-#             rendered_dict[key] = value
-#             continue
-
-#         if isinstance(value, dict):
-#             # Recursively process nested dictionaries
-#             rendered_dict[key] = render_dict_with_template(value, constant_permutation)
-
-#         elif isinstance(value, str):
-#             # Render template for each string value
-#             template = Template(value)
-#             rendered_value = template.render(constant=constant_permutation.to_dict())
-#             rendered_dict[key] = rendered_value
-
-#         elif isinstance(value, Treatment):
-#             rendered_value = Treatment(
-#                 **render_dict_with_template(value.to_dict(), constant_permutation)
-#             )
-#             rendered_dict[key] = rendered_value
-
-#         elif isinstance(value, Role):
-#             rendered_value = Role(
-#                 **render_dict_with_template(value.to_dict(), constant_permutation)
-#             )
-#             rendered_dict[key] = rendered_value
-
-#         elif isinstance(value, list):
-#             # Render template for each item in the list
-#             rendered_list = []
-#             for item in value:
-#                 if isinstance(item, dict):
-#                     # Recursively process nested dictionaries
-#                     rendered_list.append(
-#                         render_dict_with_template(item, constant_permutation)
-#                     )
-
-#                 elif isinstance(item, str):
-#                     # Render template for each string value
-#                     template = Template(item)
-#                     rendered_item = template.render(
-#                         constant=constant_permutation.to_dict()
-#                     )
-#                     rendered_list.append(rendered_item)
-
-#                 elif isinstance(item, Treatment):
-#                     rendered_item = Treatment(
-#                         **render_dict_with_template(
-#                             item.to_dict(), constant_permutation
-#                         )
-#                     )
-#                     rendered_list.append(rendered_item)
-
-#                 elif isinstance(item, Role):
-#                     rendered_item = Role(
-#                         **render_dict_with_template(
-#                             item.to_dict(), constant_permutation
-#                         )
-#                     )
-#                     rendered_list.append(rendered_item)
-
-#                 else:
-#                     rendered_list.append(item)
-
-#             rendered_dict[key] = rendered_list
-
-#         else:
-#             rendered_dict[key] = value
-
-#     return rendered_dict
 
 
 def generate_permutations(constants: dict) -> list:
@@ -129,12 +48,6 @@ def initialize_experiment(prompt_template_dict: dict) -> list:
 
     experiments = []
     for constant_permutation in constant_permutations:
-        # # For each permutation, apply constants to prompt template using Jjanja
-        # rendered_prompt_template_dict = render_dict_with_template(
-        #     prompt_template_dict=prompt_template_dict,
-        #     constant_permutation=constant_permutation,
-        # )
-
         # Initialise experiment based on rendered prompt template
         experiment = AItoAIInterviewExperiment(
             model_info=prompt_template_dict["model_info"],
