@@ -111,8 +111,8 @@ class ArtifactManager:
     ) -> dict[str, str]:
         """Save all research-ready export artifacts to the run directory.
 
-        Delegates to :func:`exporters.export_all` for CSV tables and
-        :func:`codebook.save_codebook` for the codebook JSON.
+        Delegates to ``exporters.export_all`` for CSV tables and
+        ``codebook.save_codebook`` for the codebook JSON.
 
         Args:
             session: The completed session object containing all experiment

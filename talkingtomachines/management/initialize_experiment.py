@@ -23,6 +23,8 @@ from talkingtomachines.management.experiment import (
     Constant,
 )
 
+__all__ = ["generate_permutations", "initialize_experiment"]
+
 
 def generate_permutations(constants: dict) -> list:
     """
@@ -66,10 +68,10 @@ def initialize_experiment(prompt_template_dict: dict) -> tuple[list, list]:
             constants) as extracted from the Excel workbook.
 
     Returns:
-        A two-element tuple:
-            - A list of initialised ``AItoAIInterviewExperiment`` objects
-              (one per constant permutation).
-            - A list of ``Constant`` objects representing each permutation.
+        tuple[list, list]: A two-element tuple containing a list of
+            initialised ``AItoAIInterviewExperiment`` objects (one per
+            constant permutation) and a list of ``Constant`` objects
+            representing each permutation.
     """
     # Define all constant permutations
     constant_permutations = generate_permutations(prompt_template_dict["constants"])

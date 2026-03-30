@@ -577,8 +577,6 @@ class ConversationalSyntheticSubject(SyntheticSubject):
             response_options (Any, optional): Options to validate the response against. Defaults to an empty string.
             generate_speculation_score (bool, optional): If True, includes instructions to generate a speculation score in the response. Defaults to False.
             format_response (bool, optional): If True, formats the response according to specific instructions. Defaults to False.
-            is_full_message_history (bool, optional): If True, treats the input from message_history as the full message history; otherwise, appends the input from message_history to
-            its own message_history. Defaults to False.
 
         Returns:
             str: The generated response from the subject. Returns an empty string if an exception occurs during response generation.

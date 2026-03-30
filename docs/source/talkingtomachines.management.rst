@@ -12,29 +12,14 @@ talkingtomachines.management.experiment module
    :undoc-members:
    :show-inheritance:
 
-talkingtomachines.management.integration module
------------------------------------------------
+talkingtomachines.management.initialize\_experiment module
+----------------------------------------------------------
 
-.. automodule:: talkingtomachines.management.integration
+.. automodule:: talkingtomachines.management.initialize_experiment
    :members:
    :undoc-members:
    :show-inheritance:
-
-talkingtomachines.management.monitoring module
-----------------------------------------------
-
-.. automodule:: talkingtomachines.management.monitoring
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-talkingtomachines.management.participant module
------------------------------------------------
-
-.. automodule:: talkingtomachines.management.participant
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   :exclude-members: Constant, AItoAIInterviewExperiment
 
 talkingtomachines.management.treatment module
 ---------------------------------------------
@@ -44,10 +29,3 @@ talkingtomachines.management.treatment module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
-
-.. automodule:: talkingtomachines.management
-   :members:
-   :undoc-members:
-   :show-inheritance:

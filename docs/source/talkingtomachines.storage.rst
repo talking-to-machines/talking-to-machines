@@ -4,10 +4,26 @@ talkingtomachines.storage package
 Submodules
 ----------
 
-talkingtomachines.storage.chat module
--------------------------------------
+talkingtomachines.storage.artifact\_manager module
+--------------------------------------------------
 
-.. automodule:: talkingtomachines.storage.chat
+.. automodule:: talkingtomachines.storage.artifact_manager
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+talkingtomachines.storage.codebook module
+-----------------------------------------
+
+.. automodule:: talkingtomachines.storage.codebook
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+talkingtomachines.storage.event\_log module
+-------------------------------------------
+
+.. automodule:: talkingtomachines.storage.event_log
    :members:
    :undoc-members:
    :show-inheritance:
@@ -20,34 +36,18 @@ talkingtomachines.storage.experiment module
    :undoc-members:
    :show-inheritance:
 
-talkingtomachines.storage.logs module
--------------------------------------
-
-.. automodule:: talkingtomachines.storage.logs
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-talkingtomachines.storage.survey module
----------------------------------------
-
-.. automodule:: talkingtomachines.storage.survey
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-talkingtomachines.storage.synthetic\_agent module
--------------------------------------------------
-
-.. automodule:: talkingtomachines.storage.synthetic_agent
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-talkingtomachines.storage.treatment module
+talkingtomachines.storage.exporters module
 ------------------------------------------
 
-.. automodule:: talkingtomachines.storage.treatment
+.. automodule:: talkingtomachines.storage.exporters
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+talkingtomachines.storage.serializers module
+--------------------------------------------
+
+.. automodule:: talkingtomachines.storage.serializers
    :members:
    :undoc-members:
    :show-inheritance:

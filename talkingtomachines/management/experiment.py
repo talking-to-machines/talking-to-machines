@@ -14,14 +14,14 @@ management layer of the Talking to Machines platform:
 Supporting data classes ``Treatment``, ``Role``, and ``Constant`` are also
 defined here and re-exported for backward compatibility.
 
-Module-level constants:
+Attributes:
     SUPPORTED_MODELS (list[str]): Recognised LLM model identifiers.
-    SUPPORTED_TREATMENT_ASSIGNMENT_STRATEGIES (list[str]): Valid treatment
-        assignment strategies.
-    SUPPORTED_GROUP_ASSIGNMENT_STRATEGIES (list[str]): Valid group assignment
-        strategies.
-    SUPPORTED_ROLE_ASSIGNMENT_STRATEGIES (list[str]): Valid role assignment
-        strategies.
+    SUPPORTED_TREATMENT_ASSIGNMENT_STRATEGIES (list[str]):
+        Valid treatment assignment strategies.
+    SUPPORTED_GROUP_ASSIGNMENT_STRATEGIES (list[str]):
+        Valid group assignment strategies.
+    SUPPORTED_ROLE_ASSIGNMENT_STRATEGIES (list[str]):
+        Valid role assignment strategies.
     SPECIAL_ROLES (list[str]): Role labels that receive special handling.
     SUPPORTED_PROMPT_TYPES (list[str]): Valid prompt type values.
 """
@@ -89,20 +89,10 @@ SUPPORTED_PROMPT_TYPES = [
 
 
 class Treatment:
-    """
-    A class representing a treatment with dynamically assigned attributes.
+    """A class representing a treatment with dynamically assigned attributes.
 
     Attributes:
         description (str): A description of the treatment. Defaults to an empty string if not provided.
-
-    Methods:
-        __init__(**kwargs):
-            Initializes the Treatment instance with dynamically assigned attributes.
-            If a 'description' attribute is not provided, it defaults to an empty string.
-        __repr__():
-            Returns a string representation of the Treatment instance, including all its attributes.
-        to_dict() -> dict[str, Any]:
-            Converts the Treatment object's attributes into a dictionary.
     """
 
     def __init__(self, **kwargs):
@@ -135,26 +125,11 @@ class Treatment:
 
 
 class Role:
-    """
-    Role is a class that represents a dynamic object with attributes that can be
-    set at runtime. It ensures that a `description` attribute always exists, even
-    if not explicitly provided during initialization.
+    """A dynamic object representing a role with a guaranteed ``description`` attribute.
 
     Attributes:
         description (str): A string attribute that defaults to an empty string if
-            not provided during initialization. Represents a description of the role.
-        **kwargs: Additional attributes can be dynamically added to the instance
-            during initialization.
-
-    Methods:
-        __init__(**kwargs):
-            Initializes the Role instance with dynamically provided attributes.
-            Ensures the `description` attribute is always present.
-        __repr__():
-            Returns a string representation of the Role instance, including all
-            its attributes.
-        to_dict() -> dict[str, Any]:
-            Converts the Role object's attributes into a dictionary.
+            not provided during initialization.
     """
 
     def __init__(self, **kwargs):
@@ -187,16 +162,10 @@ class Role:
 
 
 class Constant:
-    """
-    A class that dynamically stores attributes provided during initialization.
-    This class allows for the creation of objects with arbitrary attributes
-    that are passed as keyword arguments during instantiation.
+    """A class that dynamically stores attributes provided during initialization.
 
-    Methods:
-        __repr__():
-            Returns a string representation of the object, including its attributes.
-        to_dict() -> dict[str, Any]:
-            Converts the object's attributes into a dictionary.
+    Allows creation of objects with arbitrary attributes passed as keyword
+    arguments during instantiation.
     """
 
     def __init__(self, **kwargs):
