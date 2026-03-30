@@ -1,3 +1,11 @@
+"""Validation helpers for prompt template workbooks.
+
+This module provides functions that validate the structure and content of
+Excel-based prompt template files used to configure experiments on the
+Talking to Machines platform.  Validators check file paths, required
+worksheets, column headers, and mandatory field presence.
+"""
+
 import os
 import pandas as pd
 
@@ -52,14 +60,14 @@ def validate_settings_sheet(settings: pd.DataFrame) -> None:
 
     Args:
         settings (pd.DataFrame): A DataFrame containing the experimental settings.
-                                It should have columns "settings_label" and "value".
+                                It should have columns "name" and "value".
 
     Raises:
         AssertionError: If the columns of the DataFrame do not match the expected columns.
-        AssertionError: If any of the required settings are missing from the "settings_label" column.
+        AssertionError: If any of the required settings are missing from the "name" column.
     """
     # Validate the column headers
-    expected_columns = ["settings_label", "value"]
+    expected_columns = ["name", "value"]
     assert (
         list(settings.columns) == expected_columns
     ), f"Invalid columns in the 'settings' worksheet. Expected {expected_columns}, got {list(settings.columns)}"
@@ -85,7 +93,7 @@ def validate_settings_sheet(settings: pd.DataFrame) -> None:
     ]
     for setting in valid_settings:
         assert (
-            setting in settings["settings_label"].tolist()
+            setting in settings["name"].tolist()
         ), f"{setting} not found in the 'settings' worksheet."
 
 

@@ -1,3 +1,18 @@
+"""Legacy prompt-template parser and experiment runner.
+
+This module implements the original (pre-CLI) entry point for the Talking
+to Machines platform.  It reads an Excel prompt template, extracts
+settings, treatments, roles, prompts, profiles, and constants from their
+respective worksheets, initialises experiment sessions, and runs them in
+test or full (parallel) mode.
+
+Module-level constants:
+    PROMPT_TEMPLATE_SHEETS: Required worksheet names in a prompt template.
+    SPECIAL_ROLES: Role labels that receive special handling (e.g. ``"facilitator"``).
+    SUPPORTED_PROMPT_TYPES: Valid values for the ``type`` column in the prompt worksheet.
+    BOOLEAN_KEYS: Setting/prompt keys whose string values are coerced to ``bool``.
+"""
+
 import argparse, warnings, ast, concurrent.futures, json
 import pandas as pd
 from tqdm import tqdm
@@ -489,10 +504,28 @@ def print_session_settings(
     """
 
     def _format_dict_to_str(d: dict, indent: int = 10) -> str:
+        """Format a nested dictionary as an indented, human-readable string.
+
+        Args:
+            d: The dictionary to format.
+            indent: Number of leading spaces for each line.
+
+        Returns:
+            A multi-line string representation of the dictionary.
+        """
         if not d:
             return " " * indent + "{}"
 
         def _format_val(val, ind):
+            """Recursively format a value for display.
+
+            Args:
+                val: The value to format (dict, list, tuple, or scalar).
+                ind: Current indentation level.
+
+            Returns:
+                A formatted string representation of *val*.
+            """
             if isinstance(val, dict):
                 sub_lines = []
                 for kk, vv in val.items():
@@ -589,6 +622,18 @@ def run_session_wrapper(args: tuple) -> None:
 
 
 def main():
+    """Legacy CLI entry point for parsing a prompt template and running an experiment.
+
+    Parses command-line arguments to locate an Excel prompt template file,
+    validates it, extracts all worksheet data, initialises experiment
+    sessions (one per constant permutation), and prompts the user to run
+    in *test* or *full* mode.
+
+    Raises:
+        SystemExit: Via ``argparse`` if required arguments are missing.
+        ValueError: Propagated from validation helpers when the template
+            is malformed.
+    """
     # Set up command-line argument parsing
     parser = argparse.ArgumentParser(
         description="Parse the prompt template provided by the user and initialise the experiment in the Talking to Machines Platform."

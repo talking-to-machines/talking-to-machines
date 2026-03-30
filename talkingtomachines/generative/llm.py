@@ -1,3 +1,28 @@
+"""Low-level LLM query helpers for OpenAI, Hugging Face, and OpenRouter.
+
+.. deprecated::
+    This module is deprecated.  Use
+    ``talkingtomachines.gateway.router.LLMRouter`` instead.
+
+Provides retry-aware wrappers that route prompts to the appropriate
+backend based on the model identifier string.
+
+Module-level constants:
+    RETRY_DELAY (int): Seconds to wait between retries on API failure.
+    MAX_RETRIES (int): Maximum number of retry attempts per query.
+    OPENAI_MODELS (list[str]): Model identifiers handled by the OpenAI backend.
+    NO_TEMPERATURE_MODELS (list[str]): Models that do not accept a temperature parameter.
+"""
+
+import warnings
+
+warnings.warn(
+    "talkingtomachines.generative.llm is deprecated. "
+    "Use talkingtomachines.gateway.router.LLMRouter instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 import truststore
 
 truststore.inject_into_ssl()
@@ -201,6 +226,14 @@ def extract_image_url(message_content: str) -> Optional[str]:
     )
 
     def looks_like_image(url: str) -> bool:
+        """Heuristically determine whether a URL points to an image.
+
+        Args:
+            url: The URL to inspect.
+
+        Returns:
+            ``True`` if the URL likely points to an image resource.
+        """
         if re.search(r"\.(png|jpe?g|gif|webp|svg)(?:[?#]|$)", url, re.IGNORECASE):
             return True
         if re.search(

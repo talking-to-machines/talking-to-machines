@@ -1,3 +1,9 @@
+"""Legacy experiment storage utilities.
+
+Provides functions for saving session output to JSON and CSV files,
+and for parsing JSON fields that may contain Markdown code-block delimiters.
+"""
+
 from __future__ import annotations
 import os, json
 import pandas as pd

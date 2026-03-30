@@ -1,3 +1,22 @@
+"""Experiment initialisation from prompt template dictionaries.
+
+.. deprecated::
+    This module is deprecated.  Use
+    ``talkingtomachines.compiler.compiler.Compiler`` instead.
+
+Generates all constant permutations and creates one
+``AItoAIInterviewExperiment`` instance per permutation.
+"""
+
+import warnings
+
+warnings.warn(
+    "talkingtomachines.management.initialize_experiment is deprecated. "
+    "Use talkingtomachines.compiler.compiler.Compiler instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 import itertools
 from talkingtomachines.management.experiment import (
     AItoAIInterviewExperiment,
@@ -34,14 +53,23 @@ def generate_permutations(constants: dict) -> list:
         return [Constant()]
 
 
-def initialize_experiment(prompt_template_dict: dict) -> list:
-    """Initializes a list of AI-to-AI interview experiments based on the provided prompt template data.
+def initialize_experiment(prompt_template_dict: dict) -> tuple[list, list]:
+    """Initialise AI-to-AI interview experiments from prompt template data.
+
+    Creates one ``AItoAIInterviewExperiment`` for every constant
+    permutation derived from the ``"constants"`` key in the template
+    dictionary.
 
     Args:
-        prompt_template_dict (dict): A dictionary containing the prompt template data.
+        prompt_template_dict: A dictionary containing all prompt template
+            data (settings, treatments, roles, prompts, profiles, and
+            constants) as extracted from the Excel workbook.
 
     Returns:
-        list: A list of initialized AItoAIInterviewExperiment objects.
+        A two-element tuple:
+            - A list of initialised ``AItoAIInterviewExperiment`` objects
+              (one per constant permutation).
+            - A list of ``Constant`` objects representing each permutation.
     """
     # Define all constant permutations
     constant_permutations = generate_permutations(prompt_template_dict["constants"])

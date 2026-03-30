@@ -1,3 +1,22 @@
+"""Treatment assignment strategies for experiment sessions.
+
+.. deprecated::
+    This module is deprecated.  Use
+    ``talkingtomachines.core.randomisation.RandomisationEngine`` instead.
+
+Provides functions for assigning treatment labels to groups using
+simple random, complete random, or manual assignment strategies.
+"""
+
+import warnings
+
+warnings.warn(
+    "talkingtomachines.management.treatment is deprecated. "
+    "Use talkingtomachines.core.randomisation.RandomisationEngine instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 import random
 import pandas as pd
 from typing import List, Any

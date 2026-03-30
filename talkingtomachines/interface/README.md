@@ -1,6 +1,287 @@
 # Prompt Template
 
-## Prompt Template Workbook (`.xlsx`) – Worksheet Overview
+This document describes how to populate the prompt template workbook (`.xlsx`) for each version of the `talkingtomachines` platform.
+
+- [v0.3.0 Prompt Template](#v030-prompt-template)
+- [v0.2.7 Prompt Template](#v027-prompt-template)
+- [Demo Examples](#demo-examples)
+- [Video Walkthrough](#-video-walkthrough)
+- [FAQ](#faq) (applies to v0.2.7; many concepts carry forward to v0.3.0)
+
+---
+
+# v0.3.0 Prompt Template
+
+## Worksheet Overview
+
+v0.3.0 uses **7 worksheets** that map to the oTree-inspired hierarchy (Session → Module → Subsession → Group → Agent/Player). Use `talkingtomachines init` to generate a blank template with example rows.
+
+| Worksheet Name | Description |
+| - | - |
+| Settings | Global experiment settings and configurations. |
+| C | Task-specific and global constants injected into prompts via Jinja2. |
+| Fields | Data variables (fields) that agents write to during the experiment. |
+| Facilitator | Built-in and custom facilitator functions that control experiment flow. |
+| Prompts | The prompt sequence defining what happens in each task and round. |
+| Profiles | Agent profile attributes in tabular format (demographics, characteristics). |
+| Manual_ | Optional manual overrides for treatment and group assignments. |
+
+*Every sheet name is **case-sensitive**. The `Manual_` worksheet is optional; all others are mandatory. Use `talkingtomachines validate` to check your template before running.*
+
+---
+
+## 1. `Settings`
+
+Two-column format: the first column contains the setting key (`name`), the second column contains the setting value (`value`).
+
+| Key | **Required** | Default | Description/Expected Value |
+| - | - | - | - |
+| `EXPERIMENT_ID` | **Yes** | (none) | Unique experiment identifier. Used in agent ID generation (format: `{EXPERIMENT_ID}_a{profile_ID}`) and run ID generation. |
+| `MODEL_NAME` | **Yes** | (none) | The LLM model identifier to use for agent inference. The platform auto-detects the provider from the model name. Supported providers: OpenAI (`gpt-*`, `o1`, `o3`, `o4`, `o5`), Anthropic (`claude-*`), Google (`gemini-*`), Mistral (`mistral-*`, `codestral-*`), xAI (`grok-*`), DeepSeek (`deepseek-*`), Hugging Face (`hf-*`), and [OpenRouter.ai](https://openrouter.ai/models) (`openrouter/*`). Unrecognised model names default to OpenRouter. The model is validated against available API keys during `talkingtomachines validate`. |
+| `HF_INFERENCE_ENDPOINT` | No | `""` | The base URL of a deployed Hugging Face Inference Endpoint. Only required when `MODEL_NAME` starts with `hf-`. |
+| `TEMPERATURE` | No | `0.0` | Sampling temperature controlling response randomness. Expected values: `0.0` to `2.0`. Higher values produce more diverse responses. A value of `0.0` produces near-deterministic output. This setting may be ignored for certain reasoning models (e.g., `o1`, `o3`). |
+| `RANDOM_SEED` | **Yes** | (none) | A non-negative integer seed for reproducible randomisation. Used by the `RandomisationEngine` for treatment/group assignment and run ID generation. Two runs with the same seed and template produce identical assignments. |
+| `NUM_AGENTS_PER_SESSION` | **Yes** | (none) | The number of agents (synthetic subjects) participating in each session. Must be a positive integer. This determines how many profile rows from the `Profiles` worksheet are used. |
+| `TASK_SEQUENCE` | **Yes** | (none) | A comma-separated, ordered list of task names to execute in the session (e.g., `task1,task2,task3`). Each task name must correspond to entries in the `C`, `Fields`, `Prompts`, and `Facilitator` worksheets. Cannot be empty. |
+| `PROFILE_FIELDS` | No | `"ALL"` | Controls which profile columns are included. Set to `ALL` to include every column, or provide a comma-separated list of short names (e.g., `age,gender,education`). The `ID` column is always included regardless of this setting. |
+| `BUILD_PROFILE_QA` | No | `False` | If `True`, each agent's profile is formatted as a Q&A snippet (prefixed with "Interviewer:" and "Me:") and inserted into the agent's LLM system message. Accepts: `True`, `False`, `1`, `0`, `yes`, `no`. |
+| `BUILD_PROFILE_BACKSTORIES` | No | `False` | If `True`, a first-person narrated backstory is generated from the agent's profile via an additional LLM call and inserted into the agent's system message. If both `BUILD_PROFILE_QA` and `BUILD_PROFILE_BACKSTORIES` are `False`, no profile information is passed to the LLM. Accepts: `True`, `False`, `1`, `0`, `yes`, `no`. |
+| `ASSIGN_MANUALLY` | No | `""` (all random) | Controls which assignments are read from the `Manual_` worksheet instead of being randomised. Expected values: `Treatment`, `Group`, or `Treatment, Group` (comma-separated, case-insensitive). If empty, all assignments are randomised at the session level. |
+| `CONTEXT_OVERFLOW_POLICY` | No | `"terminate"` | Strategy for handling LLM context window overflow. Expected values: `terminate` (raise error and stop), `summarize` (compress prior messages via LLM summarisation), or `truncate` (drop oldest messages to fit). Case-insensitive. |
+
+**Important notes:**
+- Unknown keys are logged as warnings but do not prevent compilation.
+- Boolean values accept multiple representations: `"true"`/`"false"`, `"1"`/`"0"`, `"yes"`/`"no"`.
+- `TASK_SEQUENCE` is parsed from a comma-separated string into an ordered list at compile time. Whitespace around task names is trimmed.
+- `ASSIGN_MANUALLY` tokens are normalised to lowercase internally.
+
+---
+
+## 2. `C` (Constants)
+
+Defines task-specific and global numeric/string/boolean constants that can be dynamically injected into prompts and facilitator definitions using Jinja2 templates.
+
+| Column | **Required** | Description |
+| - | - | - |
+| `task` | **Yes** | The task name this constant belongs to (must match a name in `TASK_SEQUENCE`). Use `global` for experiment-wide constants that apply across all tasks. |
+| `name` | **Yes** | The constant identifier (e.g., `ENDOWMENT`, `MAX_NUM_ROUNDS`, `PLAYERS_PER_GROUP`, `TREATMENT_LABELS`). |
+| `value` | **Yes** | The constant value. Rows with empty values are silently skipped. |
+| `type` | No (default: `string`) | Controls how `value` is coerced to a Python type. Expected values: `integer` (or `int`), `float`, `string` (or `str`, `text`), `boolean` (or `bool`). If coercion fails, the value is kept as a string with a warning logged. |
+
+**Jinja access pattern:** `{{ C.<task>.<name> }}` (e.g., `{{ C.task1.ENDOWMENT }}`, `{{ C.global.TREATMENT_LABELS }}`)
+
+**Special constants (expected by the platform):**
+
+| Name | Scope | Type | Purpose |
+| - | - | - | - |
+| `MAX_NUM_ROUNDS` | Per task | integer | Maximum number of rounds in the task module. Required by the flow validator for each task. The session terminates the task prematurely if this limit is exceeded. Useful for preventing infinite loops with repeated prompts. |
+| `PLAYERS_PER_GROUP` | Per task | integer | Number of agents assigned to each group. If omitted, defaults to `NUM_AGENTS_PER_SESSION` (i.e., all agents in one group). |
+| `TREATMENT_LABELS` | Global or per task | string | Comma-separated treatment condition labels (e.g., `control,treatment_A,treatment_B`). Required if prompts or facilitators reference `{{ treatment }}` and treatment assignment is random (not manual). |
+
+**Important notes:**
+- Rows with empty `task` or `name` are silently skipped.
+- Constants are resolved at **compile time** — they are baked into the compiled experiment and not re-evaluated at runtime. This means `{{ C.task1.ENDOWMENT }}` in a prompt is replaced with the literal value before execution begins.
+
+---
+
+## 3. `Fields`
+
+Defines all data variables (fields) that agents write to during the experiment. Each field has a scope (class), a data type, and optional validation constraints.
+
+| Column | **Required** | Default | Description |
+| - | - | - | - |
+| `task` | **Yes** | (none) | Task name from `TASK_SEQUENCE`. |
+| `class` | **Yes** | (none) | The hierarchy scope at which the field is tracked. Expected values: `Session`, `Subsession`, `Agent`, `Group`, `Player`. See scope semantics below. |
+| `name` | **Yes** | (none) | Field identifier (variable name). Used in Jinja templates and state lookups. Must be unique within the same `(task, class)` combination. |
+| `type` | **Yes** | `"text"` | Data type for validation and response formatting. Expected values: `integer`, `float`, `text`, `category`, `boolean`. |
+| `response_options` | No | `None` | Allowed response values. Can be a Python list literal (`[0, 1, 2, 3, 4, 5]`), a Python dict literal (`{"a": "Option A", "b": "Option B"}`), or a comma-separated string (`opt1,opt2,opt3`). If empty, the field accepts free-form responses. |
+| `response_options_intro` | No | `""` | Introductory text displayed before presenting response options to the agent (e.g., `"Please choose one of the following:"`). |
+| `randomise_options_order` | No | `False` | If `True`, response options are shuffled before presentation to the agent. |
+| `validate` | No | `False` | If `True`, agent responses are validated against `response_options`. Invalid responses trigger re-prompting (up to 3 retries). |
+| `generate_speculation_score` | No | `False` | If `True`, the LLM is asked to self-assess how speculative its answer is (0–100). The score is extracted and stored separately as `{field_name}_speculation_score`. |
+| `format_response` | No | `False` | If `True`, the platform instructs the LLM to return a structured JSON response and parses the result accordingly. |
+
+**Field scope semantics:**
+
+| Class | Persistence | Description |
+| - | - | - |
+| `Session` | Entire session | Shared across all agents, tasks, and rounds. |
+| `Subsession` | One round | Shared across all groups within a single round of a task. |
+| `Agent` | Across rounds | Persists across all rounds for a single agent (not round-specific). |
+| `Group` | One round, one group | Scoped to a specific group in a specific round. |
+| `Player` | One round, one agent | Per-round, per-group instance of an agent. The most granular scope. |
+
+**Response options parsing:** The platform first attempts `ast.literal_eval()` to parse Python literals (lists, dicts, tuples). If that fails, it falls back to comma-separated string splitting (e.g., `"a,b,c"` → `["a", "b", "c"]`). Whitespace is stripped from each element.
+
+**Important notes:**
+- Boolean columns (`randomise_options_order`, `validate`, `generate_speculation_score`, `format_response`) treat empty/`NaN` values as `False`.
+- Fields are looked up at runtime by the composite key `(task, class, name)`.
+- `PUBLIC_QUESTION`, `PRIVATE_QUESTION`, and `DISCUSSION` prompts in the Prompts worksheet must link to a field defined here via `field_class` and `field_name`.
+
+---
+
+## 4. `Prompts`
+
+Defines the prompt sequence — what happens in each task and round, what text is presented to the LLM, and how responses are collected.
+
+| Column | **Required** | Default | Description |
+| - | - | - | - |
+| `task` | **Yes** | (none) | Task name from `TASK_SEQUENCE`. |
+| `prompt_sequence` | No | `0` | Non-negative integer controlling execution order within the task. Prompts with the same sequence value are executed in definition order. |
+| `type` | **Yes** | (none) | Prompt type. Expected values: `CONTEXT`, `DISCUSSION`, `PUBLIC_QUESTION`, `PRIVATE_QUESTION`, `FACILITATOR`. See type descriptions below. |
+| `is_displayed` | No | `None` (always display) | A Jinja2 boolean expression evaluated at runtime to conditionally display the prompt. Examples: `round_number == 1`, `player.treatment == 'T1'`, `round_number > 1`. If empty or `None`, the prompt always displays. If the expression references an undefined variable, a `ValueError` is raised. Other evaluation errors default to displaying the prompt. |
+| `is_adapted` | No | `False` | Documentation flag indicating whether the text has been adapted from the original human experiment. Does not affect platform operation. |
+| `human_text` | No | `""` | The original instructions from the human experiment (for documentation). Does not affect platform operation. |
+| `llm_text` | **Yes** | (none) | The Jinja2 template text sent to the LLM. Supports all variable references (see below). Must be non-empty. |
+| `rag_vector_store_id` | No | `None` | A vector store identifier for retrieval-augmented generation (RAG). If provided, relevant documents are retrieved and appended to the prompt context before the LLM call. |
+| `field_class` | **Required for question/discussion types** | `None` | The field scope for response storage. Expected values: `Session`, `Subsession`, `Agent`, `Group`, `Player`. Must match a field defined in the `Fields` worksheet. |
+| `field_name` | **Required for question/discussion types** | `None` | The field name for response storage. Must match the `name` column in the `Fields` worksheet. Combined with `field_class` to identify the target field. |
+
+**Prompt type descriptions:**
+
+| Type | Purpose | Agents respond? | Visibility | Execution order |
+| - | - | - | - | - |
+| `CONTEXT` | Provides background information, instructions, or game rules to agents. | No | Each agent receives their own rendered context (per-player Jinja rendering). | Rendered and appended to each agent's message history. |
+| `DISCUSSION` | Sequential group discussion. A question is posed to the group; agents respond one by one, each seeing all previous agents' responses. | Yes | All responses visible to group members immediately as they are generated (role `assistant` for the responding agent, role `user` for others). | Facilitator → Agent 1 → Agent 2 → Agent 3 (sequential). |
+| `PUBLIC_QUESTION` | Independent public question. Each agent answers the same question without seeing other agents' answers during that round. After all agents have responded, all responses become visible to the group. | Yes | Responses are collected first, then made visible to the entire group. | All agents answer independently; responses appended to histories afterward. |
+| `PRIVATE_QUESTION` | Private question. Each agent answers independently. Responses are only visible to the sender. | Yes | Only the responding agent can see their own response. Other agents cannot see it. | Agents answer in parallel (or sequentially, depending on implementation); responses remain private. |
+| `FACILITATOR` | Executes a facilitator function (built-in or custom LLM instruction). Not shown to agents. | No (facilitator responds) | Facilitator response appended to agent histories with `facilitator` visibility scope. | Executed by the `FacilitatorEngine`. |
+
+**Important notes:**
+- `PUBLIC_QUESTION`, `PRIVATE_QUESTION`, and `DISCUSSION` types **must** specify both `field_class` and `field_name`. Omitting these raises a `ValueError` during compilation.
+- `CONTEXT` and `FACILITATOR` types do not require field references.
+- Compile-time Jinja references (e.g., `{{ C.task1.ENDOWMENT }}`) are resolved during compilation and baked into the prompt. Runtime references (e.g., `{{ player.age }}`, `{{ round_number }}`) remain as placeholders and are evaluated during execution.
+
+**Jinja variables available in `llm_text` and `human_text`:**
+
+| Variable | Description |
+| - | - |
+| `{{ C.<task>.<constant_name> }}` | Constants from the `C` worksheet (resolved at compile time). |
+| `{{ player.<short_name> }}` | Profile attributes from the `Profiles` worksheet (e.g., `{{ player.age }}`). |
+| `{{ player.<field_name> }}` | Player-scoped field values collected during the experiment. |
+| `{{ agent.<field_name> }}` | Agent-scoped field values (persisted across rounds). |
+| `{{ group.<field_name> }}` | Group-scoped field values. |
+| `{{ session.<field_name> }}` | Session-scoped field values. |
+| `{{ round_number }}` | Current round number (1-based). |
+| `{{ group_id }}` | Current group identifier. |
+| `{{ session_id }}` | Current session identifier. |
+| `{{ run_id }}` | Unique experiment run identifier. |
+| `{{ treatment }}` | The current agent's treatment label. |
+
+---
+
+## 5. `Facilitator`
+
+Defines facilitator functions that control experiment flow. The platform includes three built-in functions; all other names are treated as custom LLM-powered facilitator instructions.
+
+| Column | **Required** | Default | Description |
+| - | - | - | - |
+| `name` | **Yes** | (none) | Function identifier. Built-in names: `creating_session`, `assign_treatment`, `assign_groups`. Any other name is treated as a custom LLM facilitator. |
+| `definition` | **Yes** | (none) | For built-in functions: a brief description (not used at runtime). For custom functions: a natural-language instruction sent to the LLM as a prompt. Supports Jinja2 templates (e.g., `{{ C.task1.ENDOWMENT }}`). |
+| `args` | No | `{}` | A Python dict literal or JSON dict of arguments passed to the function at runtime. Parsed via `ast.literal_eval()`. Example: `{"strategy": "balanced", "seed": 42}`. Empty string or `NaN` → empty dict. |
+
+**Built-in facilitator functions:**
+
+| Name | Purpose | Typical Args |
+| - | - | - |
+| `creating_session` | Initialise session state before any task executes. Called once per session. | `{}` |
+| `assign_treatment` | Assign treatment conditions to agents. Uses `ASSIGN_MANUALLY` setting; if manual, reads from `Manual_` sheets; otherwise randomises using the `RandomisationEngine`. | `{"strategy": "simple_random"}` or `{"strategy": "complete_random"}` |
+| `assign_groups` | Form groups for interactions. Uses `ASSIGN_MANUALLY` setting for groups; if random, groups agents based on `PLAYERS_PER_GROUP`. | `{"strategy": "random"}` |
+
+**Custom facilitator functions:**
+- Any function name not in the built-in list is treated as a custom LLM instruction.
+- The `definition` is rendered as a Jinja2 template and sent to the LLM as the system prompt.
+- The facilitator sees the full group conversation history (all agents' messages) formatted with sender identity and round context.
+- Custom facilitators can return **stop signals** to control flow:
+  - `end_round` — stops the current round loop for the current group.
+  - `end_session` — stops the entire session across all groups.
+  - `continue` — explicitly continues (default behaviour).
+
+**Important notes:**
+- If `args` cannot be parsed as a dict, an empty dict is used with a warning logged.
+- Custom facilitator responses are appended to agent message histories with `facilitator` visibility scope.
+
+---
+
+## 6. `Profiles`
+
+Defines agent persona characteristics (demographics, attributes, profile data). Uses a special two-row header format.
+
+**Structure:**
+```
+Row 0:    Short Names (Jinja identifiers)     → ID, age, gender, education, ...
+Row 1:    Full Question Wording (labels)       → ID, "What is your age?", "What is your gender?", ...
+Rows 2+:  Profile Data (one row per agent)    → 1, 25, "Male", "University", ...
+                                               → 2, 32, "Female", "High School", ...
+```
+
+| Component | Required | Constraints |
+| - | - | - |
+| **Row 0** (Short Names) | **Yes** | Each must be a valid Jinja2 identifier: letters, digits, and underscores only; must start with a letter (matches `^[a-zA-Z][a-zA-Z0-9_]*$`). Must be non-blank and unique. |
+| **Row 1** (Full Names) | **Yes** | Human-readable question wording. Must be non-blank. Column count must match Row 0. |
+| **Data Rows** | **Yes** | One row per agent profile. Column count must match headers. |
+
+**ID column requirements:**
+- There **must** be a column with the short name `ID` (case-insensitive match). This is required even if you do not intend to provide any other profile information.
+- ID values must be **unique** across all profile rows. Duplicates raise a `ValueError`.
+- IDs are used to construct stable agent identifiers: `{EXPERIMENT_ID}_a{ID}`.
+
+**Jinja access pattern:** Profile fields are accessed as `{{ player.<short_name> }}` in prompts (e.g., `{{ player.age }}`, `{{ player.gender }}`).
+
+**Important notes:**
+- The `PROFILE_FIELDS` setting in `Settings` controls which columns are included. If set to `ALL` (default), all columns are passed through. If set to a comma-separated list, only those columns (plus `ID`) are included.
+- Depending on `BUILD_PROFILE_QA` and `BUILD_PROFILE_BACKSTORIES` in `Settings`, profile data is formatted and inserted into each agent's LLM system message. If both are `False`, no profile information is passed to the LLM (though profile fields are still available via `{{ player.<field> }}` in prompts).
+- The number of profile data rows must be at least `NUM_AGENTS_PER_SESSION`.
+
+---
+
+## 7. `Manual_` (Optional)
+
+Defines manual (non-random) overrides for treatment assignments, group memberships, and field values. Only used when `ASSIGN_MANUALLY` is set in `Settings`.
+
+You can use a single worksheet named `Manual_` or multiple worksheets with the prefix `Manual_` (e.g., `Manual_Treatments`, `Manual_Groups`). All are merged into a single registry.
+
+| Column | **Required** | Description |
+| - | - | - |
+| `ID` | **Yes** | Must correspond to a value in the `ID` column of the `Profiles` worksheet. Identifies which agent receives the assignment. |
+| `task` | Conditional | Task name. If empty, the assignment applies to all tasks in `TASK_SEQUENCE`. At least one of `task` or `class` must be non-empty. |
+| `round_number` | No | If empty or `NaN`, the assignment applies to all rounds. If specified, it applies only to that round. |
+| `class` | Conditional | Hierarchy level of the assignment. Expected values: `Session`, `Module`, `Subsession`, `Group`, `Agent`, `Player`. At least one of `task` or `class` must be non-empty. |
+| `name` | **Yes** | The assignment type. For treatment assignments: `treatment`. For group assignments: `id_in_subsession`. For other field values: any defined field name. |
+| `value` | **Yes** | The assigned value. For treatments: a treatment label string (e.g., `control`, `treatment_A`). For groups: a group identifier. For fields: the field value. |
+
+**Treatment assignment rows:**
+- Set `name = "treatment"` and `class = "Agent"`.
+- The `value` should be a treatment label matching one of the labels in `TREATMENT_LABELS`.
+
+**Group assignment rows:**
+- Set `name = "id_in_subsession"` and `class = "Group"`.
+- The `value` is a group identifier. Agents with the same group value are placed in the same group.
+
+**Important notes:**
+- Profile IDs referenced in `Manual_` sheets are cross-validated against the `Profiles` worksheet. If a referenced ID does not exist, a `ValueError` is raised.
+- Duplicate keys (same `ID`, `task`, `round_number`, `class`, `name`) result in the later value overwriting the earlier one with a warning logged.
+- Rows missing `ID` or `name` raise a `ValueError`.
+
+---
+
+## Validation Pipeline (v0.3.0)
+
+When you run `talkingtomachines validate`, the platform executes the following validators in order:
+
+1. **Schema Validator** — Checks worksheet structure, column presence, required fields.
+2. **Reference Validator** — Validates Jinja references (constants, fields, profiles, facilitators) to ensure all referenced variables exist.
+3. **Flow Validator** — Validates prompt ordering, field linkage, and confirms `MAX_NUM_ROUNDS` and `PLAYERS_PER_GROUP` are defined for each task.
+4. **Provider Validator** — Checks that the LLM model is valid, the corresponding API key is set, and the model supports any features used (e.g., RAG, visual inputs).
+5. **Context Window Validator** — Estimates total token usage to ensure the experiment fits within the model's context window. Reports warnings at 80% utilisation and errors if the limit would be exceeded.
+
+---
+
+---
+
+# v0.2.7 Prompt Template
+
+## Prompt Template Workbook (`.xlsx`) – Worksheet Overview
 
 
 | Worksheet Name | Description |
@@ -12,15 +293,15 @@
 | profile | Contains the synthetic subjects' profile information in tabular format. |
 | constant | Contains the string/numerical constants that can be dynamically injected into the `treatment`, `role`, and `prompt` worksheets using Jinja2 templates. |
 
-*Every sheet name is **case‑sensitive** and **mandatory**. Any additional or missing worksheets will trigger a validation failure.*
+*Every sheet name is **case‑sensitive** and **mandatory**. Any additional or missing worksheets will trigger a validation failure.*
 
 ---
 
-## 1.  `settings`
+## 1.  `settings`
 
 | Key | **Required** | Description/Expected Value |
 | - | - | - |
-| `settings_label` | **Yes** | Serves as the header for the canonical keys listed below. Expected value: `value`. |
+| `name` | **Yes** | Serves as the header for the canonical keys listed below. Expected value: `value`. |
 | `session_id` | **Yes** | The unique session identifier that will be assigned to the experiment. This information will also be used to name the output files (with UTC date time) after the experiment completes (e.g., `<session_id>_YYYYMMDDTHHMMSSZ.json` and `<session_id>_YYYYMMDDTHHMMSSZ.csv`). |
 | `model_info` | **Yes** | The LLM that will be used in the experiment. The platform currently supports most LLMs from OpenAI (`gpt-5.1`, `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `gpt-5-chat-latest`, `gpt-5-codex`, `gpt-5-pro`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-4.1-nano`, `gpt-4o`, `gpt-4o-2024-05-13`, `gpt-4o-mini`, `o1`, `o1-pro`, `o3-pro`, `o3`, `o4-mini`), Hugging Face Inference APIs (`hf-inference`), and [OpenRouter.ai](https://openrouter.ai/models) by default. Currently, only the LLMs from OpenAI can accept visual inputs. |
 | `hf_inference_endpoint` | **Optional** | Refers to the base URL generated when deploying a Hugging Face Inference Endpoint. This field is only required when choosing `hf-inference` in `model_info`. Deploy a HF inference endpoint by navigating to the model of your choice on the Hugging Face website → Select `Deploy` and `HF Inference Endpoint` → Select your cloud provider and define your endpoint's configuration, then select `Create Endpoint` → Wait for the API endpoint to be successfully deployed and you can obtain the `hf_inference_endpoint` URL by clicking on the `API` tab under `Playground` and copying the URL in `base_url` |
@@ -35,12 +316,12 @@
 | `role_assignment_strategy` | **Yes** | The strategy used for assigning roles to subjects. Expected values: `random`, `manual`. |
 | `role_column` | **Optional** | In the case that the role assignment strategy is `manual`, provide the column name from the `profile` worksheet that contains the assigned roles. |
 | `random_seed` | **Optional** | The random seed for reproducibility. If this value is not provided, the platform will default to a value of `42`. |
-| `build_profile_qna` | **Yes** | A boolean flag for representing the subject's profile information in Q&A format in the system message. Expected values: `True` or `False`. If `build_profile_qna` is set to `True`, the subject’s profile is formatted as a Q&A snippet, where each profile-related question is prefixed with “Interviewer:” and the subject's response with “Me:”. This snippet is inserted into the LLM-powered subject’s system message to give the LLM context about the subject's profile. |
-| `build_profile_backstories` | **Yes** | A boolean flag for representing the subject's profile information as first-person backstories in the system message. Expected values: `True` or `False`. If `build_profile_backstories` is set to `True`, a first-person narrated backstory will be generated based on the subject's responses and inserted into the LLM-powered subject’s system message to give the LLM context about the subject's profile. If both `build_profile_qna` and `build_profile_backstories` is set to `False`, the LLM will not be provided any profile-related information about the subject. |
+| `build_profile_qna` | **Yes** | A boolean flag for representing the subject's profile information in Q&A format in the system message. Expected values: `True` or `False`. If `build_profile_qna` is set to `True`, the subject's profile is formatted as a Q&A snippet, where each profile-related question is prefixed with "Interviewer:" and the subject's response with "Me:". This snippet is inserted into the LLM-powered subject's system message to give the LLM context about the subject's profile. |
+| `build_profile_backstories` | **Yes** | A boolean flag for representing the subject's profile information as first-person backstories in the system message. Expected values: `True` or `False`. If `build_profile_backstories` is set to `True`, a first-person narrated backstory will be generated based on the subject's responses and inserted into the LLM-powered subject's system message to give the LLM context about the subject's profile. If both `build_profile_qna` and `build_profile_backstories` is set to `False`, the LLM will not be provided any profile-related information about the subject. |
 
 ---
 
-## 2.  `treatment`
+## 2.  `treatment`
 
 | Column | **Required** | Description |
 | - | - | - |
@@ -51,7 +332,7 @@
 
 ---
 
-## 3.  `role`
+## 3.  `role`
 
 | Column | **Required** | Description |
 | - | - | - |
@@ -62,7 +343,7 @@
 
 ---
 
-## 4.  `prompt`
+## 4.  `prompt`
 
 | Column | **Required** | Description/Expected value |
 | - | - | - |
@@ -77,24 +358,24 @@
 | `response_options` | **Optional** | The response options that will be used to validate the LLM's generated response during each experiment round. The response options can be defined either as a plain string `Enter a number between 0 and 5`, a Python list `[0,1,2,3,4,5]`, or a Python tuple `(0,5)`. In that case, the same response options will be automatically assigned to every user-defined role listed in the `role` worksheet. Alternatively, you can define a Python dictionary, where the keys are the role labels (matching those in the `role` worksheet) and values are the response options for that specific role. Similarly, the response options can be a plain string, a Python list, or a Python tuple. When presenting your response options as a Python dictionary, you can also customise different action spaces for each user-defined role in that experiment round. |
 | `randomize_response_order` | **Yes** | A boolean field indicating if the order of the response options should be randomized before presenting it to the LLM. Expected values: `True` or `False`. |
 | `validate_response` | **Yes** | A boolean field indicating if the LLM responses should be validated against the values in the `response_options` field. If the LLM response does not match with any of the options in the `response_options` field, the LLM will be queried again for a maximum of 5 times before proceeding with the last response. Expected values: `True` or `False`. |
-| `generate_speculation_score` | **Yes** | A boolean field indicating if the LLM should generate a speculation score (where 0 = not speculative at all and 100 = entirely speculative.). This is used to guard against LLM hallucination. Expected values: `True` or `False`. |
+| `generate_speculation_score` | **Yes** | A boolean field indicating if the LLM should generate a speculation score (where 0 = not speculative at all and 100 = entirely speculative.). This is used to guard against LLM hallucination. Expected values: `True` or `False`. |
 | `format_response` | **Yes** | A boolean field indicating if the LLM response should be formatted as a JSON string or plain text string. Expected values: `True` or `False`. |
 
 *Extra columns will be rejected. Each row refers to a new round in the experiment.*
 
 ---
 
-## 5.  `profile`
+## 5.  `profile`
 
-* **Row 1:** Shorten name for the profile-related question. *Must be non‑blank & unique.*
-* **Row 2:** The actual wording used when asking the profile-related question. *Must be non‑blank and human-readable.*
-* **Row 3 … n:** The subjects' profile data, where each row represent the profile of a unique subject and each column refers to the response provided by the subject for each profile-related question.
+* **Row 1:** Shorten name for the profile-related question. *Must be non‑blank & unique.*
+* **Row 2:** The actual wording used when asking the profile-related question. *Must be non‑blank and human-readable.*
+* **Row 3 … n:** The subjects' profile data, where each row represent the profile of a unique subject and each column refers to the response provided by the subject for each profile-related question.
 * There must be a column named 'ID' representing a unique identifier for each subject that will be participanting in the experiment. This must be satisfied even if you do not intend to provide any profile information for your subjects.
-* Depending on whether `build_profile_qna` and `build_profile_backstories` in the `settings` worksheet is set to `True` or `False`, the subject's responses will be formatted accordingly and passed into the system message to provide the LLM context about the subject’s profile.
+* Depending on whether `build_profile_qna` and `build_profile_backstories` in the `settings` worksheet is set to `True` or `False`, the subject's responses will be formatted accordingly and passed into the system message to provide the LLM context about the subject's profile.
 
 ---
 
-## 6.  `constant`
+## 6.  `constant`
 
 | Column | **Required** | Description |
 | - | - | - |
@@ -102,6 +383,8 @@
 | `value` | **Yes** | Expects a list containing different permutations that should be applied to the constant placeholders. |
 
 *Extra columns will be rejected. Each row refers to a new constant permutation. If more than one row is defined, the package will perform a cartesian product over all rows to create a list of all possible permutations. Each permutation will spin off a separate session.*
+
+---
 
 ---
 
@@ -124,7 +407,7 @@ A video walkthrough on how to populate the prompt template workbook based on a s
 
 ## FAQ
 
-This section contains questions and answers we’ve compiled from past workshops, and we’ll continue to expand this section as more questions arise:
+This section contains questions and answers we've compiled from past workshops, and we'll continue to expand this section as more questions arise:
 
 ---
 
@@ -133,7 +416,7 @@ This section contains questions and answers we’ve compiled from past workshops
 **Response**: You can safely use Jinja dot notation to:
 * Reference treatment attributes inside the `role` worksheet (e.g. `{{ treatment.description }}`),
 * Reference constants inside both the `treatment` and `role` worksheets (e.g. `{{ constant.label }}`), and
-* Reference role, treatment, and constant attributes in the `llm_text` field of the `prompt` worksheet (e.g. `{{ role.description }}`, `{{ treatment.description }}`, `{{ constant.label }}`). 
+* Reference role, treatment, and constant attributes in the `llm_text` field of the `prompt` worksheet (e.g. `{{ role.description }}`, `{{ treatment.description }}`, `{{ constant.label }}`).
 
 However, you should not use Jinja dot notation in the `treatment` worksheet to reference role attributes, as this can potentially create infinite reference loops (role → treatment → role → …). You also shouldn't use Jinja dot notation inside the `response_options` field of the `prompt` worksheet. If you need to provide instructions/prompts with dynamic bounds, leave the `response_options` field empty and express the constraint directly in `llm_text`. For example:
 
@@ -143,7 +426,7 @@ Respond with a numerical value between `{{ treatment.start_value }}` and `{{ tre
 
 **Question**: What is treated as private information vs public information for the LLM-powered subjects during an experiment?
 
-**Response**: Each LLM-powered subject is provided with certain “private” and “public” information:
+**Response**: Each LLM-powered subject is provided with certain "private" and "public" information:
 * Private to each subject:
   * Role descriptions and role-related attributes from the `role` worksheet
   * Profile-related information from the `profile` worksheet
@@ -153,7 +436,7 @@ Respond with a numerical value between `{{ treatment.start_value }}` and `{{ tre
   * `public_question` and `repeat_public_question` prompts
   * `discussion` prompts
 
-We rely on these prompt types to control visibility within a group. 
+We rely on these prompt types to control visibility within a group.
 
 ---
 
@@ -172,21 +455,21 @@ Only those subjects will participate in that round.
 * Set `type = "context"` if you are only providing contextual information to those subjects and not expecting a response.
 * Set `type = "private_question"` or `type = "repeat_private_question"` if only that subset of subjects need to participate in this round.
 
-This effectively creates “subgroups” within a larger group in a single round. However, the platform does not yet support randomising which subjects participate in each experiment round. This functionality is planned and will be introduced in future iterations of the platform.
+This effectively creates "subgroups" within a larger group in a single round. However, the platform does not yet support randomising which subjects participate in each experiment round. This functionality is planned and will be introduced in future iterations of the platform.
 
 ---
 
-**Question**: I’m not very familiar with LLMs. How should I think about key parameters like model choice, temperature, and speculation score?
+**Question**: I'm not very familiar with LLMs. How should I think about key parameters like model choice, temperature, and speculation score?
 
 **Response**: At a high level:
-* `model_info` affects model's capability and cost. Larger or more advanced models (e.g. `gpt-5.1`, `gpt-5-pro`) tend to be more reliable and robust but are slower and more expensive. Smaller or “mini/nano” models are cheaper and faster but may make more logical errors. The platform supports a range of OpenAI models, Hugging Face Inference (`hf-inference`), and OpenRouter models via `model_info` to fit your experiment needs.
+* `model_info` affects model's capability and cost. Larger or more advanced models (e.g. `gpt-5.1`, `gpt-5-pro`) tend to be more reliable and robust but are slower and more expensive. Smaller or "mini/nano" models are cheaper and faster but may make more logical errors. The platform supports a range of OpenAI models, Hugging Face Inference (`hf-inference`), and OpenRouter models via `model_info` to fit your experiment needs.
 
 * `temperature` controls the randomness and creativity of the LLM's output:
   * Low temperature (0–0.3): Responses that are deterministic, more stable, less variation.
   * Medium (0.4–0.8): Responses with balanced variety vs stability.
   * High (0.9–2): Responses that are diverse, exploratory, more variance and sometimes noisy. For many synthetic experiments, a moderate–high temperature (e.g. ~1.0) is helpful if you want a richer distribution of behaviors.
 
-* `generate_speculation_score` tells the LLM to self-assess how speculative its answer is using a value between 0 and 100. A score of 0 means that the LLM is very certain of its response while a score of 100 means the response is purely speculative. This is useful to flag potentially hallucinated content and can be used later in analysis to filter or weight responses. 
+* `generate_speculation_score` tells the LLM to self-assess how speculative its answer is using a value between 0 and 100. A score of 0 means that the LLM is very certain of its response while a score of 100 means the response is purely speculative. This is useful to flag potentially hallucinated content and can be used later in analysis to filter or weight responses.
 
 We recommend running small pilot sessions, where you can try varying temperature and model choice on a subset of prompts and inspect how response variability, stability, and realism change.
 
@@ -196,17 +479,17 @@ We recommend running small pilot sessions, where you can try varying temperature
 
 **Response**: The current version of the Python package has limited support for fully flexible multi-round matching and direct use of `profile.*` in prompts. For such designs, we recommend treating the current implementation as a simplified single-round approximation and preparing your materials so they can be upgraded later:
 
-1. Import a grouping indicator from the original human data for one iteration only (e.g. group IDs linking the two stakeholders and the observer). Store this in the `profile` worksheet and reference it in `settings.group_column` when using manual group assignment. 
+1. Import a grouping indicator from the original human data for one iteration only (e.g. group IDs linking the two stakeholders and the observer). Store this in the `profile` worksheet and reference it in `settings.group_column` when using manual group assignment.
 2. Implement only a single iteration of the later-stage interaction.
-3. Avoid heavy “offline” matching logic for the synthetic replication; treat that as an edge case until the package supports richer matching.
+3. Avoid heavy "offline" matching logic for the synthetic replication; treat that as an edge case until the package supports richer matching.
 
 This makes your template forward-compatible with a future version of the package that will handle multi-round, constraint-based rematching more flexibly. In the meantime, this functionality is planned and will be introduced in future iterations of the platform.
 
 ---
 
-**Question**: How do I handle experiments that require groups of different sizes (e.g. 3 and 6 participants) whose decisions interact, like in “Coordination in the Presence of Asset Markets”?
+**Question**: How do I handle experiments that require groups of different sizes (e.g. 3 and 6 participants) whose decisions interact, like in "Coordination in the Presence of Asset Markets"?
 
-**Response**: The current platform expects fixed group sizes per session via `num_subjects_per_group` and `num_groups` in the `settings` sheet. It does not yet support a single session where some groups have 3 members and others have 6, all sharing one template. 
+**Response**: The current platform expects fixed group sizes per session via `num_subjects_per_group` and `num_groups` in the `settings` sheet. It does not yet support a single session where some groups have 3 members and others have 6, all sharing one template.
 
 Recommended workarounds:
 1. You can define subgroups to participate in certain rounds by providing a Python dictionary in the `llm_text` field where the keys are the subjects' roles and the values are the prompts that will be presented to those subjects. For example, for the round that only involves 3 subjects (`Participant 1`, `Participant 2`, `Participant 4`), you can define the following dictionary in the `llm_text` field:
@@ -224,14 +507,14 @@ Recommended workarounds:
 
 **Question**: Will additional experiment templates be made available (e.g. on GitHub), beyond the current demos?
 
-**Response**: Yes. The goal is to gradually build an archive of synthetic replication packages and example templates to support different experimental designs. At present, the repository includes a Public Goods Experiment, an RCT demo, and a blank prompt template workbook as starting points. More templates from other studies will be added over time as they are cleaned, documented, and made suitable for reuse. 
+**Response**: Yes. The goal is to gradually build an archive of synthetic replication packages and example templates to support different experimental designs. At present, the repository includes a Public Goods Experiment, an RCT demo, and a blank prompt template workbook as starting points. More templates from other studies will be added over time as they are cleaned, documented, and made suitable for reuse.
 
 ---
 
 **Question**: What is the difference between the `prompt` and `profile` worksheets in the prompt template workbook?
 
 **Response**:
-* The `profile` worksheet stores static subject information: each row is an unique subject, each column is a profile-related question and the subjects' responses, and there must be an `ID` column. These values can be turned into Q&A snippets or backstories and fed into the LLM-powered subject's system message, depending on `build_profile_qna` and `build_profile_backstories` in `settings`. 
+* The `profile` worksheet stores static subject information: each row is an unique subject, each column is a profile-related question and the subjects' responses, and there must be an `ID` column. These values can be turned into Q&A snippets or backstories and fed into the LLM-powered subject's system message, depending on `build_profile_qna` and `build_profile_backstories` in `settings`.
 * The `prompt` worksheet defines the experiment flow: rounds (`round_id`, `round_order`), prompt `type`, the text shown to LLM-powered subjects (`llm_text`), and how responses are collected and validated (`response_type`, `response_options`, etc.).
 
 In short: `profile` = *who the subject is*; `prompt` = *what happens each round and what the subjects are asked to do*.
@@ -251,7 +534,7 @@ In short: `profile` = *who the subject is*; `prompt` = *what happens each round 
 * Provide a labelled MCQ version in `llm_text`, e.g. A/B/C/D options,
 * Define `response_options = ["A", "B", "C", "D"]`.
 
-During preprocessing or analysis, you can then map each option back to the format presented in the original study. This is a reasonable and recommended adaptation, as long as it’s documented via `is_adapted = True`. 
+During preprocessing or analysis, you can then map each option back to the format presented in the original study. This is a reasonable and recommended adaptation, as long as it's documented via `is_adapted = True`.
 
 ---
 
@@ -261,11 +544,11 @@ During preprocessing or analysis, you can then map each option back to the forma
 * A plain string, e.g. `"Enter a number between 0 and 5"`;
 * A Python list, e.g. `[0, 1, 2, 3, 4, 5]` or `["A", "B", "C", "D"]`;
 * A Python tuple representing a numeric range, e.g. `(0, 5)`;
-* A Python dictionary mapping role labels to any of the above so different roles can have different action spaces. 
+* A Python dictionary mapping role labels to any of the above so different roles can have different action spaces.
 
 It is used in two ways:
-1. When `validate_response = True`, the platform checks whether the LLM’s answer matches with any of the permissible values. If not, it retries up to 5 times before moving on.
-2. By including `{{ response_options }}` in the `llm_text` field, the platform injects standard formatting instructions based on the response options (e.g. “Answer with one of: A, B, C, D”), making it more likely the LLM chooses a valid option.
+1. When `validate_response = True`, the platform checks whether the LLM's answer matches with any of the permissible values. If not, it retries up to 5 times before moving on.
+2. By including `{{ response_options }}` in the `llm_text` field, the platform injects standard formatting instructions based on the response options (e.g. "Answer with one of: A, B, C, D"), making it more likely the LLM chooses a valid option.
 
 Note that you cannot use Jinja dot notation inside the `response_options` field.
 
@@ -275,9 +558,9 @@ Note that you cannot use Jinja dot notation inside the `response_options` field.
 
 **Response**: Only OpenAI models support visual inputs in the current platform. If your `model_info` uses one of the supported OpenAI models, you can:
 * Host the image at a publicly accessible URL (such as in Dropbox), and
-* Reference that URL in the `llm_text` field as part of the instructions (e.g. “Look at this image: <URL> and then answer…”). 
+* Reference that URL in the `llm_text` field as part of the instructions (e.g. "Look at this image: <URL> and then answer…").
 
-If you cannot use images (e.g. because you’re on `hf-inference` or OpenRouter), the recommended approach is to replace each image with a detailed textual description that conveys the same information. Also, note that images hosted on Google Drive cannot be accessed by OpenAI’s models, even if the link is public. Instead, you can consider hosting the image in a publicly accessible Dropbox folder.
+If you cannot use images (e.g. because you're on `hf-inference` or OpenRouter), the recommended approach is to replace each image with a detailed textual description that conveys the same information. Also, note that images hosted on Google Drive cannot be accessed by OpenAI's models, even if the link is public. Instead, you can consider hosting the image in a publicly accessible Dropbox folder.
 
 ---
 
@@ -297,7 +580,7 @@ You can still keep both templates in the same repository or project, but the pla
 **Response**: Yes, to an extent. The platform already supports:
 * OpenAI models (via `model_info` such as `gpt-5.1`, `gpt-4.1`, `gpt-4o`, etc.)
 * Hugging Face Inference when `model_info = "hf-inference"` and `hf_inference_endpoint` is provided
-* OpenRouter.ai models when `model_info = <provider/model_name, i.e., mistralai/devstral-2512>`. 
+* OpenRouter.ai models when `model_info = <provider/model_name, i.e., mistralai/devstral-2512>`.
 
 We are also considering providing support for local LLMs (e.g. via an Ollama-like client); however, it is likely to be deprioritized due to the low demand.
 
@@ -316,7 +599,7 @@ If prompts are neutral and temperature is reasonably high (e.g. around 1.0) yet 
 **Question**: What should I do if the model repeatedly produces incorrect or malformed responses?
 
 **Response**: Use a two-step debugging strategy:
-1. Enable reasoning output by setting `format_response = True`. This instructs the platform to provide a structured response containing a “reasoning” field so you can inspect the model's thinking process. 
+1. Enable reasoning output by setting `format_response = True`. This instructs the platform to provide a structured response containing a "reasoning" field so you can inspect the model's thinking process.
 2. Based on that reasoning:
    * If the model misunderstood the instructions or the structure of the task, revise your prompts (especially in the `llm_text` field) to be clearer, ensure reference information are correctly rendered by the facilitator, and remove ambiguity.
    * If the instructions are clear and the model *still* makes logical errors, consider switching to a more capable thinking model (e.g. `gpt-5.1`), but treat this as a second step because larger models tend to be more expensive.
@@ -327,7 +610,7 @@ Most issues are resolved by clarifying prompts and validation logic before needi
 
 **Question**: Is there an `end_experiment` command, and how can I stop a repeated round when some terminating condition is met (e.g., participants choose to stop)?
 
-**Response**: There is no dedicated `end_experiment` command. For rounds using `repeat_public_question` or `repeat_private_question`, these rounds will repeat until the facilitator role returns a response with the special command: `end_round`. 
+**Response**: There is no dedicated `end_experiment` command. For rounds using `repeat_public_question` or `repeat_private_question`, these rounds will repeat until the facilitator role returns a response with the special command: `end_round`.
 
 To implement participant-driven stopping:
 1. Allow participants to indicate their desire to stop.
@@ -338,7 +621,7 @@ To implement participant-driven stopping:
 
 **Question**: When should I set `is_adapted = True` in the `prompt` worksheet?
 
-**Response**: Set `is_adapted = True` whenever the text shown to the LLM (`llm_text`) differs from the original human instructions, even if the change is minor (e.g. small rephrasings, graph caption changes, labelled options). This field is only for documentation and does not affect how the platform runs the experiment. It simply records that the LLM saw an adapted version rather than the exact original wording seen by the human subject. 
+**Response**: Set `is_adapted = True` whenever the text shown to the LLM (`llm_text`) differs from the original human instructions, even if the change is minor (e.g. small rephrasings, graph caption changes, labelled options). This field is only for documentation and does not affect how the platform runs the experiment. It simply records that the LLM saw an adapted version rather than the exact original wording seen by the human subject.
 
 ---
 
@@ -347,7 +630,7 @@ To implement participant-driven stopping:
 **Response**: The platform currently has only a partial workaround for fully dynamic group reshuffling. If your human data include a group ID per round, we recommend:
 1. Using the group composition from the first round only as the grouping structure for the synthetic replication.
 2. Adding a dedicated column in the `profile` sheet (e.g. `group_round1`) to store this first-round group ID for each subject.
-3. Setting `group_assignment_strategy = "manual"` and pointing `group_column` in the `settings` worksheet to that newly created column. 
+3. Setting `group_assignment_strategy = "manual"` and pointing `group_column` in the `settings` worksheet to that newly created column.
 
 Document this as an adaptation so that once the package supports more flexible, round-by-round grouping, your design can be updated accordingly. In the meantime, this functionality is planned and will be introduced in future iterations of the platform.
 
@@ -361,13 +644,13 @@ Document this as an adaptation so that once the package supports more flexible, 
 
 **Question**: How should we treat answers from a Big Five questionnaire that served both as a distraction and as a personality measure in the original experiment?
 
-**Response**: The recommended approach is to use the Big Five responses as profile information in the `profile` worksheet, and document this adaptation. This preserves the original participants’ personality traits as part of the synthetic persona, which may be behaviourally relevant. You can still note the “distraction” role of the questionnaire in your design documentation.
+**Response**: The recommended approach is to use the Big Five responses as profile information in the `profile` worksheet, and document this adaptation. This preserves the original participants' personality traits as part of the synthetic persona, which may be behaviourally relevant. You can still note the "distraction" role of the questionnaire in your design documentation.
 
 ---
 
 **Question**: The dataset includes both birth year and age at the time of the experiment. Which should we use for profiling?
 
-**Response**: You should use the age at the time of the original experiment (in years), not the birth year plus today’s date. The goal is to replicate the participant’s persona at the time of data collection, which is better captured by the original age variable than recalculating age relative to the present.
+**Response**: You should use the age at the time of the original experiment (in years), not the birth year plus today's date. The goal is to replicate the participant's persona at the time of data collection, which is better captured by the original age variable than recalculating age relative to the present.
 
 ---
 
@@ -378,6 +661,6 @@ Document this as an adaptation so that once the package supports more flexible, 
 2. Leave `response_options` empty.
 3. In `llm_text`, give explicit formatting instructions, e.g.:
 
-“In your response, return a JSON list containing your three chosen items, like: `["item1", "item2", "item3"]`.”
+"In your response, return a JSON list containing your three chosen items, like: `["item1", "item2", "item3"]`."
 
 This way, the model outputs a single response that encodes all three choices, and you can parse the returned list during preprocessing or analysis.

@@ -1,5 +1,29 @@
+"""Synthetic subject implementations for AI-to-AI experiments.
+
+.. deprecated::
+    This module is deprecated.  Use
+    ``talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject``
+    instead.
+
+Defines ``SyntheticSubject`` (base) and ``ConversationalSyntheticSubject``
+(conversation-capable) classes that represent LLM-backed participants in
+an experiment session.
+
+Module-level constants:
+    ProfileInfo: Type alias for a dictionary of profile key-value pairs.
+    NUM_RETRY (int): Number of retries when response validation fails.
+    OPENAI_MODELS (list[str]): Model identifiers handled by the OpenAI backend.
+"""
+
 from __future__ import annotations
 import re, warnings, openai, json, copy
+
+warnings.warn(
+    "talkingtomachines.generative.synthetic_subject is deprecated. "
+    "Use talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 from typing import Any, Callable, TYPE_CHECKING
 from talkingtomachines.generative.prompt import (
     generate_subject_system_message,

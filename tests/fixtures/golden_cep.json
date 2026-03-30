@@ -1,0 +1,72 @@
+{
+  "experiment_id": "pgg_golden",
+  "run_id": "run_golden_001",
+  "cep_hash": "",
+  "config_hash": "",
+  "settings": {
+    "model_name": "gpt-4o",
+    "temperature": 0.7,
+    "random_seed": 42,
+    "build_profile_qa": false,
+    "build_profile_backstories": false,
+    "profile_fields": "ALL"
+  },
+  "profiles": {
+    "short_names": ["ID", "age", "party"],
+    "full_names": ["Participant ID", "Age", "Political Party"],
+    "rows": [
+      {"ID": 1, "age": 30, "party": "D"},
+      {"ID": 2, "age": 45, "party": "R"},
+      {"ID": 3, "age": 28, "party": "D"},
+      {"ID": 4, "age": 52, "party": "R"}
+    ],
+    "id_column": "ID",
+    "included_columns": ["ID", "age", "party"]
+  },
+  "fields": [
+    {
+      "field_class": "Player",
+      "task": "pgg",
+      "name": "contribution",
+      "type": "integer",
+      "response_options": null,
+      "response_options_intro": "",
+      "randomise_options_order": false,
+      "validate": false,
+      "format_response": false,
+      "generate_speculation_score": false
+    }
+  ],
+  "prompts": {
+    "pgg": [
+      {
+        "type": "CONTEXT",
+        "llm_text": "You are participating in a public goods game. Round {{ round_number }}.",
+        "is_displayed": null,
+        "field_class": null,
+        "field_name": null
+      },
+      {
+        "type": "PRIVATE_QUESTION",
+        "llm_text": "How much will you contribute? (0 to {{ C.pgg.ENDOWMENT }})",
+        "is_displayed": null,
+        "field_class": "Player",
+        "field_name": "contribution"
+      }
+    ]
+  },
+  "task_sequence": ["pgg"],
+  "facilitator_functions": [],
+  "constants": {
+    "pgg": {
+      "MAX_NUM_ROUNDS": 3,
+      "PLAYERS_PER_GROUP": 4,
+      "ENDOWMENT": 20,
+      "MULTIPLIER": 2.0
+    }
+  },
+  "assignment_plan": {
+    "treatment_assignments": {},
+    "group_assignments": {}
+  }
+}

@@ -1,91 +1,234 @@
-from talkingtomachines.generative.synthetic_subject import (
-    SyntheticSubject,
-    ConversationalSyntheticSubject,
+"""
+Tests for the new ConversationalSyntheticSubject (Phase 9).
+
+Replaces old tests of ``talkingtomachines.generative.synthetic_subject``
+with tests of ``talkingtomachines.agents.synthetic_subject``.
+"""
+
+from __future__ import annotations
+
+import random
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from talkingtomachines.agents.synthetic_subject import ConversationalSyntheticSubject
+from talkingtomachines.core.models import (
+    Agent,
+    Player,
+    Group,
+    Session,
+    PromptDefinition,
+    FieldDefinition,
 )
+from talkingtomachines.core.fields import ExperimentState
+from talkingtomachines.gateway.base import LLMProvider, LLMResponse
 
 
-def test_synthetic_agent():
-    # Create a sample demographic info
-    demographic_info = {"age": 30, "gender": "male", "occupation": "engineer"}
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
-    # Create a synthetic agent instance
-    agent = SyntheticSubject(
-        experiment_id="123",
-        experiment_context="context",
-        session_id=1,
-        demographic_info=demographic_info,
-        model_info="model",
+
+class MockRouter:
+    """Minimal stand-in for LLMRouter."""
+
+    def __init__(self, content="mock answer"):
+        self._content = content
+        self.call_count = 0
+
+    def generate(
+        self, message_history, model, temperature=0.0, **kwargs
+    ) -> LLMResponse:
+        self.call_count += 1
+        return LLMResponse(
+            content=self._content,
+            prompt_tokens=10,
+            completion_tokens=5,
+            total_tokens=15,
+            model=model,
+            provider="mock",
+            latency_ms=100.0,
+            cost_usd=0.0,
+        )
+
+
+def _make_subject(router=None, content="mock answer") -> ConversationalSyntheticSubject:
+    agent = Agent(
+        agent_id="a1",
+        agent_instance_id="inst_a1",
+        profile_info={"ID": 1, "age": 30},
+        treatment_label="T1",
+    )
+    player = Player(
+        player_id="p1",
+        agent_instance_id="inst_a1",
+        agent_id="a1",
+        group_id="g1",
+    )
+    group = Group(
+        group_id="g1",
+        subsession_id="sub1",
+        players=[player],
+        turn_order=["inst_a1"],
+    )
+    session = Session(
+        session_id="s1",
+        run_id="r1",
+        experiment_id="exp1",
+        cep_hash="abc",
+    )
+    state = ExperimentState()
+    r = router or MockRouter(content=content)
+
+    return ConversationalSyntheticSubject(
+        agent=agent,
+        player=player,
+        group=group,
+        session=session,
+        state=state,
+        router=r,
+        model_name="gpt-4o",
+        temperature=0.0,
     )
 
-    # Test the getter methods
-    assert agent.get_experiment_id() == "123"
-    assert agent.get_experiment_context() == "context"
-    assert agent.get_session_id() == 1
-    assert (
-        agent.get_demographic_prompt()
-        == "Your demographic profile: 1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
-    )
-    assert agent.get_model_info() == "model"
 
-    # Test the to_dict() method
-    agent_dict = agent.to_dict()
-    assert agent_dict["experiment_id"] == "123"
-    assert agent_dict["experiment_context"] == "context"
-    assert agent_dict["session_id"] == 1
-    assert (
-        agent_dict["demographic_prompt"]
-        == "Your demographic profile: 1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
-    )
-    assert agent_dict["model_info"] == "model"
-
-    # Test the respond() method
-    response = agent.respond()
-    assert isinstance(response, str)
-
-
-def test_conversational_synthetic_agent():
-    # Create a sample demographic info
-    demographic_info = {"age": 30, "gender": "male", "occupation": "engineer"}
-
-    # Create a conversational synthetic agent instance
-    agent = ConversationalSyntheticSubject(
-        experiment_id="123",
-        experiment_context="context",
-        session_id=1,
-        demographic_info=demographic_info,
-        role="assistant",
-        role_description="AI assistant",
-        model_info="model",
-        treatment="treatment",
+def _make_prompt(
+    prompt_type="DISCUSSION", text="What do you think?"
+) -> PromptDefinition:
+    return PromptDefinition(
+        task="pgg",
+        prompt_sequence=1,
+        type=prompt_type,
+        llm_text=text,
+        is_displayed=None,
+        field_class=None,
+        field_name=None,
     )
 
-    # Test the getter methods
-    assert agent.get_experiment_id() == "123"
-    assert agent.get_experiment_context() == "context"
-    assert agent.get_session_id() == 1
-    assert (
-        agent.get_demographic_prompt()
-        == "Your demographic profile: 1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
-    )
-    assert agent.get_model_info() == "model"
-    assert agent.get_role() == "assistant"
-    assert agent.get_role_description() == "AI assistant"
-    assert agent.get_treatment() == "treatment"
 
-    # Test the to_dict() method
-    agent_dict = agent.to_dict()
-    assert agent_dict["experiment_id"] == "123"
-    assert agent_dict["experiment_context"] == "context"
-    assert agent_dict["session_id"] == 1
-    assert (
-        agent_dict["demographic_prompt"]
-        == "Your demographic profile: 1) Interviewer: age Me: 30 2) Interviewer: gender Me: male 3) Interviewer: occupation Me: engineer "
+def _make_field_def(name="decision", field_type="text") -> FieldDefinition:
+    return FieldDefinition(
+        field_class="Player",
+        task="pgg",
+        name=name,
+        type=field_type,
+        format_response=False,
+        generate_speculation_score=False,
     )
-    assert agent_dict["model_info"] == "model"
-    assert agent_dict["role"] == "assistant"
-    assert agent_dict["role_description"] == "AI assistant"
-    assert agent_dict["treatment"] == "treatment"
 
-    # Test the respond() method
-    response = agent.respond("How can I assist you?")
-    assert isinstance(response, str)
+
+# ---------------------------------------------------------------------------
+# Construction
+# ---------------------------------------------------------------------------
+
+
+def test_subject_construction():
+    subject = _make_subject()
+    assert subject.agent.agent_id == "a1"
+    assert subject.player.player_id == "p1"
+
+
+def test_subject_system_message_is_string():
+    subject = _make_subject()
+    assert isinstance(subject.get_system_message(), str)
+
+
+# ---------------------------------------------------------------------------
+# respond()
+# ---------------------------------------------------------------------------
+
+
+def test_respond_returns_string():
+    subject = _make_subject(content="5")
+    prompt = _make_prompt()
+    result = subject.respond("pgg", 1, prompt)
+    assert isinstance(result, str)
+
+
+def test_respond_calls_router():
+    router = MockRouter(content="I contribute 10.")
+    subject = _make_subject(router=router)
+    prompt = _make_prompt(prompt_type="DISCUSSION", text="Discuss.")
+    subject.respond("pgg", 1, prompt)
+    assert router.call_count == 1
+
+
+def test_respond_stores_player_state_when_field_def():
+    router = MockRouter(content="happy")
+    subject = _make_subject(router=router)
+    prompt = _make_prompt(prompt_type="PRIVATE_QUESTION", text="How are you?")
+    field_def = _make_field_def(name="mood")
+
+    subject.respond("survey", 1, prompt, field_def=field_def)
+
+    stored = subject._state.get_player("p1", "survey", "mood")
+    assert stored == "happy"
+
+
+def test_respond_jinja_rendering_in_prompt():
+    router = MockRouter(content="ok")
+    subject = _make_subject(router=router)
+    # Template refers to player.age — should render without error
+    prompt = _make_prompt(
+        text="You are {{ player.age }} years old. What is your decision?"
+    )
+    result = subject.respond("pgg", 1, prompt)
+    assert isinstance(result, str)
+
+
+def test_respond_with_response_options():
+    """format_response=True causes JSON parsing attempt — raw fallback if not valid JSON."""
+    router = MockRouter(content='{"vote": "yes"}')
+    subject = _make_subject(router=router)
+    prompt = _make_prompt(prompt_type="PUBLIC_QUESTION")
+    field_def = FieldDefinition(
+        field_class="Player",
+        task="pgg",
+        name="vote",
+        type="text",
+        response_options=["yes", "no"],
+        response_options_intro="Choose:",
+        randomise_options_order=False,
+        validate=False,
+        format_response=True,
+        generate_speculation_score=False,
+    )
+    result = subject.respond("pgg", 1, prompt, field_def=field_def)
+    assert isinstance(result, str)
+
+
+# ---------------------------------------------------------------------------
+# validate_response
+# ---------------------------------------------------------------------------
+
+
+def test_validate_response_valid_option():
+    subject = _make_subject()
+    field_def = FieldDefinition(
+        field_class="Player",
+        task="pgg",
+        name="decision",
+        type="text",
+        response_options=["A", "B", "C"],
+        format_response=False,
+        generate_speculation_score=False,
+    )
+    assert subject._validate_response("A", ["A", "B", "C"], field_def) is True
+
+
+def test_validate_response_invalid_option():
+    subject = _make_subject()
+    field_def = FieldDefinition(
+        field_class="Player",
+        task="pgg",
+        name="decision",
+        type="text",
+        response_options=["A", "B"],
+        format_response=False,
+        generate_speculation_score=False,
+    )
+    assert subject._validate_response("X", ["A", "B"], field_def) is False
+
+
+# ---------------------------------------------------------------------------

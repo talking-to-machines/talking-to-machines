@@ -1,19 +1,29 @@
-# Talking to Machines Platform (Beta Release)
+# Talking to Machines Platform (Beta Release)
 
-
-The `talkingtomachines` platform is developed to facilitate the design, conduct, and analysis of large-scale experimental trials and treatments with LLM-powered agents. 
+The `talkingtomachines` platform facilitates the design, conduct, and analysis of large-scale experimental trials and treatments with LLM-powered agents.
 
 ---
 
-## ✨ Features
+## ✨ Features
 
-* **CLI‑first Workflow** – Build and run large-scale experimental trials straight from your terminal.
+* **CLI-first Workflow** – Build and run large-scale experimental trials straight from your terminal.
 
-* **Python Package** – Use the same engine as a Python package in Juypter notebooks and Python pipelines.
+* **Python Package** – Use the same engine as a Python package in Jupyter notebooks and Python pipelines.
 
-* **Multi‑Model Providers** – Built-in support for **OpenAI** chat models, **Hugging Face** Inference API, and OpenRouter.ai models.
+* **Multi-Model Providers** – Built-in support for **OpenAI**, **Anthropic (Claude)**, **Google (Gemini)**, **Mistral**, **xAI (Grok)**, **DeepSeek**, **Hugging Face** Inference API, and **OpenRouter** models.
 
-* **Reproducible** – Every run is JSON‑logged for auditable and reproducible results.
+* **Reproducible** – Every run is JSON-logged for auditable and reproducible results.
+
+* **Excel-based Configuration** – Researchers configure experiments entirely through an Excel workbook with no programming required.
+
+---
+
+## Version History
+
+| Version | Architecture | Status |
+|---------|-------------|--------|
+| **v0.3.0** | oTree-inspired hierarchy (Session → Module → Subsession → Group → Agent/Player). Compiler-based pipeline with validation, checkpointing, resume, and multi-format export. | Development (current branch) |
+| **v0.2.7** | Flat session-based architecture with role/treatment worksheets. Single-pass execution via argparse CLI. | Stable (latest published on TestPyPI) |
 
 ---
 
@@ -23,12 +33,11 @@ The `talkingtomachines` platform is developed to facilitate the design, conduct,
 
 * macOS or Windows 10/11
 
-* Network access and API keys to your chosen model providers (OpenAI, Hugging Face, OpenRouter.ai)
+* Network access and API keys to your chosen model providers
 
 ---
 
-## 🔧 Installation
-
+## 🔧 Installation
 
 ### 1. Install `Miniconda` (recommended)
 
@@ -44,7 +53,6 @@ Verify your installation by running the following command in your terminal (for 
 ```bash
 conda --version
 ```
-
 
 ### 2. Create and activate a new `conda` environment
 
@@ -70,8 +78,15 @@ pip --version
 ```
 
 ### 3. Install the `talkingtomachines` package
+
+**v0.2.7 (latest stable release):**
 ```bash
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple talkingtomachines
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple talkingtomachines==0.2.7
+```
+
+**v0.3.0:**
+```bash
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple talkingtomachines==0.3.0
 ```
 
 Verify that the `talkingtomachines` package is properly installed:
@@ -82,77 +97,228 @@ talkingtomachines --help
 
 ---
 
-### 📹 Video Walkthrough
+## API Key Setup
+
+Set the API keys for your chosen model provider(s) as environment variables. You only need to set the key(s) for the provider(s) you plan to use. An error will be raised during validation if a model is selected but its corresponding API key is not set.
+
+### macOS / Linux
+
+```bash
+export OPENAI_API_KEY=sk-...
+export ANTHROPIC_API_KEY=sk-ant-...
+export GOOGLE_API_KEY=...
+export MISTRAL_API_KEY=...
+export XAI_API_KEY=...
+export DEEPSEEK_API_KEY=...
+export HF_API_KEY=hf_...
+export OPENROUTER_API_KEY=sk-or-...
+```
+
+### Windows (PowerShell)
+
+```powershell
+$env:OPENAI_API_KEY='sk-...'
+$env:ANTHROPIC_API_KEY='sk-ant-...'
+$env:GOOGLE_API_KEY='...'
+$env:MISTRAL_API_KEY='...'
+$env:XAI_API_KEY='...'
+$env:DEEPSEEK_API_KEY='...'
+$env:HF_API_KEY='hf_...'
+$env:OPENROUTER_API_KEY='sk-or-...'
+```
+
+### Using a `.env` file
+
+Alternatively, you can create a `.env` file in your project directory with your API keys. The platform uses `python-dotenv` to automatically load environment variables from a `.env` file at startup:
+
+```
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+---
+
+## 🚀 CLI Usage
+
+### v0.3.0
+
+v0.3.0 uses a subcommand-based CLI built on [Click](https://click.palletsprojects.com/).
+
+#### `init` — Create a new experiment project
+
+```bash
+talkingtomachines init my_experiment
+talkingtomachines init my_experiment --format csv
+talkingtomachines init my_experiment --output ./projects
+```
+
+Creates a project folder with a blank prompt template (Excel workbook or CSV files) containing all required worksheets with example rows.
+
+| Flag | Description |
+|------|-------------|
+| `--format, -fmt` | Template format: `xlsx` (default) or `csv` |
+| `--output, -o` | Output directory (default: current directory) |
+
+#### `validate` — Validate a template without running
+
+```bash
+talkingtomachines validate path/to/template.xlsx
+talkingtomachines validate path/to/csv_directory/
+```
+
+Runs all validators (schema, reference, flow, provider, context window) and reports any errors. On success, displays the experiment ID, config hash, task sequence, context window size, and model name.
+
+#### `run` — Compile and execute an experiment
+
+```bash
+# Run in test mode (default): one group per task, sequential execution
+talkingtomachines run path/to/template.xlsx 
+# Alternatively,
+talkingtomachines run path/to/template.xlsx --test
+
+# Perform full run: all groups, parallel execution
+talkingtomachines run path/to/template.xlsx --full-run
+
+# Set a budget cap (in USD)
+talkingtomachines run path/to/template.xlsx --budget 10.0
+
+# Define custom output directory
+talkingtomachines run path/to/template.xlsx --output my_results
+```
+
+| Flag | Description |
+|------|-------------|
+| `--test` / `--full-run` | Test mode (default) runs one group per task; full run executes all groups in parallel |
+| `--budget` | Budget cap in USD (default: 0 = no cap) |
+| `--output, -o` | Output base directory (default: `experiment_results`) |
+
+#### `resume` — Resume an interrupted experiment run
+
+```bash
+talkingtomachines resume experiment_results/my_experiment/run_abc123
+talkingtomachines resume experiment_results/my_experiment/run_abc123 --budget 5.0
+```
+
+Loads the most recent checkpoint from the run directory and resumes execution from where it was interrupted, restoring session state, completed modules, and experiment state variables.
+
+| Flag | Description |
+|------|-------------|
+| `--budget` | Budget cap in USD (default: 0 = no cap) |
+
+#### `export` — Re-export artifacts from a completed run
+
+```bash
+talkingtomachines export run_abc123
+talkingtomachines export run_abc123 --format jsonl
+talkingtomachines export run_abc123 --format all --output ./exports
+talkingtomachines export run_abc123 --base my_experiments
+```
+
+Re-exports artifacts from an existing run folder. If checkpoints exist, performs full artifact re-export including codebook and all data tables. If no checkpoints exist, only exports the codebook.
+
+| Flag | Description |
+|------|-------------|
+| `--format, -fmt` | Export format: `csv` (default), `jsonl`, or `all` |
+| `--output, -o` | Output directory (default: run folder) |
+| `--base` | Base experiment results directory (default: `experiment_results`) |
+
+---
+
+### v0.2.7
+
+v0.2.7 uses a single-command CLI via argparse. There are no subcommands — the template path is passed directly as an argument.
+
+```bash
+# Run an experiment
+talkingtomachines path/to/template.xlsx
+
+# Check version
+talkingtomachines --version
+```
+
+The platform reads the Excel workbook, validates all worksheets, and immediately executes the experiment. There is no separate `validate`, `resume`, or `export` command in v0.2.7.
+
+---
+
+## Supported Models
+
+Both v0.2.7 and v0.3.0 support the same set of providers. The provider is auto-detected from the model name.
+
+| Provider | Model prefix | Example models | Environment variable |
+|----------|-------------|----------------|----------------------|
+| OpenAI | `gpt-*`, `o1`, `o3`, `o4`, `o5`, `chatgpt-*` | `gpt-4.1`, `gpt-5`, `o4-mini` | `OPENAI_API_KEY` |
+| Anthropic | `claude-*` | `claude-opus-4-6`, `claude-sonnet-4-6` | `ANTHROPIC_API_KEY` |
+| Google | `gemini-*` | `gemini-2.5-pro`, `gemini-2.0-flash` | `GOOGLE_API_KEY` |
+| Mistral | `mistral-*`, `codestral-*` | `mistral-large`, `codestral` | `MISTRAL_API_KEY` |
+| xAI | `grok-*` | `grok-3`, `grok-3-mini` | `XAI_API_KEY` |
+| DeepSeek | `deepseek-*` | `deepseek-chat`, `deepseek-r1` | `DEEPSEEK_API_KEY` |
+| HuggingFace | `hf-*` | Custom inference endpoints | `HF_API_KEY` |
+| OpenRouter | `openrouter/*` | `openrouter/anthropic/claude-3` | `OPENROUTER_API_KEY` |
+
+Unrecognised model names default to OpenRouter.
+
+---
+
+## 📄 Prompt Template Setup
+
+Detailed instructions on how to populate the prompt template can be found here: [`Prompt Template Instructions`](https://github.com/talking-to-machines/talking-to-machines/tree/main/talkingtomachines/interface/README.md). The experiment is configured through an Excel workbook. Use `talkingtomachines init` (v0.3.0) to generate a blank template with example rows.
+
+### v0.3.0 Worksheets
+
+v0.3.0 uses 7 worksheets that map to the oTree-inspired hierarchy.
+
+| Worksheet | Purpose |
+|-----------|---------|
+| **Settings** | Global experiment settings: model name, temperature, random seed, task sequence, context window overflow policy. |
+| **C** | Constants defined per task (e.g., `ENDOWMENT`, `MAX_NUM_ROUNDS`, `PLAYERS_PER_GROUP`). Columns: `task`, `name`, `value`, `type`. Accessed via `{{ C.task_name.constant_name }}` in prompts. |
+| **Fields** | Data variables that agents write to during the experiment. Columns: `task`, `class`, `name`, `type`, `response_options`, `response_options_intro`, `randomise_options_order`, `validate`, `generate_speculation_score`, `format_response`. |
+| **Facilitator** | Built-in and custom facilitator functions. Columns: `name`, `definition`, `args`. Built-in functions: `creating_session`, `assign_treatment`, `assign_groups`. Custom functions use natural-language LLM instructions. |
+| **Prompts** | The prompt sequence for each task. Columns: `task`, `prompt_sequence`, `type`, `is_displayed`, `is_adapted`, `human_text`, `llm_text`, `rag_vector_store_id`, `field_class`, `field_name`. |
+| **Profiles** | Agent profile attributes. Row 0 = short names (Jinja2 identifiers), Row 1 = full question wording, Rows 2+ = profile data. First column must be `ID` with unique values. |
+| **Manual_** | Optional manual overrides for treatment assignments, group memberships, and field values. Columns: `ID`, `task`, `round_number`, `class`, `name`, `value`. |
+
+---
+
+### v0.2.7 Worksheets
+
+v0.2.7 uses 6 worksheets with a flat session-based architecture.
+
+| Worksheet | Purpose |
+|-----------|---------|
+| **settings** | Global experiment settings: model info, temperature, number of subjects per group, number of groups, treatment/group/role assignment strategies, random seed. |
+| **treatment** | Treatment arms and their descriptions. Columns: `treatment_label`, `value`. Values can be plain strings or Python dictionaries with named attributes. |
+| **role** | User-defined and special roles (including `facilitator`). Columns: `role_label`, `value`. The `facilitator` role is mandatory and orchestrates experiment flow. |
+| **prompt** | Experiment flow and prompts. Columns: `round_id`, `type`, `round_order`, `is_adapted`, `human_text`, `llm_text`, `response_name`, `response_type`, `response_options`, `randomize_response_order`, `validate_response`, `generate_speculation_score`, `format_response`. |
+| **profile** | Agent profile attributes. Row 1 = short names, Row 2 = full questions, Rows 3+ = profile data. Must include an `ID` column. |
+| **constant** | String/numerical constants for Jinja2 injection. Columns: `label`, `value`, `type`. |
+
+---
+
+## 📹 Video Walkthrough
 A video walkthrough on how to set up the `talkingtomachines` platform for both macOS and Windows devices can be found here:
 
+### v0.3.0
 macOS: [Video Walkthrough](https://www.loom.com/share/a2c15f1258d5436eaeca197998286cd9?sid=7958bdbe-2f34-4d5f-8d47-49fd49cb315c)
 
 Windows: [Video Walkthrough](https://www.loom.com/share/79969b38be6d4c2387d19ecc3e54ae4d?sid=d372a5e7-6dd5-4923-b838-69eba7dce20a)
 
 
----
+### v0.2.7
+macOS: [Video Walkthrough](https://www.loom.com/share/a2c15f1258d5436eaeca197998286cd9?sid=7958bdbe-2f34-4d5f-8d47-49fd49cb315c)
 
-## 🚀 Usage
-
-### CLI Tool
-The `talkingtomachines` platform can be used as a CLI tool for non-technical users or users who are not familiar with Python. To use the CLI tool, you will need to populate a prompt template Excel workbook to define your experimental setup. Detailed instructions on how to properly set up a prompt template for your experiment can be found here: [`Prompt Template Instructions`](https://github.com/talking-to-machines/talking-to-machines/tree/main/talkingtomachines/interface/README.md)
-
-1. Set the API keys for OpenAI, Hugging Face, and OpenRouter.ai as environment variables on your terminal (for macOS) or Windows Powershell (for Windows):
-
-For macOS: 
-```bash
-export OPENAI_API_KEY=sk-...
-export HF_API_KEY=hf_...
-export OPENROUTER_API_KEY=sk-...
-```
-
-For Windows:
-```bash
-$env:OPENAI_API_KEY='sk-...'
-$env:HF_API_KEY='hf-...'
-$env:OPENROUTER_API_KEY='sk-...'
-```
-
-2. Provide the file path to the prompt template to allow the `talkingtomachines` platform parse your experimental setup
-```bash
-talkingtomachines path/to/prompt/template.xlsx
-```
-
-You will see a summary of your experimental setup parsed from the prompt template for your verification and the following prompt:
-```
-Verify the experiment settings above and choose a run mode:
-  • Type 'test'  → Runs the session in TEST mode (one randomly selected group per treatment)
-  • Type 'full'  → Runs the FULL session
-  • Anything else → Terminates the session immediately
-Your choice: 
-```
-
-Experimental results are saved to your current directory under the `experiment_results` folder with a JSON file containing the raw outputs (`experiment_results/<session_id>.json`) and a CSV file containing the formatted outputs (`experiment_results/<session_id>.csv`).
-
-
-### Python Package
-The `talkingtomachines` platform can also be imported as a Python package for power users/developers who are interested in creating more advanced experimental designs that are currently not supported by the prompt template.
-
-```python
-import talkingtomachines
-```
+Windows: [Video Walkthrough](https://www.loom.com/share/79969b38be6d4c2387d19ecc3e54ae4d?sid=d372a5e7-6dd5-4923-b838-69eba7dce20a)
 
 ---
 
-## 📄 Prompt Template Setup
+## Demo Experiments
+You may also want to explore these example experimental designs and their accompanying prompt templates prepared by the development team:
 
-Detailed instructions on how to populate the prompt template can be found here: [`Prompt Template Instructions`](https://github.com/talking-to-machines/talking-to-machines/tree/main/talkingtomachines/interface/README.md)
+* **Public Goods Experiment**: [Public Goods Experiment Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/public_good_experiment)
 
-You may also explore these example experimental designs and their accompanying prompt templates prepared by the development team:
-
-* **Public Goods Experiment**: A public goods experiment demo example with a populated prompt template workbook and description of its experimental design: [Public Goods Experiment Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/public_good_experiment)
-
-* **Randomized Controlled Trial (RCT)**: A RCT experiment demo example with a populated prompt template workbook: [RCT Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/rct_experiment)
-
-* **Prompt Template**: A unpopulated version of the prompt template has been provided to serve as a starting point for creating new synthetic experiments: [Prompt Template](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/prompt_template.xlsx)
+* **Randomized Controlled Trial (RCT)**: [RCT Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/rct_experiment)
 
 ---
 
-## 📜 License
+## License
 
 MIT License – see [`LICENSE`](https://github.com/talking-to-machines/talking-to-machines/blob/main/LICENSE) for details.
