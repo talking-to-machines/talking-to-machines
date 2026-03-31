@@ -85,7 +85,7 @@ def parse_fields(df: pd.DataFrame) -> tuple[list[FieldDefinition], dict]:
             columns ``class``, ``module``, ``name``, and ``type``.
 
     Returns:
-        A two-element tuple:
+        tuple: A two-element tuple containing
 
         - **fields** -- Ordered list of ``FieldDefinition`` instances.
         - **index** -- Dictionary keyed by ``(module, field_class, name)``

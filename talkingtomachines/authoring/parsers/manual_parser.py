@@ -6,7 +6,7 @@ Supports two modes for reading manual assignment data from Excel workbooks:
     - **Multi-tab**: One or more sheets named ``Manual_*``
       (e.g. ``Manual_Treatments``).
 
-All Manual_ sheets are merged into a unified registry keyed by
+All ``Manual_`` sheets are merged into a unified registry keyed by
 ``(profile_id, module, round_number, class, name)``.
 
 The ``id`` column corresponds to the ``ID`` column in the Profiles worksheet.
@@ -15,11 +15,11 @@ Accepted ``class`` values:
     Session, Module, Subsession, Group, Agent, Player.
 
 Attributes:
-    _REQUIRED_COLS (set[str]): Column names that every Manual_ sheet must
+    _REQUIRED_COLS (set[str]): Column names that every ``Manual_`` sheet must
         contain (lower-cased): ``id``, ``module``, ``round_number``, ``class``,
         ``name``, and ``value``.
     _VALID_CLASSES (set[str]): The set of accepted hierarchy class names.
-    ManualRegistry (type alias): ``dict[tuple[Any, str, Any, str, str], Any]``
+    ManualRegistry: Type alias ``dict[tuple[Any, str, Any, str, str], Any]``
         — the return type produced by :func:`parse_manual_sheets`.
 """
 
@@ -39,7 +39,7 @@ ManualRegistry = dict[tuple[Any, str, Any, str, str], Any]
 
 
 def _parse_manual_sheet(df: pd.DataFrame, sheet_name: str = "Manual_") -> list[dict]:
-    """Parse a single Manual_ sheet into a list of record dicts.
+    """Parse a single ``Manual_`` sheet into a list of record dicts.
 
     Normalises column names to lower-case, validates that all required
     columns are present, and raises a ``ValueError`` if ``id`` or
@@ -47,7 +47,7 @@ def _parse_manual_sheet(df: pd.DataFrame, sheet_name: str = "Manual_") -> list[d
     also be provided; if both are missing, a ``ValueError`` is raised.
 
     Args:
-        df: Raw DataFrame read from one Manual_ Excel tab.
+        df: Raw DataFrame read from one ``Manual_`` Excel tab.
         sheet_name: Name of the sheet (used for error messages).
 
     Returns:
@@ -122,11 +122,11 @@ def parse_manual_sheets(
     sheets: dict[str, pd.DataFrame],
     profile_ids: Optional[set] = None,
 ) -> ManualRegistry:
-    """Parse one or more Manual_ sheets and merge into a unified registry.
+    """Parse one or more ``Manual_`` sheets and merge into a unified registry.
 
     Iterates over all sheets whose names start with ``Manual_``, parses
-    each with :func:`_parse_manual_sheet`, and combines the results into
-    a single :data:`ManualRegistry`. Duplicate keys are overwritten with
+    each with ``_parse_manual_sheet``, and combines the results into
+    a single ``ManualRegistry``. Duplicate keys are overwritten with
     a logged warning.
 
     Args:

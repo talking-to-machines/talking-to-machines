@@ -9,13 +9,14 @@ proceeds through the following stages:
        the agent only sees messages it is permitted to observe.
     3. Render the current prompt's ``llm_text`` via Jinja using the
        experiment state context.
-    3.5. Optionally prepend RAG-retrieved chunks to the rendered prompt.
-    4. Optionally shuffle and inject response options into the prompt.
-    5. Append formatting instructions (JSON schema, speculation score).
-    5.5. Detect ``[IMAGE:]``, ``[VIDEO:]``, ``[AUDIO:]`` media tags and
-         convert the prompt into provider-compatible multimodal content
-         blocks.
-    6. Return the normalised ``[{"role": ..., "content": ...}, ...]`` list.
+    4. Optionally prepend RAG-retrieved chunks to the rendered prompt.
+    5. Optionally shuffle and inject response options into the prompt.
+    6. Append formatting instructions (JSON schema, speculation score).
+    7. Detect ``[IMAGE:]``, ``[VIDEO:]``, ``[AUDIO:]`` media tags and
+       convert the prompt into provider-compatible multimodal content
+       blocks.
+    8. Return the normalised ``[{"role": ..., "content": ...}, ...]`` list.
+    
 """
 
 from __future__ import annotations
