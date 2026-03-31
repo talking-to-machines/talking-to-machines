@@ -577,7 +577,15 @@ class ExperimentRuntime:
                     },
                 )
                 stop_signal = self._execute_facilitator_prompt(
-                    prompt, group, agents_map, cep, task_name, field_def, jinja_ctx
+                    prompt,
+                    group,
+                    agents_map,
+                    cep,
+                    task_name,
+                    field_def,
+                    jinja_ctx,
+                    session=session,
+                    round_number=round_number,
                 )
                 if stop_signal in ("end_round", "end_session"):
                     break
@@ -864,6 +872,8 @@ class ExperimentRuntime:
         task_name: str,
         field_def: Optional[FieldDefinition] = None,
         jinja_ctx: dict | None = None,
+        session: Optional[Session] = None,
+        round_number: int = 0,
     ) -> str:
         """Execute a FACILITATOR-type prompt via the FacilitatorEngine.
 
@@ -927,35 +937,77 @@ class ExperimentRuntime:
                     seen_ids.add(msg_id)
                     facilitator_messages.append(msg)
 
-        context = {
+        base_context = {
             "group_id": group.group_id,
             "agent_ids": [p.agent_id for p in group.players],
             "facilitator_messages": facilitator_messages,
         }
-        # Merge Jinja context so facilitator definitions can use {{ C.task.name }}, etc.
-        if jinja_ctx:
-            context.update(jinja_ctx)
-        result = engine.execute(fn, context)
 
-        # Append facilitator response to agent histories (facilitator-only visibility)
-        if result:
-            msg = make_message(
-                role="user",
-                content=result,
-                sender_agent_instance_id="facilitator",
-                group_id=group.group_id,
-                visibility=VISIBILITY_FACILITATOR,
-                task=task_name,
-                round_number=0,  # facilitator not tied to a specific round
-            )
-            self._append_to_agent_histories(msg, group, agents_map)
+        is_player_scoped = field_def and field_def.field_class == "Player"
 
-        # Store facilitator response in ExperimentState if field is defined
-        if field_def and field_def.name and result:
-            if field_def.field_class == "Session":
-                self._state.set_session(task_name, field_def.name, result)
-            elif field_def.field_class == "Group":
-                self._state.set_group(group.group_id, task_name, field_def.name, result)
+        if is_player_scoped:
+            # Player-scoped facilitator: run once per player with
+            # player-specific Jinja context, storing the result in
+            # each player's field.  The facilitator still sees the
+            # full group conversation built above.
+            result = ""
+            for player in group.players:
+                agent = agents_map.get(player.agent_instance_id)
+                if agent is None:
+                    continue
+                player_ctx = self._state.build_jinja_context(
+                    agent=agent,
+                    player=player,
+                    group=group,
+                    session=session,
+                    task=task_name,
+                    round_number=round_number,
+                    constants=cep.constants,
+                )
+                player_context = dict(base_context)
+                player_context.update(player_ctx)
+                player_result = engine.execute(fn, player_context)
+                if player_result:
+                    result = player_result  # keep last for stop signal
+                    self._state.set_player(
+                        player.player_id, task_name, field_def.name, player_result
+                    )
+                    msg = make_message(
+                        role="user",
+                        content=player_result,
+                        sender_agent_instance_id="facilitator",
+                        group_id=group.group_id,
+                        visibility=VISIBILITY_FACILITATOR,
+                        task=task_name,
+                        round_number=round_number,
+                    )
+                    self._append_to_agent_histories(msg, group, agents_map)
+        else:
+            # Session / Group / no-field: single group-wide execution
+            context = dict(base_context)
+            if jinja_ctx:
+                context.update(jinja_ctx)
+            result = engine.execute(fn, context)
+
+            if result:
+                msg = make_message(
+                    role="user",
+                    content=result,
+                    sender_agent_instance_id="facilitator",
+                    group_id=group.group_id,
+                    visibility=VISIBILITY_FACILITATOR,
+                    task=task_name,
+                    round_number=round_number,
+                )
+                self._append_to_agent_histories(msg, group, agents_map)
+
+            if field_def and field_def.name and result:
+                if field_def.field_class == "Session":
+                    self._state.set_session(task_name, field_def.name, result)
+                elif field_def.field_class == "Group":
+                    self._state.set_group(
+                        group.group_id, task_name, field_def.name, result
+                    )
 
         # Check raw text for stop signal keywords
         return self._flow.evaluate_stop_condition(result)

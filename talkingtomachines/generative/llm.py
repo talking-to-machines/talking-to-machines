@@ -181,7 +181,7 @@ def extract_image_url(message_content: str) -> Optional[str]:
         Optional[str]: The extracted image URL if found, otherwise None.
 
     The extraction process includes:
-    
+
     1. Searching for Base64-encoded image URLs.
     2. Identifying generic HTTP(S) URLs and applying heuristics to determine if they
        are likely to point to images. This includes:
