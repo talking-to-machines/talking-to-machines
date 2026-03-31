@@ -19,10 +19,10 @@ v0.3.0 uses **7 worksheets** that map to the oTree-inspired hierarchy (Session �
 | Worksheet Name | Description |
 | - | - |
 | Settings | Global experiment settings and configurations. |
-| C | Task-specific and global constants injected into prompts via Jinja2. |
+| C | Module-specific and global constants injected into prompts via Jinja2. |
 | Fields | Data variables (fields) that agents write to during the experiment. |
 | Facilitator | Built-in and custom facilitator functions that control experiment flow. |
-| Prompts | The prompt sequence defining what happens in each task and round. |
+| Prompts | The prompt sequence defining what happens in each module and round. |
 | Profiles | Agent profile attributes in tabular format (demographics, characteristics). |
 | Manual_ | Optional manual overrides for treatment and group assignments. |
 
@@ -36,13 +36,13 @@ Two-column format: the first column contains the setting key (`name`), the secon
 
 | Key | **Required** | Default | Description/Expected Value |
 | - | - | - | - |
-| `EXPERIMENT_ID` | **Yes** | (none) | Unique experiment identifier. Used in agent ID generation (format: `{EXPERIMENT_ID}_a{profile_ID}`) and run ID generation. |
+| `EXPERIMENT_ID` | **Yes** | (none) | Unique experiment identifier. Used in run ID generation. |
 | `MODEL_NAME` | **Yes** | (none) | The LLM model identifier to use for agent inference. The platform auto-detects the provider from the model name. Supported providers: OpenAI (`gpt-*`, `o1`, `o3`, `o4`, `o5`), Anthropic (`claude-*`), Google (`gemini-*`), Mistral (`mistral-*`, `codestral-*`), xAI (`grok-*`), DeepSeek (`deepseek-*`), Hugging Face (`hf-*`), and [OpenRouter.ai](https://openrouter.ai/models) (`openrouter/*`). Unrecognised model names default to OpenRouter. The model is validated against available API keys during `talkingtomachines validate`. |
 | `HF_INFERENCE_ENDPOINT` | No | `""` | The base URL of a deployed Hugging Face Inference Endpoint. Only required when `MODEL_NAME` starts with `hf-`. |
 | `TEMPERATURE` | No | `0.0` | Sampling temperature controlling response randomness. Expected values: `0.0` to `2.0`. Higher values produce more diverse responses. A value of `0.0` produces near-deterministic output. This setting may be ignored for certain reasoning models (e.g., `o1`, `o3`). |
 | `RANDOM_SEED` | **Yes** | (none) | A non-negative integer seed for reproducible randomisation. Used by the `RandomisationEngine` for treatment/group assignment and run ID generation. Two runs with the same seed and template produce identical assignments. |
 | `NUM_AGENTS_PER_SESSION` | **Yes** | (none) | The number of agents (synthetic subjects) participating in each session. Must be a positive integer. This determines how many profile rows from the `Profiles` worksheet are used. |
-| `TASK_SEQUENCE` | **Yes** | (none) | A comma-separated, ordered list of task names to execute in the session (e.g., `task1,task2,task3`). Each task name must correspond to entries in the `C`, `Fields`, `Prompts`, and `Facilitator` worksheets. Cannot be empty. |
+| `MODULE_SEQUENCE` | **Yes** | (none) | A comma-separated, ordered list of module names to execute in the session (e.g., `module1,module2,module3`). Each module name must correspond to entries in the `C`, `Fields`, `Prompts`, and `Facilitator` worksheets. Cannot be empty. |
 | `PROFILE_FIELDS` | No | `"ALL"` | Controls which profile columns are included. Set to `ALL` to include every column, or provide a comma-separated list of short names (e.g., `age,gender,education`). The `ID` column is always included regardless of this setting. |
 | `BUILD_PROFILE_QA` | No | `False` | If `True`, each agent's profile is formatted as a Q&A snippet (prefixed with "Interviewer:" and "Me:") and inserted into the agent's LLM system message. Accepts: `True`, `False`, `1`, `0`, `yes`, `no`. |
 | `BUILD_PROFILE_BACKSTORIES` | No | `False` | If `True`, a first-person narrated backstory is generated from the agent's profile via an additional LLM call and inserted into the agent's system message. If both `BUILD_PROFILE_QA` and `BUILD_PROFILE_BACKSTORIES` are `False`, no profile information is passed to the LLM. Accepts: `True`, `False`, `1`, `0`, `yes`, `no`. |
@@ -52,35 +52,35 @@ Two-column format: the first column contains the setting key (`name`), the secon
 **Important notes:**
 - Unknown keys are logged as warnings but do not prevent compilation.
 - Boolean values accept multiple representations: `"true"`/`"false"`, `"1"`/`"0"`, `"yes"`/`"no"`.
-- `TASK_SEQUENCE` is parsed from a comma-separated string into an ordered list at compile time. Whitespace around task names is trimmed.
+- `MODULE_SEQUENCE` is parsed from a comma-separated string into an ordered list at compile time. Whitespace around module names is trimmed.
 - `ASSIGN_MANUALLY` tokens are normalised to lowercase internally.
 
 ---
 
 ## 2. `C` (Constants)
 
-Defines task-specific and global numeric/string/boolean constants that can be dynamically injected into prompts and facilitator definitions using Jinja2 templates.
+Defines module-specific and global numeric/string/boolean constants that can be dynamically injected into prompts and facilitator definitions using Jinja2 templates.
 
 | Column | **Required** | Description |
 | - | - | - |
-| `task` | **Yes** | The task name this constant belongs to (must match a name in `TASK_SEQUENCE`). Use `global` for experiment-wide constants that apply across all tasks. |
+| `module` | **Yes** | The module name this constant belongs to (must match a name in `MODULE_SEQUENCE`). Use `global` for experiment-wide constants that apply across all modules. |
 | `name` | **Yes** | The constant identifier (e.g., `ENDOWMENT`, `MAX_NUM_ROUNDS`, `PLAYERS_PER_GROUP`, `TREATMENT_LABELS`). |
 | `value` | **Yes** | The constant value. Rows with empty values are silently skipped. |
 | `type` | No (default: `string`) | Controls how `value` is coerced to a Python type. Expected values: `integer` (or `int`), `float`, `string` (or `str`, `text`), `boolean` (or `bool`). If coercion fails, the value is kept as a string with a warning logged. |
 
-**Jinja access pattern:** `{{ C.<task>.<name> }}` (e.g., `{{ C.task1.ENDOWMENT }}`, `{{ C.global.TREATMENT_LABELS }}`)
+**Jinja access pattern:** `{{ C.<module>.<name> }}` (e.g., `{{ C.module1.ENDOWMENT }}`, `{{ C.global.TREATMENT_LABELS }}`)
 
 **Special constants (expected by the platform):**
 
 | Name | Scope | Type | Purpose |
 | - | - | - | - |
-| `MAX_NUM_ROUNDS` | Per task | integer | Maximum number of rounds in the task module. Required by the flow validator for each task. The session terminates the task prematurely if this limit is exceeded. Useful for preventing infinite loops with repeated prompts. |
-| `PLAYERS_PER_GROUP` | Per task | integer | Number of agents assigned to each group. If omitted, defaults to `NUM_AGENTS_PER_SESSION` (i.e., all agents in one group). |
-| `TREATMENT_LABELS` | Global or per task | string | Comma-separated treatment condition labels (e.g., `control,treatment_A,treatment_B`). Required if prompts or facilitators reference `{{ treatment }}` and treatment assignment is random (not manual). |
+| `MAX_NUM_ROUNDS` | Per module | integer | Maximum number of rounds in the module. Required by the flow validator for each module. The session terminates the module prematurely if this limit is exceeded. Useful for preventing infinite loops with repeated prompts. |
+| `PLAYERS_PER_GROUP` | Per module | integer | Number of agents assigned to each group. If omitted, defaults to `NUM_AGENTS_PER_SESSION` (i.e., all agents in one group). |
+| `TREATMENT_LABELS` | Global or per module | string | Comma-separated treatment condition labels (e.g., `control,treatment_A,treatment_B`). Required if prompts or facilitators reference `{{ treatment }}` and treatment assignment is random (not manual). |
 
 **Important notes:**
-- Rows with empty `task` or `name` are silently skipped.
-- Constants are resolved at **compile time** — they are baked into the compiled experiment and not re-evaluated at runtime. This means `{{ C.task1.ENDOWMENT }}` in a prompt is replaced with the literal value before execution begins.
+- Rows with empty `module` or `name` are silently skipped.
+- Constants are resolved at **compile time** — they are baked into the compiled experiment and not re-evaluated at runtime. This means `{{ C.module1.ENDOWMENT }}` in a prompt is replaced with the literal value before execution begins.
 
 ---
 
@@ -90,9 +90,9 @@ Defines all data variables (fields) that agents write to during the experiment. 
 
 | Column | **Required** | Default | Description |
 | - | - | - | - |
-| `task` | **Yes** | (none) | Task name from `TASK_SEQUENCE`. |
+| `module` | **Yes** | (none) | Module name from `MODULE_SEQUENCE`. |
 | `class` | **Yes** | (none) | The hierarchy scope at which the field is tracked. Expected values: `Session`, `Subsession`, `Agent`, `Group`, `Player`. See scope semantics below. |
-| `name` | **Yes** | (none) | Field identifier (variable name). Used in Jinja templates and state lookups. Must be unique within the same `(task, class)` combination. |
+| `name` | **Yes** | (none) | Field identifier (variable name). Used in Jinja templates and state lookups. Must be unique within the same `(module, class)` combination. |
 | `type` | **Yes** | `"text"` | Data type for validation and response formatting. Expected values: `integer`, `float`, `text`, `category`, `boolean`. |
 | `response_options` | No | `None` | Allowed response values. Can be a Python list literal (`[0, 1, 2, 3, 4, 5]`), a Python dict literal (`{"a": "Option A", "b": "Option B"}`), or a comma-separated string (`opt1,opt2,opt3`). If empty, the field accepts free-form responses. |
 | `response_options_intro` | No | `""` | Introductory text displayed before presenting response options to the agent (e.g., `"Please choose one of the following:"`). |
@@ -105,8 +105,8 @@ Defines all data variables (fields) that agents write to during the experiment. 
 
 | Class | Persistence | Description |
 | - | - | - |
-| `Session` | Entire session | Shared across all agents, tasks, and rounds. |
-| `Subsession` | One round | Shared across all groups within a single round of a task. |
+| `Session` | Entire session | Shared across all agents, modules, and rounds. |
+| `Subsession` | One round | Shared across all groups within a single round of a module. |
 | `Agent` | Across rounds | Persists across all rounds for a single agent (not round-specific). |
 | `Group` | One round, one group | Scoped to a specific group in a specific round. |
 | `Player` | One round, one agent | Per-round, per-group instance of an agent. The most granular scope. |
@@ -115,21 +115,21 @@ Defines all data variables (fields) that agents write to during the experiment. 
 
 **Important notes:**
 - Boolean columns (`randomise_options_order`, `validate`, `generate_speculation_score`, `format_response`) treat empty/`NaN` values as `False`.
-- Fields are looked up at runtime by the composite key `(task, class, name)`.
+- Fields are looked up at runtime by the composite key `(module, class, name)`.
 - `PUBLIC_QUESTION`, `PRIVATE_QUESTION`, and `DISCUSSION` prompts in the Prompts worksheet must link to a field defined here via `field_class` and `field_name`.
 
 ---
 
 ## 4. `Prompts`
 
-Defines the prompt sequence — what happens in each task and round, what text is presented to the LLM, and how responses are collected.
+Defines the prompt sequence — what happens in each module and round, what text is presented to the LLM, and how responses are collected.
 
 | Column | **Required** | Default | Description |
 | - | - | - | - |
-| `task` | **Yes** | (none) | Task name from `TASK_SEQUENCE`. |
-| `prompt_sequence` | No | `0` | Non-negative integer controlling execution order within the task. Prompts with the same sequence value are executed in definition order. |
+| `module` | **Yes** | (none) | Module name from `MODULE_SEQUENCE`. |
+| `prompt_sequence` | No | `0` | Non-negative integer controlling execution order within the module. Prompts with the same sequence value are executed in definition order. |
 | `type` | **Yes** | (none) | Prompt type. Expected values: `CONTEXT`, `DISCUSSION`, `PUBLIC_QUESTION`, `PRIVATE_QUESTION`, `FACILITATOR`. See type descriptions below. |
-| `is_displayed` | No | `None` (always display) | A Jinja2 boolean expression evaluated at runtime to conditionally display the prompt. Examples: `round_number == 1`, `player.treatment == 'T1'`, `round_number > 1`. If empty or `None`, the prompt always displays. If the expression references an undefined variable, a `ValueError` is raised. Other evaluation errors default to displaying the prompt. |
+| `is_displayed` | No | `None` (always display) | A Jinja2 boolean expression evaluated at runtime to conditionally display the prompt. Examples: `round_number == 1`, `player.treatment == 'T1'`, `round_number > 1`. If empty or `None`, the prompt always displays. Expressions referencing `player.` or `agent.` attributes are evaluated **per player** within the group, so each agent is individually included or excluded. Non-player expressions (e.g., `round_number == 1`) are evaluated once for the group. If the expression references an undefined variable, a `ValueError` is raised. Other evaluation errors default to displaying the prompt. |
 | `is_adapted` | No | `False` | Documentation flag indicating whether the text has been adapted from the original human experiment. Does not affect platform operation. |
 | `human_text` | No | `""` | The original instructions from the human experiment (for documentation). Does not affect platform operation. |
 | `llm_text` | **Yes** | (none) | The Jinja2 template text sent to the LLM. Supports all variable references (see below). Must be non-empty. |
@@ -150,13 +150,13 @@ Defines the prompt sequence — what happens in each task and round, what text i
 **Important notes:**
 - `PUBLIC_QUESTION`, `PRIVATE_QUESTION`, and `DISCUSSION` types **must** specify both `field_class` and `field_name`. Omitting these raises a `ValueError` during compilation.
 - `CONTEXT` and `FACILITATOR` types do not require field references.
-- Compile-time Jinja references (e.g., `{{ C.task1.ENDOWMENT }}`) are resolved during compilation and baked into the prompt. Runtime references (e.g., `{{ player.age }}`, `{{ round_number }}`) remain as placeholders and are evaluated during execution.
+- Compile-time Jinja references (e.g., `{{ C.module1.ENDOWMENT }}`) are resolved during compilation and baked into the prompt. Runtime references (e.g., `{{ player.age }}`, `{{ round_number }}`) remain as placeholders and are evaluated during execution.
 
 **Jinja variables available in `llm_text` and `human_text`:**
 
 | Variable | Description |
 | - | - |
-| `{{ C.<task>.<constant_name> }}` | Constants from the `C` worksheet (resolved at compile time). |
+| `{{ C.<module>.<constant_name> }}` | Constants from the `C` worksheet (resolved at compile time). |
 | `{{ player.<short_name> }}` | Profile attributes from the `Profiles` worksheet (e.g., `{{ player.age }}`). |
 | `{{ player.<field_name> }}` | Player-scoped field values collected during the experiment. |
 | `{{ agent.<field_name> }}` | Agent-scoped field values (persisted across rounds). |
@@ -177,14 +177,14 @@ Defines facilitator functions that control experiment flow. The platform include
 | Column | **Required** | Default | Description |
 | - | - | - | - |
 | `name` | **Yes** | (none) | Function identifier. Built-in names: `creating_session`, `assign_treatment`, `assign_groups`. Any other name is treated as a custom LLM facilitator. |
-| `definition` | **Yes** | (none) | For built-in functions: a brief description (not used at runtime). For custom functions: a natural-language instruction sent to the LLM as a prompt. Supports Jinja2 templates (e.g., `{{ C.task1.ENDOWMENT }}`). |
+| `definition` | **Yes** | (none) | For built-in functions: a brief description (not used at runtime). For custom functions: a natural-language instruction sent to the LLM as a prompt. Supports Jinja2 templates (e.g., `{{ C.module1.ENDOWMENT }}`). |
 | `args` | No | `{}` | A Python dict literal or JSON dict of arguments passed to the function at runtime. Parsed via `ast.literal_eval()`. Example: `{"strategy": "balanced", "seed": 42}`. Empty string or `NaN` → empty dict. |
 
 **Built-in facilitator functions:**
 
 | Name | Purpose | Typical Args |
 | - | - | - |
-| `creating_session` | Initialise session state before any task executes. Called once per session. | `{}` |
+| `creating_session` | Initialise session state before any module executes. Called once per session. | `{}` |
 | `assign_treatment` | Assign treatment conditions to agents. Uses `ASSIGN_MANUALLY` setting; if manual, reads from `Manual_` sheets; otherwise randomises using the `RandomisationEngine`. | `{"strategy": "simple_random"}` or `{"strategy": "complete_random"}` |
 | `assign_groups` | Form groups for interactions. Uses `ASSIGN_MANUALLY` setting for groups; if random, groups agents based on `PLAYERS_PER_GROUP`. | `{"strategy": "random"}` |
 
@@ -224,7 +224,7 @@ Rows 2+:  Profile Data (one row per agent)    → 1, 25, "Male", "University", .
 **ID column requirements:**
 - There **must** be a column with the short name `ID` (case-insensitive match). This is required even if you do not intend to provide any other profile information.
 - ID values must be **unique** across all profile rows. Duplicates raise a `ValueError`.
-- IDs are used to construct stable agent identifiers: `{EXPERIMENT_ID}_a{ID}`.
+- IDs are used as stable agent identifiers (the raw profile `ID` value).
 
 **Jinja access pattern:** Profile fields are accessed as `{{ player.<short_name> }}` in prompts (e.g., `{{ player.age }}`, `{{ player.gender }}`).
 
@@ -244,9 +244,9 @@ You can use a single worksheet named `Manual_` or multiple worksheets with the p
 | Column | **Required** | Description |
 | - | - | - |
 | `ID` | **Yes** | Must correspond to a value in the `ID` column of the `Profiles` worksheet. Identifies which agent receives the assignment. |
-| `task` | Conditional | Task name. If empty, the assignment applies to all tasks in `TASK_SEQUENCE`. At least one of `task` or `class` must be non-empty. |
+| `module` | Conditional | Module name. If empty, the assignment applies to all modules in `MODULE_SEQUENCE`. At least one of `module` or `class` must be non-empty. |
 | `round_number` | No | If empty or `NaN`, the assignment applies to all rounds. If specified, it applies only to that round. |
-| `class` | Conditional | Hierarchy level of the assignment. Expected values: `Session`, `Module`, `Subsession`, `Group`, `Agent`, `Player`. At least one of `task` or `class` must be non-empty. |
+| `class` | Conditional | Hierarchy level of the assignment. Expected values: `Session`, `Module`, `Subsession`, `Group`, `Agent`, `Player`. At least one of `module` or `class` must be non-empty. |
 | `name` | **Yes** | The assignment type. For treatment assignments: `treatment`. For group assignments: `id_in_subsession`. For other field values: any defined field name. |
 | `value` | **Yes** | The assigned value. For treatments: a treatment label string (e.g., `control`, `treatment_A`). For groups: a group identifier. For fields: the field value. |
 
@@ -260,7 +260,7 @@ You can use a single worksheet named `Manual_` or multiple worksheets with the p
 
 **Important notes:**
 - Profile IDs referenced in `Manual_` sheets are cross-validated against the `Profiles` worksheet. If a referenced ID does not exist, a `ValueError` is raised.
-- Duplicate keys (same `ID`, `task`, `round_number`, `class`, `name`) result in the later value overwriting the earlier one with a warning logged.
+- Duplicate keys (same `ID`, `module`, `round_number`, `class`, `name`) result in the later value overwriting the earlier one with a warning logged.
 - Rows missing `ID` or `name` raise a `ValueError`.
 
 ---
@@ -271,7 +271,7 @@ When you run `talkingtomachines validate`, the platform executes the following v
 
 1. **Schema Validator** — Checks worksheet structure, column presence, required fields.
 2. **Reference Validator** — Validates Jinja references (constants, fields, profiles, facilitators) to ensure all referenced variables exist.
-3. **Flow Validator** — Validates prompt ordering, field linkage, and confirms `MAX_NUM_ROUNDS` and `PLAYERS_PER_GROUP` are defined for each task.
+3. **Flow Validator** — Validates prompt ordering, field linkage, and confirms `MAX_NUM_ROUNDS` and `PLAYERS_PER_GROUP` are defined for each module.
 4. **Provider Validator** — Checks that the LLM model is valid, the corresponding API key is set, and the model supports any features used (e.g., RAG, visual inputs).
 5. **Context Window Validator** — Estimates total token usage to ensure the experiment fits within the model's context window. Reports warnings at 80% utilisation and errors if the limit would be exceeded.
 

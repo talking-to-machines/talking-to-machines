@@ -65,8 +65,9 @@ def _fn(
 
 def test_creating_session_returns_empty_string():
     engine, _, _ = _engine()
-    result = engine.execute(_fn("creating_session"), context={})
+    result, rendered = engine.execute(_fn("creating_session"), context={})
     assert result == ""
+    assert rendered == ""
 
 
 def test_creating_session_does_not_call_rng(mocker=None):
@@ -85,8 +86,9 @@ def test_creating_session_does_not_call_rng(mocker=None):
 def test_assign_treatment_returns_empty_string():
     engine, mock_rng, _ = _engine()
     context = {"agent_ids": ["agent_a", "agent_b"], "treatment_labels": ["T1", "T2"]}
-    result = engine.execute(_fn("assign_treatment"), context=context)
+    result, rendered = engine.execute(_fn("assign_treatment"), context=context)
     assert result == ""
+    assert rendered == ""
 
 
 def test_assign_treatment_delegates_to_rng():
@@ -107,7 +109,7 @@ def test_assign_treatment_delegates_to_rng():
 
 def test_assign_treatment_missing_agent_ids_returns_empty():
     engine, mock_rng, _ = _engine()
-    result = engine.execute(
+    result, _ = engine.execute(
         _fn("assign_treatment"), context={"treatment_labels": ["T1"]}
     )
     assert result == ""
@@ -116,7 +118,7 @@ def test_assign_treatment_missing_agent_ids_returns_empty():
 
 def test_assign_treatment_missing_treatment_labels_returns_empty():
     engine, mock_rng, _ = _engine()
-    result = engine.execute(_fn("assign_treatment"), context={"agent_ids": ["a1"]})
+    result, _ = engine.execute(_fn("assign_treatment"), context={"agent_ids": ["a1"]})
     assert result == ""
     mock_rng.assign_treatments.assert_not_called()
 
@@ -129,8 +131,9 @@ def test_assign_treatment_missing_treatment_labels_returns_empty():
 def test_assign_groups_returns_empty_string():
     engine, mock_rng, _ = _engine()
     context = {"agent_ids": ["a1", "a2", "a3", "a4"], "players_per_group": 2}
-    result = engine.execute(_fn("assign_groups"), context=context)
+    result, rendered = engine.execute(_fn("assign_groups"), context=context)
     assert result == ""
+    assert rendered == ""
 
 
 def test_assign_groups_delegates_to_rng():
@@ -148,7 +151,7 @@ def test_assign_groups_delegates_to_rng():
 
 def test_assign_groups_empty_agent_ids_returns_empty():
     engine, mock_rng, _ = _engine()
-    result = engine.execute(
+    result, _ = engine.execute(
         _fn("assign_groups"), context={"agent_ids": [], "players_per_group": 2}
     )
     assert result == ""
@@ -162,10 +165,11 @@ def test_assign_groups_empty_agent_ids_returns_empty():
 
 def test_custom_facilitator_calls_router_generate():
     engine, _, mock_router = _engine(llm_response='{"payoff": 10}')
-    result = engine.execute(
+    result, rendered = engine.execute(
         _fn("set_payoff", definition="Set payoff to 10."), context={}
     )
     assert result == '{"payoff": 10}'
+    assert rendered == "Set payoff to 10."
     mock_router.generate.assert_called_once()
 
 
@@ -181,27 +185,27 @@ def test_custom_facilitator_passes_definition_to_llm():
 def test_custom_facilitator_returns_raw_string():
     fenced = '```json\n{"score": 42}\n```'
     engine, _, _ = _engine(llm_response=fenced)
-    result = engine.execute(_fn("score_fn"), context={})
+    result, _ = engine.execute(_fn("score_fn"), context={})
     assert result == '```json\n{"score": 42}\n```'
 
 
 def test_custom_facilitator_returns_raw_string_plain_fences():
     fenced = '```\n{"val": 7}\n```'
     engine, _, _ = _engine(llm_response=fenced)
-    result = engine.execute(_fn("val_fn"), context={})
+    result, _ = engine.execute(_fn("val_fn"), context={})
     assert result == '```\n{"val": 7}\n```'
 
 
 def test_custom_facilitator_invalid_json_returns_raw():
     engine, _, _ = _engine(llm_response="not valid json {{}")
-    result = engine.execute(_fn("broken_fn"), context={})
+    result, _ = engine.execute(_fn("broken_fn"), context={})
     assert result == "not valid json {{}"
 
 
 def test_custom_facilitator_router_exception_returns_empty():
     engine, _, mock_router = _engine()
     mock_router.generate.side_effect = RuntimeError("LLM error")
-    result = engine.execute(_fn("error_fn"), context={})
+    result, _ = engine.execute(_fn("error_fn"), context={})
     assert result == ""
 
 

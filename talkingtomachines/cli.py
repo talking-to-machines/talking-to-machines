@@ -118,7 +118,7 @@ def main():
             click.echo(click.style("Validation passed.", fg="green"))
             click.echo(f"  Experiment ID : {cep.experiment_id}")
             click.echo(f"  Config hash   : {cep.config_hash}")
-            click.echo(f"  Tasks         : {', '.join(cep.task_sequence)}")
+            click.echo(f"  Modules       : {', '.join(cep.module_sequence)}")
             from talkingtomachines.gateway.model_registry import get_model_spec
 
             spec = get_model_spec(cep.settings.get("model_name", ""))
@@ -152,7 +152,7 @@ def main():
         "mode",
         flag_value="test",
         default=True,
-        help="Test mode (default): run one group per task, sequential.",
+        help="Test mode (default): run one group per module, sequential.",
     )
     @click.option(
         "--full-run",
@@ -166,20 +166,20 @@ def main():
     @click.option(
         "--output",
         "-o",
-        default="experiment_results",
-        help="Output base directory (default: experiment_results).",
+        default=None,
+        help="Output base directory (default: same directory as the template).",
     )
     def run(template_path: str, mode: str, budget: float, output: str):
         """Compile and execute an experiment from a template file or CSV directory.
 
         By default runs in test mode (``--test``), executing only one group
-        per task sequentially.  Pass ``--full-run`` to run all groups in
+        per module sequentially.  Pass ``--full-run`` to run all groups in
         parallel within a single session.
 
         Args:
             template_path: Path to an Excel template file or a directory
                 containing CSV template files.
-            mode: ``"test"`` (default) runs one group per task
+            mode: ``"test"`` (default) runs one group per module
                 sequentially. ``"full"`` runs all groups in parallel.
             budget: Budget cap in USD. ``0`` means no cap.
             output: Base directory for experiment output.
@@ -194,9 +194,15 @@ def main():
             level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
         )
 
+        from pathlib import Path
         from talkingtomachines.compiler.compiler import CompilationError
         from talkingtomachines.orchestrator.runtime import ExperimentRuntime
         from talkingtomachines.storage.artifact_manager import ArtifactManager
+
+        # Default output to the same directory as the template
+        if output is None:
+            tp = Path(template_path)
+            output = str(tp.parent if tp.is_file() else tp)
 
         click.echo(f"Compiling: {template_path}")
         try:
@@ -206,10 +212,10 @@ def main():
             click.echo(click.style(f"Compilation failed: {exc}", fg="red"))
             sys.exit(1)
 
-        run_dir = f"{output}/{cep.experiment_id}/{cep.run_id}"
+        run_dir = f"{output}/results/{cep.run_id}"
         test_mode = mode == "test"
         click.echo(
-            f"Mode: {'Test Mode (1 group per task)' if test_mode else 'Full Run (All groups)'}"
+            f"Mode: {'Test Mode (1 group per module)' if test_mode else 'Full Run (All groups)'}"
         )
         click.echo(f"Run ID: {cep.run_id}")
         click.echo(f"Output: {run_dir}")
@@ -224,10 +230,10 @@ def main():
         runtime = ExperimentRuntime(cep, output_dir=run_dir, budget_cap_usd=budget)
         start_time = datetime.now(timezone.utc).isoformat()
 
-        num_tasks = len(cep.task_sequence)
+        num_modules = len(cep.module_sequence)
         progress_bar = click.progressbar(
-            length=num_tasks,
-            label="Running tasks",
+            length=num_modules,
+            label="Running modules",
             show_pos=True,
             item_show_func=lambda t: t or "",
         )
@@ -235,13 +241,13 @@ def main():
         try:
             with progress_bar as bar:
 
-                def _on_task_complete(_task_idx, task_name, _total):
-                    bar.update(1, task_name)
+                def _on_module_complete(_module_idx, module_name, _total):
+                    bar.update(1, module_name)
 
                 session = runtime.run(
                     session_number=1,
                     test_mode=test_mode,
-                    on_task_complete=_on_task_complete,
+                    on_module_complete=_on_module_complete,
                 )
         except Exception as exc:
             click.echo(click.style(f"\nRuntime error: {exc}", fg="red"))

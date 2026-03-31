@@ -10,7 +10,7 @@ responses are parsed as state updates.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from jinja2.sandbox import SandboxedEnvironment
 
@@ -72,8 +72,8 @@ class FacilitatorEngine:
         self,
         fn: FacilitatorFunction,
         context: dict[str, Any],
-    ) -> str:
-        """Execute a facilitator function and return its raw response.
+    ) -> tuple[str, str]:
+        """Execute a facilitator function and return its response and rendered prompt.
 
         For built-in functions, delegates to the appropriate internal
         method and returns an empty string (side-effects only). For
@@ -86,18 +86,20 @@ class FacilitatorEngine:
                 treatment labels, etc.).
 
         Returns:
-            The raw LLM response text for custom facilitators, or an
-            empty string for built-in facilitators.
+            A tuple of ``(result, rendered_prompt)``. For custom LLM
+            facilitators, *result* is the LLM response and
+            *rendered_prompt* is the Jinja-rendered definition. For
+            built-in facilitators, both are empty strings.
         """
         if fn.name == "creating_session":
             self._creating_session(fn, context)
-            return ""
+            return "", ""
         if fn.name == "assign_treatment":
             self._assign_treatment(fn, context)
-            return ""
+            return "", ""
         if fn.name == "assign_groups":
             self._assign_groups(fn, context)
-            return ""
+            return "", ""
         return self._execute_llm_facilitator(fn, context)
 
     # ------------------------------------------------------------------
@@ -215,7 +217,9 @@ class FacilitatorEngine:
             )
             return template_str
 
-    def _execute_llm_facilitator(self, fn: FacilitatorFunction, context: dict) -> str:
+    def _execute_llm_facilitator(
+        self, fn: FacilitatorFunction, context: dict
+    ) -> tuple[str, str]:
         """Execute a custom facilitator function via an LLM call.
 
         Renders the function definition as a Jinja2 template, sends it
@@ -233,8 +237,10 @@ class FacilitatorEngine:
                 prior responses.
 
         Returns:
-            The raw LLM response text. Returns an empty string if the
-            LLM call fails.
+            A tuple of ``(result, rendered_definition)`` where *result*
+            is the raw LLM response and *rendered_definition* is the
+            Jinja-rendered definition text. Returns ``("", rendered)``
+            if the LLM call fails.
         """
         rendered_definition = self._render(fn.definition, context)
         system_prompt = (
@@ -255,7 +261,7 @@ class FacilitatorEngine:
         #   who said what and when.
         facilitator_messages = context.get("facilitator_messages", [])
         for msg in facilitator_messages:
-            sender = msg.get("sender_agent_instance_id", "")
+            sender = msg.get("sender_agent_id", "")
             content = msg.get("content", "")
             if not content:
                 continue
@@ -265,13 +271,13 @@ class FacilitatorEngine:
                 message_history.append({"role": "assistant", "content": content})
             else:
                 # Agent message — prefix with sender and round context
-                task = msg.get("task", "")
+                module = msg.get("module", "")
                 round_num = msg.get("round_number", 0)
                 prefix_parts = []
                 if sender:
                     prefix_parts.append(sender)
-                if task:
-                    prefix_parts.append(f"task={task}")
+                if module:
+                    prefix_parts.append(f"module={module}")
                 if round_num:
                     prefix_parts.append(f"round={round_num}")
                 prefix = f"[{', '.join(prefix_parts)}] " if prefix_parts else ""
@@ -288,7 +294,7 @@ class FacilitatorEngine:
                 model=self._model,
                 temperature=self._temperature,
             )
-            return response.content.strip()
+            return response.content.strip(), rendered_definition
         except Exception as exc:
             logger.error("Facilitator LLM call failed: %s", exc)
-            return ""
+            return "", rendered_definition

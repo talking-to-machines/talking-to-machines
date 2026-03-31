@@ -37,7 +37,7 @@ def _msg(
     return make_message(
         role="assistant",
         content=content,
-        sender_agent_instance_id=sender,
+        sender_agent_id=sender,
         group_id=group_id,
         treatment_label=treatment,
         visibility=visibility,
@@ -52,7 +52,7 @@ def _filter(
 ) -> list:
     return filter_message_history(
         shared_history=history,
-        requesting_agent_instance_id=requesting_agent,
+        requesting_agent_id=requesting_agent,
         requesting_group_id=group_id,
         requesting_treatment_label=treatment,
     )
@@ -67,14 +67,14 @@ def test_make_message_has_required_fields():
     msg = make_message(
         role="user",
         content="Hello",
-        sender_agent_instance_id="a1",
+        sender_agent_id="a1",
         group_id="G1",
         treatment_label="T1",
         visibility=VISIBILITY_GROUP_ONLY,
     )
     assert msg["role"] == "user"
     assert msg["content"] == "Hello"
-    assert msg["sender_agent_instance_id"] == "a1"
+    assert msg["sender_agent_id"] == "a1"
     assert msg["group_id"] == "G1"
     assert msg["treatment_label"] == "T1"
     assert msg["visibility"] == VISIBILITY_GROUP_ONLY
@@ -93,7 +93,7 @@ def test_make_message_extra_fields_merged():
 def test_make_message_defaults():
     msg = make_message(role="user", content="text")
     assert msg["visibility"] == VISIBILITY_GROUP_ONLY
-    assert msg["sender_agent_instance_id"] == ""
+    assert msg["sender_agent_id"] == ""
     assert msg["group_id"] == ""
     assert msg["treatment_label"] == ""
 

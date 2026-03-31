@@ -35,7 +35,7 @@ _VALID_VISIBILITIES = {
 
 def filter_message_history(
     shared_history: list[dict],
-    requesting_agent_instance_id: str,
+    requesting_agent_id: str,
     requesting_group_id: str,
     requesting_treatment_label: str,
 ) -> list[dict]:
@@ -49,10 +49,10 @@ def filter_message_history(
     Args:
         shared_history: Full list of message dicts from the session.
             Each dict may contain keys ``visibility``,
-            ``sender_agent_instance_id``, ``group_id``, and
+            ``sender_agent_id``, ``group_id``, and
             ``treatment_label``.
-        requesting_agent_instance_id: Instance ID of the agent whose
-            visible history is being assembled.
+        requesting_agent_id: Agent ID of the agent whose visible
+            history is being assembled.
         requesting_group_id: Group ID the requesting agent belongs to
             in the current round.
         requesting_treatment_label: Treatment condition label assigned
@@ -65,7 +65,7 @@ def filter_message_history(
     visible: list[dict] = []
     for msg in shared_history:
         vis = msg.get("visibility", VISIBILITY_GROUP_ONLY)
-        sender = msg.get("sender_agent_instance_id", "")
+        sender = msg.get("sender_agent_id", "")
         msg_group = msg.get("group_id", "")
         msg_treatment = msg.get("treatment_label", "")
 
@@ -78,7 +78,7 @@ def filter_message_history(
             if msg_group == requesting_group_id:
                 visible.append(msg)
         elif vis == VISIBILITY_PRIVATE:
-            if sender == requesting_agent_instance_id:
+            if sender == requesting_agent_id:
                 visible.append(msg)
         elif vis == VISIBILITY_TREATMENT_GROUP:
             if msg_treatment == requesting_treatment_label:
@@ -94,11 +94,11 @@ def filter_message_history(
 def make_message(
     role: str,
     content: str,
-    sender_agent_instance_id: str = "",
+    sender_agent_id: str = "",
     group_id: str = "",
     treatment_label: str = "",
     visibility: str = VISIBILITY_GROUP_ONLY,
-    task: str = "",
+    module: str = "",
     round_number: int = 0,
     extra: dict | None = None,
 ) -> dict[str, Any]:
@@ -107,17 +107,17 @@ def make_message(
     Args:
         role: Message role, typically ``"user"`` or ``"assistant"``.
         content: The textual content of the message.
-        sender_agent_instance_id: Instance ID of the agent that produced
-            this message. Defaults to ``""``.
+        sender_agent_id: Agent ID of the agent that produced this
+            message. Defaults to ``""``.
         group_id: Group the sender belongs to in the current round.
             Defaults to ``""``.
         treatment_label: Treatment condition of the sender. Defaults
             to ``""``.
         visibility: One of the four visibility scope constants.
             Defaults to ``VISIBILITY_GROUP_ONLY``.
-        task: Task (module) name that produced this message.
+        module: Module name that produced this message.
             Defaults to ``""``.
-        round_number: Round number within the task. Defaults to ``0``.
+        round_number: Round number within the module. Defaults to ``0``.
         extra: Optional additional key-value pairs to merge into the
             message dict.
 
@@ -128,10 +128,10 @@ def make_message(
         "role": role,
         "content": content,
         "visibility": visibility,
-        "sender_agent_instance_id": sender_agent_instance_id,
+        "sender_agent_id": sender_agent_id,
         "group_id": group_id,
         "treatment_label": treatment_label,
-        "task": task,
+        "module": module,
         "round_number": round_number,
     }
     if extra:

@@ -90,7 +90,7 @@ class ContextBuilder:
         player: "Player",
         group: "Group",
         session: "Session",
-        task: str,
+        module: str,
         round_number: int,
         prompt: "PromptDefinition",
         system_message: str,
@@ -110,8 +110,8 @@ class ContextBuilder:
             player: The ``Player`` model for the current participant.
             group: The ``Group`` the player belongs to.
             session: The current ``Session``.
-            task: Task identifier (e.g., oTree app name).
-            round_number: Current round number within the task.
+            module: Module identifier (e.g., oTree app name).
+            round_number: Current round number within the module.
             prompt: ``PromptDefinition`` containing the Jinja template text.
             system_message: Pre-built system message (profile prompt).
             field_def: Optional ``FieldDefinition`` controlling response
@@ -130,7 +130,7 @@ class ContextBuilder:
         # Read from the agent's session-wide message history.
         visible_history = filter_message_history(
             shared_history=agent.message_history,
-            requesting_agent_instance_id=agent.agent_instance_id,
+            requesting_agent_id=agent.agent_id,
             requesting_group_id=group.group_id,
             requesting_treatment_label=agent.treatment_label,
         )
@@ -148,7 +148,7 @@ class ContextBuilder:
             player=player,
             group=group,
             session=session,
-            task=task,
+            module=module,
             round_number=round_number,
             constants=constants,
         )

@@ -97,7 +97,7 @@ def _make_prompt(
     prompt_type="DISCUSSION", text="What do you think?"
 ) -> PromptDefinition:
     return PromptDefinition(
-        task="pgg",
+        module="pgg",
         prompt_sequence=1,
         type=prompt_type,
         llm_text=text,
@@ -110,7 +110,7 @@ def _make_prompt(
 def _make_field_def(name="decision", field_type="text") -> FieldDefinition:
     return FieldDefinition(
         field_class="Player",
-        task="pgg",
+        module="pgg",
         name=name,
         type=field_type,
         format_response=False,
@@ -139,11 +139,12 @@ def test_subject_system_message_is_string():
 # ---------------------------------------------------------------------------
 
 
-def test_respond_returns_string():
+def test_respond_returns_tuple():
     subject = _make_subject(content="5")
     prompt = _make_prompt()
-    result = subject.respond("pgg", 1, prompt)
-    assert isinstance(result, str)
+    content, rendered_prompt = subject.respond("pgg", 1, prompt)
+    assert isinstance(content, str)
+    assert isinstance(rendered_prompt, str)
 
 
 def test_respond_calls_router():
@@ -173,8 +174,9 @@ def test_respond_jinja_rendering_in_prompt():
     prompt = _make_prompt(
         text="You are {{ player.age }} years old. What is your decision?"
     )
-    result = subject.respond("pgg", 1, prompt)
-    assert isinstance(result, str)
+    content, rendered_prompt = subject.respond("pgg", 1, prompt)
+    assert isinstance(content, str)
+    assert isinstance(rendered_prompt, str)
 
 
 def test_respond_with_response_options():
@@ -184,7 +186,7 @@ def test_respond_with_response_options():
     prompt = _make_prompt(prompt_type="PUBLIC_QUESTION")
     field_def = FieldDefinition(
         field_class="Player",
-        task="pgg",
+        module="pgg",
         name="vote",
         type="text",
         response_options=["yes", "no"],
@@ -194,8 +196,8 @@ def test_respond_with_response_options():
         format_response=True,
         generate_speculation_score=False,
     )
-    result = subject.respond("pgg", 1, prompt, field_def=field_def)
-    assert isinstance(result, str)
+    content, rendered_prompt = subject.respond("pgg", 1, prompt, field_def=field_def)
+    assert isinstance(content, str)
 
 
 # ---------------------------------------------------------------------------
@@ -207,7 +209,7 @@ def test_validate_response_valid_option():
     subject = _make_subject()
     field_def = FieldDefinition(
         field_class="Player",
-        task="pgg",
+        module="pgg",
         name="decision",
         type="text",
         response_options=["A", "B", "C"],
@@ -221,7 +223,7 @@ def test_validate_response_invalid_option():
     subject = _make_subject()
     field_def = FieldDefinition(
         field_class="Player",
-        task="pgg",
+        module="pgg",
         name="decision",
         type="text",
         response_options=["A", "B"],

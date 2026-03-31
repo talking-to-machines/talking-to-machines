@@ -1,6 +1,6 @@
 """Context window validator (compile-time estimation).
 
-Estimates worst-case context window usage for each task in an
+Estimates worst-case context window usage for each module in an
 experiment and warns or errors when the estimate approaches or
 exceeds the model's context window limit.
 """
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class ContextWindowValidator:
     """Estimates worst-case context window usage at compile time.
 
-    For each task, computes a conservative upper-bound token estimate
+    For each module, computes a conservative upper-bound token estimate
     based on prompt lengths, number of rounds, and players per group.
     Emits a ``ValidationError`` when the estimate exceeds the model's
     context window, or logs a warning when utilisation passes
@@ -37,7 +37,7 @@ class ContextWindowValidator:
         model_name: str,
         prompts: dict[str, list],
         constants: dict[str, dict[str, Any]],
-        task_sequence: list[str],
+        module_sequence: list[str],
         num_agents_per_session: int,
     ) -> None:
         """Initialise the context window validator.
@@ -45,24 +45,24 @@ class ContextWindowValidator:
         Args:
             model_name: Name of the LLM model (used to look up the
                 context window size via the model registry).
-            prompts: Mapping ``{task: [PromptDefinition, ...]}`` as
+            prompts: Mapping ``{module: [PromptDefinition, ...]}`` as
                 returned by the prompts parser.
-            constants: Nested dictionary ``{task: {name: value}}``
+            constants: Nested dictionary ``{module: {name: value}}``
                 as returned by the constants parser.
-            task_sequence: Ordered list of task names from the
-                ``TASK_SEQUENCE`` setting.
+            module_sequence: Ordered list of module names from the
+                ``MODULE_SEQUENCE`` setting.
             num_agents_per_session: Number of agents per session,
                 used as the default ``PLAYERS_PER_GROUP`` fallback.
         """
         self._model_name = model_name
         self._prompts = prompts
         self._constants = constants
-        self._task_sequence = task_sequence
+        self._module_sequence = module_sequence
         self._num_agents = num_agents_per_session
         self._errors: list[ValidationError] = []
 
     def validate(self) -> list[ValidationError]:
-        """Run context window estimation for each task and return errors.
+        """Run context window estimation for each module and return errors.
 
         Computes worst-case token usage assuming all prompts are
         displayed, all agents respond every round, and all rounds
@@ -72,26 +72,26 @@ class ContextWindowValidator:
 
         Returns:
             A list of ``ValidationError`` instances. An empty list
-            indicates that all tasks are within safe limits.
+            indicates that all modules are within safe limits.
         """
         self._errors = []
         spec = get_model_spec(self._model_name)
         max_tokens = spec.max_context_tokens
 
-        for task in self._task_sequence:
-            task_consts = self._constants.get(task, {})
-            max_rounds = int(task_consts.get("MAX_NUM_ROUNDS", 1))
+        for module in self._module_sequence:
+            module_consts = self._constants.get(module, {})
+            max_rounds = int(module_consts.get("MAX_NUM_ROUNDS", 1))
             players_per_group = int(
-                task_consts.get("PLAYERS_PER_GROUP", self._num_agents)
+                module_consts.get("PLAYERS_PER_GROUP", self._num_agents)
             )
 
-            task_prompts = self._prompts.get(task, [])
-            if not task_prompts:
+            module_prompts = self._prompts.get(module, [])
+            if not module_prompts:
                 continue
 
             # Estimate tokens per prompt text
             prompt_token_estimates = []
-            for p in task_prompts:
+            for p in module_prompts:
                 text = getattr(p, "llm_text", "") or ""
                 prompt_token_estimates.append(estimate_tokens(text))
             avg_prompt_tokens = (
@@ -102,9 +102,9 @@ class ContextWindowValidator:
 
             # Worst case: all prompts displayed, all agents respond, all rounds run
             # Context grows as: system + sum over rounds of (prompts + agent_responses)
-            turns_per_round = len(task_prompts) * players_per_group
+            turns_per_round = len(module_prompts) * players_per_group
             tokens_per_round = (
-                len(task_prompts) * avg_prompt_tokens
+                len(module_prompts) * avg_prompt_tokens
                 + turns_per_round * AVG_RESPONSE_TOKENS
             )
             total_estimate = int(
@@ -120,7 +120,7 @@ class ContextWindowValidator:
                     "Settings",
                     None,
                     "MODEL_NAME",
-                    f"Task '{task}': estimated worst-case context usage "
+                    f"Module '{module}': estimated worst-case context usage "
                     f"({total_estimate:,} tokens) EXCEEDS model '{self._model_name}' "
                     f"context window ({max_tokens:,} tokens). "
                     f"Consider reducing MAX_NUM_ROUNDS ({max_rounds}), "
@@ -129,9 +129,9 @@ class ContextWindowValidator:
                 )
             elif utilization > WARNING_THRESHOLD:
                 logger.warning(
-                    "Task '%s': estimated context usage is %.0f%% of %s context window "
+                    "Module '%s': estimated context usage is %.0f%% of %s context window "
                     "(%s / %s tokens). Risk of overflow at runtime.",
-                    task,
+                    module,
                     utilization * 100,
                     self._model_name,
                     f"{total_estimate:,}",

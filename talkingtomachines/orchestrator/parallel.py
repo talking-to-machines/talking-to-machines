@@ -28,7 +28,7 @@ import logging
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Any, TypeVar
+from typing import Callable, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ def _session_worker(
             to a subdirectory derived from experiment/run/session identifiers.
         session_number: Numeric index of the session to execute.
         budget_cap_usd: Maximum spend in USD for this session (0 = unlimited).
-        test_mode: If True, only one group per task is executed.
+        test_mode: If True, only one group per module is executed.
 
     Returns:
         A ``SessionResult`` with success/failure status and metadata.

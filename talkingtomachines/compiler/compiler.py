@@ -15,11 +15,10 @@ Pipeline:
 
 from __future__ import annotations
 
-import json
 import logging
 import random
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import pandas as pd
 
@@ -111,7 +110,10 @@ class Compiler:
             A new ``Compiler`` instance with all sheets parsed.
         """
         xl = pd.ExcelFile(path, engine="openpyxl")
-        sheets = {name: xl.parse(name, header=0) for name in xl.sheet_names}
+        sheets = {
+            name: xl.parse(name, header=None if name == "Profiles" else 0)
+            for name in xl.sheet_names
+        }
         return cls(sheets)
 
     @classmethod
@@ -129,7 +131,8 @@ class Compiler:
         d = Path(directory)
         sheets: dict[str, pd.DataFrame] = {}
         for csv_file in d.glob("*.csv"):
-            sheets[csv_file.stem] = pd.read_csv(csv_file)
+            header = None if csv_file.stem == "Profiles" else 0
+            sheets[csv_file.stem] = pd.read_csv(csv_file, header=header)
         return cls(sheets)
 
     # ------------------------------------------------------------------
@@ -219,7 +222,7 @@ class Compiler:
             sheets=self._sheets,
             constants=constants,
             field_index=field_index,
-            task_names=settings.task_sequence,
+            module_names=settings.module_sequence,
             profile_short_names=profile_short_names,
             facilitator_names=facilitator_names,
         ).validate()
@@ -228,7 +231,7 @@ class Compiler:
         flow_errors = FlowValidator(
             prompts=prompts,
             constants=constants,
-            task_names=settings.task_sequence,
+            module_names=settings.module_sequence,
             field_index=field_index,
         ).validate()
         all_errors.extend(flow_errors)
@@ -236,8 +239,8 @@ class Compiler:
         # Detect multimodal and RAG usage from prompt text and settings
         all_prompt_text = " ".join(
             p.llm_text
-            for task_prompts in prompts.values()
-            for p in task_prompts
+            for module_prompts in prompts.values()
+            for p in module_prompts
             if hasattr(p, "llm_text") and p.llm_text
         )
         from talkingtomachines.gateway.media import has_video, has_audio
@@ -247,8 +250,8 @@ class Compiler:
         # RAG is enabled if any prompt has a rag_vector_store_id
         _has_rag = any(
             hasattr(p, "rag_vector_store_id") and p.rag_vector_store_id
-            for task_prompts in prompts.values()
-            for p in task_prompts
+            for module_prompts in prompts.values()
+            for p in module_prompts
         )
 
         # API key validation
@@ -281,7 +284,7 @@ class Compiler:
             model_name=settings.model_name,
             prompts=prompts,
             constants=constants,
-            task_sequence=settings.task_sequence,
+            module_sequence=settings.module_sequence,
             num_agents_per_session=settings.num_agents_per_session,
         ).validate()
         all_errors.extend(ctx_errors)
@@ -350,7 +353,7 @@ class Compiler:
                 t: [p.to_dict() for p in ps] for t, ps in resolved_prompts.items()
             },
             "profiles": profiles,
-            "task_sequence": settings.task_sequence,
+            "module_sequence": settings.module_sequence,
             "assignment_plan": assignment_plan.to_dict(),
         }
         cep_hash = compute_cep_hash(cep_dict)
@@ -391,9 +394,9 @@ class Compiler:
         Args:
             settings: Parsed experiment settings object.
             agent_ids: List of deterministic agent IDs derived from profiles.
-            constants: Parsed constants dictionary keyed by task name.
+            constants: Parsed constants dictionary keyed by module name.
             rng: Seeded random number generator for reproducibility.
-            prompts: Parsed prompts dictionary keyed by task name, used
+            prompts: Parsed prompts dictionary keyed by module name, used
                 to validate that ``TREATMENT_LABELS`` is defined when
                 prompts reference ``{{ treatment }}``.
             facilitators: Parsed facilitator function list, used to
@@ -434,24 +437,24 @@ class Compiler:
         treatment_labels = self._parse_treatment_labels()
 
         if "treatment" in manual_modes:
-            # Manual treatment: {task: {round: {agent_id: treatment_label}}}
+            # Manual treatment: {module: {round: {agent_id: treatment_label}}}
             # Reads entries where name == "treatment" from Manual_ registry.
-            # Missing task → apply to all tasks; missing round → all rounds.
+            # Missing module → apply to all modules; missing round → all rounds.
             treatment_strategy = "manual"
-            for (pid, task, round_num, cls, name), value in manual_registry.items():
+            for (pid, module, round_num, cls, name), value in manual_registry.items():
                 if name == "treatment":
                     agent_id = make_agent_id(settings.experiment_id, pid)
                     label = str(value)
 
-                    # Determine target tasks
-                    if task:
-                        target_tasks = [task]
+                    # Determine target modules
+                    if module:
+                        target_modules = [module]
                     else:
-                        target_tasks = list(settings.task_sequence)
+                        target_modules = list(settings.module_sequence)
 
-                    for t in target_tasks:
-                        task_consts = constants.get(t, {})
-                        max_rounds = int(task_consts.get("MAX_NUM_ROUNDS", 1))
+                    for t in target_modules:
+                        module_consts = constants.get(t, {})
+                        max_rounds = int(module_consts.get("MAX_NUM_ROUNDS", 1))
 
                         # Determine target rounds
                         if pd.notna(round_num) and round_num != "":
@@ -460,8 +463,8 @@ class Compiler:
                             target_rounds = list(range(1, max_rounds + 1))
 
                         for r in target_rounds:
-                            task_dict = treatment_assignments.setdefault(t, {})
-                            round_dict = task_dict.setdefault(r, {})
+                            module_dict = treatment_assignments.setdefault(t, {})
+                            round_dict = module_dict.setdefault(r, {})
                             round_dict[agent_id] = label
         elif treatment_labels and agent_ids:
             # Random assignment at session level: {agent_id: treatment_label}
@@ -480,8 +483,8 @@ class Compiler:
             if prompts:
                 all_template_text += " ".join(
                     p.llm_text
-                    for task_prompts in prompts.values()
-                    for p in task_prompts
+                    for module_prompts in prompts.values()
+                    for p in module_prompts
                     if hasattr(p, "llm_text") and p.llm_text
                 )
             if facilitators:
@@ -501,7 +504,7 @@ class Compiler:
                 )
 
         # ------------------------------------------------------------------
-        # Group assignment plan: {task: {round: {group_id: [agent_ids]}}}
+        # Group assignment plan: {module: {round: {group_id: [agent_ids]}}}
         # ------------------------------------------------------------------
         group_assignments: dict[str, dict] = {}
         group_strategy = "random"
@@ -509,23 +512,23 @@ class Compiler:
         if "group" in manual_modes:
             # Manual groups: read from Manual_ registry.
             # Entries have class="Group", name="id_in_subsession", value=group label.
-            # Missing task → apply to all tasks; missing round → all rounds.
+            # Missing module → apply to all modules; missing round → all rounds.
             group_strategy = "manual"
             manual_group_plan: dict[str, dict] = {}
-            for (pid, task, round_num, cls, name), value in manual_registry.items():
+            for (pid, module, round_num, cls, name), value in manual_registry.items():
                 if cls == "Group" and name == "id_in_subsession":
                     agent_id = make_agent_id(settings.experiment_id, pid)
                     group_label = str(value)
 
-                    # Determine target tasks
-                    if task:
-                        target_tasks = [task]
+                    # Determine target modules
+                    if module:
+                        target_modules = [module]
                     else:
-                        target_tasks = list(settings.task_sequence)
+                        target_modules = list(settings.module_sequence)
 
-                    for t in target_tasks:
-                        task_consts = constants.get(t, {})
-                        max_rounds = int(task_consts.get("MAX_NUM_ROUNDS", 1))
+                    for t in target_modules:
+                        module_consts = constants.get(t, {})
+                        max_rounds = int(module_consts.get("MAX_NUM_ROUNDS", 1))
 
                         # Determine target rounds
                         if pd.notna(round_num) and round_num != "":
@@ -538,18 +541,18 @@ class Compiler:
                             r_dict = t_dict.setdefault(r, {})
                             r_dict.setdefault(group_label, []).append(agent_id)
 
-            for task in settings.task_sequence:
-                task_consts = constants.get(task, {})
-                max_rounds = int(task_consts.get("MAX_NUM_ROUNDS", 1))
-                group_assignments[task] = {}
+            for mod in settings.module_sequence:
+                module_consts = constants.get(mod, {})
+                max_rounds = int(module_consts.get("MAX_NUM_ROUNDS", 1))
+                group_assignments[mod] = {}
                 for round_num in range(1, max_rounds + 1):
-                    manual = manual_group_plan.get(task, {}).get(round_num)
+                    manual = manual_group_plan.get(mod, {}).get(round_num)
                     if manual:
                         groups = engine.assign_groups(
                             agent_ids=agent_ids,
                             players_per_group=len(agent_ids) or 1,
                             strategy="manual",
-                            path=f"{task}.round_{round_num}",
+                            path=f"{mod}.round_{round_num}",
                             manual_groups=manual,
                         )
                     else:
@@ -557,17 +560,17 @@ class Compiler:
                             agent_ids=agent_ids,
                             players_per_group=len(agent_ids) or 1,
                             strategy="random",
-                            path=f"{task}.round_{round_num}",
+                            path=f"{mod}.round_{round_num}",
                         )
-                    group_assignments[task][round_num] = groups
+                    group_assignments[mod][round_num] = groups
         else:
-            # Random groups at session level — assign once, reuse for all tasks/rounds
+            # Random groups at session level — assign once, reuse for all modules/rounds
             players_per_group = len(agent_ids) or 1
-            # Use the first task's PLAYERS_PER_GROUP if available
-            if settings.task_sequence:
-                first_task_consts = constants.get(settings.task_sequence[0], {})
+            # Use the first module's PLAYERS_PER_GROUP if available
+            if settings.module_sequence:
+                first_module_consts = constants.get(settings.module_sequence[0], {})
                 players_per_group = int(
-                    first_task_consts.get("PLAYERS_PER_GROUP", players_per_group)
+                    first_module_consts.get("PLAYERS_PER_GROUP", players_per_group)
                 )
 
             session_groups = engine.assign_groups(
@@ -576,12 +579,12 @@ class Compiler:
                 strategy="random",
                 path="session_groups",
             )
-            for task in settings.task_sequence:
-                task_consts = constants.get(task, {})
-                max_rounds = int(task_consts.get("MAX_NUM_ROUNDS", 1))
-                group_assignments[task] = {}
+            for mod in settings.module_sequence:
+                module_consts = constants.get(mod, {})
+                max_rounds = int(module_consts.get("MAX_NUM_ROUNDS", 1))
+                group_assignments[mod] = {}
                 for round_num in range(1, max_rounds + 1):
-                    group_assignments[task][round_num] = session_groups
+                    group_assignments[mod][round_num] = session_groups
 
         return AssignmentPlan(
             treatment_strategy=treatment_strategy,
@@ -595,7 +598,7 @@ class Compiler:
         """Extract treatment labels from the C (Constants) worksheet.
 
         Looks for a constant named ``TREATMENT_LABELS`` (under ``global``
-        or any task) containing a comma-separated string of labels.
+        or any module) containing a comma-separated string of labels.
 
         Returns:
             A list of treatment label strings, or an empty list if
@@ -606,9 +609,9 @@ class Compiler:
             return []
 
         constants = parse_constants(constants_df)
-        # Check global constants first, then per-task
-        for task_consts in constants.values():
-            raw = task_consts.get("TREATMENT_LABELS")
+        # Check global constants first, then per-module
+        for module_consts in constants.values():
+            raw = module_consts.get("TREATMENT_LABELS")
             if raw:
                 labels = [s.strip() for s in str(raw).split(",") if s.strip()]
                 return labels

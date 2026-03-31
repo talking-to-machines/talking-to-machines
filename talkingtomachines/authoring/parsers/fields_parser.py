@@ -2,7 +2,7 @@
 
 Converts each row of the Fields worksheet into a ``FieldDefinition``
 dataclass and builds an O(1) lookup index keyed by
-``(task, field_class, name)``.
+``(module, field_class, name)``.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from talkingtomachines.core.models import FieldDefinition
 
 logger = logging.getLogger(__name__)
 
-_REQUIRED_COLS = {"class", "task", "name", "type"}
+_REQUIRED_COLS = {"class", "module", "name", "type"}
 _VALID_CLASSES = {"Session", "Subsession", "Agent", "Group", "Player"}
 _VALID_TYPES = {"integer", "float", "text", "category", "boolean"}
 
@@ -76,19 +76,19 @@ def parse_fields(df: pd.DataFrame) -> tuple[list[FieldDefinition], dict]:
     """Parse the Fields worksheet into definitions and a lookup index.
 
     Each row is converted into a ``FieldDefinition`` dataclass. Rows
-    missing a ``class``, ``task``, or ``name`` value raise a
+    missing a ``class``, ``module``, or ``name`` value raise a
     ``ValueError``. Unknown class or type values are accepted with a
     warning.
 
     Args:
         df: DataFrame for the Fields worksheet with at least the
-            columns ``class``, ``task``, ``name``, and ``type``.
+            columns ``class``, ``module``, ``name``, and ``type``.
 
     Returns:
         A two-element tuple:
 
         - **fields** -- Ordered list of ``FieldDefinition`` instances.
-        - **index** -- Dictionary keyed by ``(task, field_class, name)``
+        - **index** -- Dictionary keyed by ``(module, field_class, name)``
           mapping to the corresponding ``FieldDefinition``.
 
     Raises:
@@ -108,21 +108,21 @@ def parse_fields(df: pd.DataFrame) -> tuple[list[FieldDefinition], dict]:
 
     for row_num, row in df.iterrows():
         field_class = str(row.get("class", "")).strip()
-        task = str(row.get("task", "")).strip()
+        module = str(row.get("module", "")).strip()
         name = str(row.get("name", "")).strip()
         field_type = str(row.get("type", "text")).strip().lower()
 
-        if not field_class or not task or not name:
+        if not field_class or not module or not name:
             missing_parts = []
             if not field_class:
                 missing_parts.append("class")
-            if not task:
-                missing_parts.append("task")
+            if not module:
+                missing_parts.append("module")
             if not name:
                 missing_parts.append("name")
             raise ValueError(
                 f"Fields row {row_num}: missing required value(s): {', '.join(missing_parts)}. "
-                "Every row must have a class, task, and name."
+                "Every row must have a class, module, and name."
             )
 
         if field_class not in _VALID_CLASSES:
@@ -143,7 +143,7 @@ def parse_fields(df: pd.DataFrame) -> tuple[list[FieldDefinition], dict]:
 
         fd = FieldDefinition(
             field_class=field_class,
-            task=task,
+            module=module,
             name=name,
             type=field_type,
             response_options=_parse_response_options(row.get("response_options")),
@@ -156,6 +156,6 @@ def parse_fields(df: pd.DataFrame) -> tuple[list[FieldDefinition], dict]:
             format_response=_parse_bool(row.get("format_response")),
         )
         fields.append(fd)
-        index[(task, field_class, name)] = fd
+        index[(module, field_class, name)] = fd
 
     return fields, index

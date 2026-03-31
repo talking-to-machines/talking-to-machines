@@ -19,8 +19,6 @@ Attributes:
 
 from __future__ import annotations
 
-import io
-import os
 from pathlib import Path
 from typing import Literal
 
@@ -43,14 +41,14 @@ _SHEETS: dict[str, dict] = {
             ["PROFILE_FIELDS", "ALL"],
             ["BUILD_PROFILE_QA", True],
             ["BUILD_PROFILE_BACKSTORIES", False],
-            ["ASSIGN_MANUALLY", ""],
+            ["ASSIGN_MANUALLY", "Treatment, Group"],
             ["NUM_AGENTS_PER_SESSION", 4],
             ["CONTEXT_OVERFLOW_POLICY", "terminate"],
-            ["TASK_SEQUENCE", "task1"],
+            ["MODULE_SEQUENCE", "task1"],
         ],
     },
     "C": {
-        "columns": ["task", "name", "value", "type"],
+        "columns": ["module", "name", "value", "type"],
         "rows": [
             ["global", "TREATMENT_LABELS", "control,treatment_A", "string"],
             ["task1", "MAX_NUM_ROUNDS", 3, "integer"],
@@ -61,7 +59,7 @@ _SHEETS: dict[str, dict] = {
     },
     "Fields": {
         "columns": [
-            "task",
+            "module",
             "class",
             "name",
             "type",
@@ -82,7 +80,7 @@ _SHEETS: dict[str, dict] = {
                 "Please choose one of the following:",
                 False,
                 True,
-                False,
+                True,
                 True,
             ],
             [
@@ -143,29 +141,37 @@ _SHEETS: dict[str, dict] = {
             ["assign_groups", "Form groups for this round.", "{}"],
             [
                 "calculate_total_contribution",
-                "Calculate the total tokens contributed to the public account by all players in this round.",
+                """Calculate the total number of tokens contributed to the public account in this round using the following formula:
+Player 1's contribution to public account in this round + Player 2's contribution to public account in this round
+Respond with only the resulting nunber without providing any explanations.""",
                 "{}",
             ],
             [
                 "calculate_public_account_earnings",
-                "Calculate {{ player.agent_instance_id }}’s total earnings from the public account in this round. Each player’s total earnings from the public account is calculated by multiplying the total tokens contributed to the public account in this round by a factor of 2 and distributing it equally among all players.",
+                """Calculate Player ID {{ player.agent_id }}'s earnings from the public account this round using the following formula:
+({{ group.total_contribution }} × 2) ÷ {{ group.num_players }}
+Respond with only the resulting number without providing any explanations.""",
                 "{}",
             ],
             [
                 "calculate_private_account_remaining",
-                "Calculate {{ player.agent_instance_id }}’s remaining private tokens in this round. This is calculated by deducting the player’s public account token contributions from their initial endowment.",
+                """Calculate Player ID {{ player.agent_id }}'s remaining private tokens this round using the following formula:
+{{ C.task1.MAX_ENDOWMENT }} − {{ player.decision }}
+Respond with only the resulting number without any explanations.""",
                 "{}",
             ],
             [
                 "calculate_total_earnings",
-                "Calculate {{ player.agent_instance_id }}’s total earnings in this round. This is calculated by summing the player’s total earnings from the public account and remaining tokens in their private account in this round.",
+                """Calculate Player ID {{ player.agent_id }}'s total earnings this round using the following formula:
+{{ player.public_account_earnings }} + {{ player.private_account_remaining }}
+Respond with only the resulting number without any explanations.""",
                 "{}",
             ],
         ],
     },
     "Prompts": {
         "columns": [
-            "task",
+            "module",
             "prompt_sequence",
             "type",
             "is_displayed",
@@ -256,7 +262,7 @@ _SHEETS: dict[str, dict] = {
                 None,
                 False,
                 "",
-                "The total contribution for this round is {{ group.total_contribution }} tokens. The total earnings for you this round is {{ player.total_earnings }} tokens.",
+                "The total contribution for this round is {{ group.total_contribution }} tokens. Your total earnings for this round is {{ player.total_earnings }} tokens.",
                 None,
                 "",
                 "",
@@ -278,11 +284,24 @@ _SHEETS: dict[str, dict] = {
         ],
     },
     "Manual_": {
-        "columns": ["ID", "task", "round_number", "class", "name", "value"],
+        "columns": ["ID", "module", "round_number", "class", "name", "value"],
         "rows": [
-            # Examples (uncomment and set ASSIGN_MANUALLY in Settings):
-            # Manual treatment: [1, "task1", 1, "Agent", "treatment", "treatment_A"],
-            # Manual group:     [1, "task1", 1, "Group", "id_in_subsession", "G1"],
+            [1, "task1", 1, "Agent", "treatment", "control"],
+            [1, "task1", 2, "Agent", "treatment", "control"],
+            [1, "task1", 3, "Agent", "treatment", "control"],
+            [2, "task1", 1, "Agent", "treatment", "treatment_A"],
+            [2, "task1", 2, "Agent", "treatment", "treatment_A"],
+            [2, "task1", 3, "Agent", "treatment", "treatment_A"],
+            [3, "task1", 1, "Agent", "treatment", "control"],
+            [3, "task1", 2, "Agent", "treatment", "control"],
+            [3, "task1", 3, "Agent", "treatment", "control"],
+            [4, "task1", 1, "Agent", "treatment", "treatment_A"],
+            [4, "task1", 2, "Agent", "treatment", "treatment_A"],
+            [4, "task1", 3, "Agent", "treatment", "treatment_A"],
+            [1, "task1", None, "Group", "id_in_subsession", "group1"],
+            [2, "task1", None, "Group", "id_in_subsession", "group2"],
+            [3, "task1", None, "Group", "id_in_subsession", "group1"],
+            [4, "task1", None, "Group", "id_in_subsession", "group2"],
         ],
     },
 }

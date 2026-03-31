@@ -7,8 +7,8 @@ Tables:
   session_table.csv   — one row per session
   agent_table.csv     — one row per agent per session
   group_table.csv     — one row per group per subsession
-  responses.csv       — one row per player per subsession
-  assignments.csv     — one row per agent per task per round
+  player.csv          — one row per player per subsession
+  assignments.csv     — one row per agent per module per round
 """
 
 from __future__ import annotations
@@ -16,22 +16,38 @@ from __future__ import annotations
 import csv
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
-from talkingtomachines.core.models import (
-    Session,
-    Agent,
-    Player,
-    Group,
-    Subsession,
-    Module,
-)
+from talkingtomachines.core.models import Session
 from talkingtomachines.compiler.cep_schema import CompiledExperiment
 from talkingtomachines.core.fields import ExperimentState
 
 logger = logging.getLogger(__name__)
+
+
+def _compute_run_time_sec(
+    start_time: Optional[str], end_time: Optional[str]
+) -> Optional[float]:
+    """Parse ISO timestamps and return elapsed seconds, or ``None`` on failure.
+
+    Args:
+        start_time: ISO-format start timestamp string.
+        end_time: ISO-format end timestamp string.
+
+    Returns:
+        Elapsed seconds rounded to two decimals, or ``None`` if either
+        timestamp is missing or unparseable.
+    """
+    if not start_time or not end_time:
+        return None
+    try:
+        t0 = datetime.fromisoformat(start_time)
+        t1 = datetime.fromisoformat(end_time)
+        return round((t1 - t0).total_seconds(), 2)
+    except (ValueError, TypeError):
+        return None
 
 
 def export_all(
@@ -52,7 +68,7 @@ def export_all(
 
     Args:
         session: The completed session object containing experiment data.
-        cep: The compiled experiment package with field and task definitions.
+        cep: The compiled experiment package with field and module definitions.
         state: The experiment state holding all recorded field values.
         output_dir: Directory where CSV files will be written.
         start_time: ISO-format timestamp for when the run started.
@@ -73,7 +89,7 @@ def export_all(
     )
     paths["agent_table"] = _export_agent_table(session, cep, state, out)
     paths["group_table"] = _export_group_table(session, cep, state, out)
-    paths["responses"] = _export_responses(session, cep, state, out)
+    paths["player"] = _export_player_table(session, cep, state, out)
     paths["assignments"] = _export_assignments(session, cep, out)
     paths["metrics"] = _export_metrics(
         session, cep, out, total_cost_usd, start_time, end_time
@@ -133,6 +149,7 @@ def _export_session_table(
             "start_time": start_time or "",
             "end_time": end_time or "",
             "total_cost_usd": total_cost_usd,
+            "run_time_sec": _compute_run_time_sec(start_time, end_time) or "",
             "stop_reason": stop_reason,
         }
     ]
@@ -149,7 +166,7 @@ def _export_agent_table(
     """Export agent-level data to ``agent_table.csv``.
 
     Produces one row per agent per session, including profile fields and
-    agent-scoped field values for each task.
+    agent-scoped field values for each module.
 
     Args:
         session: The session object.
@@ -172,11 +189,17 @@ def _export_agent_table(
         # Profile fields
         row.update(agent.profile_info)
 
-        # Agent-scoped field values for each task
-        for task in cep.task_sequence:
-            agent_fields = state.get_agent_task(agent.agent_id, task)
+        # Agent-scoped field values for each module
+        for module in cep.module_sequence:
+            agent_fields = state.get_agent_module(agent.agent_id, module)
             for k, v in agent_fields.items():
-                row[f"{task}.{k}"] = v
+                row[f"{module}.{k}"] = v
+
+        # System message and message history for debugging
+        row["system_message"] = agent.state.get("system_message", "")
+        row["message_history"] = json.dumps(
+            agent.message_history, ensure_ascii=False, default=str
+        )
 
         rows.append(row)
     _write_csv(path, rows)
@@ -214,24 +237,26 @@ def _export_group_table(
                     "subsession_id": subsession.subsession_id,
                     "group_id": group.group_id,
                     "round_number": subsession.round_number,
-                    "task": module.task_name,
+                    "module": module.module_name,
                     "num_players": len(group.players),
                 }
                 # Group-scoped field values
-                group_fields = state.get_group_task(group.group_id, module.task_name)
+                group_fields = state.get_group_module(
+                    group.group_id, module.module_name
+                )
                 row.update(group_fields)
                 rows.append(row)
     _write_csv(path, rows)
     return path
 
 
-def _export_responses(
+def _export_player_table(
     session: Session,
     cep: CompiledExperiment,
     state: ExperimentState,
     out: Path,
 ) -> str:
-    """Export player-level responses to ``responses.csv``.
+    """Export player-level responses to ``player.csv``.
 
     Produces one row per player per subsession, including player-scoped
     field values.
@@ -245,7 +270,7 @@ def _export_responses(
     Returns:
         The file path of the exported CSV.
     """
-    path = str(out / "responses.csv")
+    path = str(out / "player.csv")
     rows: list[dict] = []
     for module in session.modules:
         for subsession in module.subsessions:
@@ -259,11 +284,11 @@ def _export_responses(
                         "group_id": group.group_id,
                         "subsession_id": subsession.subsession_id,
                         "round_number": subsession.round_number,
-                        "task": module.task_name,
+                        "module": module.module_name,
                     }
                     # Player-scoped field values
-                    player_fields = state.get_player_task(
-                        player.player_id, module.task_name
+                    player_fields = state.get_player_module(
+                        player.player_id, module.module_name
                     )
                     row.update(player_fields)
                     rows.append(row)
@@ -278,7 +303,7 @@ def _export_assignments(
 ) -> str:
     """Export treatment and group assignments to ``assignments.csv``.
 
-    Produces one row per agent per task per round, documenting group
+    Produces one row per agent per module per round, documenting group
     membership and treatment labels.
 
     Args:
@@ -293,22 +318,27 @@ def _export_assignments(
     plan = cep.assignment_plan
     rows: list[dict] = []
     for agent in session.agents:
-        for task in cep.task_sequence:
-            task_groups = plan.group_assignments.get(task, {})
-            for round_num, groups in task_groups.items():
+        for module in cep.module_sequence:
+            module_groups = plan.group_assignments.get(module, {})
+            for round_num, groups in module_groups.items():
                 group_id = ""
                 for gid, member_ids in groups.items():
                     if agent.agent_id in member_ids:
                         group_id = gid
                         break
+                treatment_label = plan.get_treatment(
+                    agent.agent_id, module, int(round_num)
+                )
+                if not treatment_label:
+                    treatment_label = agent.treatment_label
                 rows.append(
                     {
                         "session_id": session.session_id,
                         "agent_id": agent.agent_id,
                         "agent_instance_id": agent.agent_instance_id,
-                        "task": task,
+                        "module": module,
                         "round_number": round_num,
-                        "treatment_label": agent.treatment_label,
+                        "treatment_label": treatment_label,
                         "group_id": group_id,
                     }
                 )
@@ -327,12 +357,12 @@ def _export_metrics(
     """Export aggregate metrics to ``metrics.csv``.
 
     Produces one row per session with experiment-level statistics
-    including agent counts, task counts, total rounds, groups, players,
+    including agent counts, module counts, total rounds, groups, players,
     messages, cumulative API cost, and timing information.
 
     Args:
         session: The session object containing experiment hierarchy data.
-        cep: The compiled experiment package with task definitions.
+        cep: The compiled experiment package with module definitions.
         out: Output directory path.
         total_cost_usd: Cumulative LLM API cost in USD for the run.
         start_time: ISO-format timestamp for when the run started.
@@ -362,12 +392,13 @@ def _export_metrics(
             "run_id": session.run_id,
             "experiment_id": session.experiment_id,
             "num_agents": len(session.agents),
-            "num_tasks": len(cep.task_sequence),
+            "num_modules": len(cep.module_sequence),
             "num_rounds_total": total_rounds,
             "num_groups_total": total_groups,
             "num_players_total": total_players,
             "num_messages_total": total_messages,
             "total_cost_usd": total_cost_usd,
+            "run_time_sec": _compute_run_time_sec(start_time, end_time) or "",
             "start_time": start_time or "",
             "end_time": end_time or "",
         }

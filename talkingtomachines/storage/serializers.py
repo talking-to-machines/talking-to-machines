@@ -147,7 +147,7 @@ def serialize_module(module: Any) -> dict:
 
     Args:
         module: A ``Module`` instance with ``module_id``, ``session_id``,
-            ``task_name``, and ``subsessions`` attributes.
+            ``module_name``, and ``subsessions`` attributes.
 
     Returns:
         A dictionary containing module metadata and serialized subsessions.
@@ -155,7 +155,7 @@ def serialize_module(module: Any) -> dict:
     return {
         "module_id": module.module_id,
         "session_id": module.session_id,
-        "task_name": module.task_name,
+        "module_name": module.module_name,
         "subsessions": [serialize_subsession(s) for s in module.subsessions],
     }
 
@@ -252,7 +252,7 @@ def deserialize_session(data: dict) -> Any:
         module = Module(
             module_id=m_data["module_id"],
             session_id=m_data["session_id"],
-            task_name=m_data["task_name"],
+            module_name=m_data["module_name"],
         )
         for s_data in m_data.get("subsessions", []):
             subsession = Subsession(

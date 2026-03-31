@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Optional
 
 import pandas as pd
 
@@ -83,10 +83,10 @@ class SchemaValidator:
     # Required columns per sheet (lower-cased)
     _SHEET_REQUIRED_COLS: dict[str, set[str]] = {
         "Settings": {"name", "value"},
-        "C": {"task", "name", "value", "type"},
-        "Fields": {"class", "task", "name", "type"},
+        "C": {"module", "name", "value", "type"},
+        "Fields": {"class", "module", "name", "type"},
         "Facilitator": {"name", "definition"},  # optional sheet
-        "Prompts": {"task", "prompt_sequence", "type", "llm_text"},
+        "Prompts": {"module", "prompt_sequence", "type", "llm_text"},
         "Profiles": set(),  # optional; validated separately (row-0 / row-1 header)
         # No Treatments sheet — treatment labels defined in C worksheet
     }
@@ -177,7 +177,7 @@ class SchemaValidator:
             "MODEL_NAME",
             "RANDOM_SEED",
             "NUM_AGENTS_PER_SESSION",
-            "TASK_SEQUENCE",
+            "MODULE_SEQUENCE",
         }
         if "name" not in df.columns:
             return
@@ -253,7 +253,7 @@ class SchemaValidator:
         from talkingtomachines.authoring.parsers.manual_parser import _VALID_CLASSES
 
         # "id" matches the Profiles tab ID column (design doc §5.2)
-        required = {"id", "task", "round_number", "class", "name", "value"}
+        required = {"id", "module", "round_number", "class", "name", "value"}
         self._check_required_columns(sheet_name, df, required)
 
         df = self._normalize_cols(df)

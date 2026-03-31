@@ -116,7 +116,8 @@ def test_build_profile_prompt_backstory_with_mock_router():
 def test_build_system_message_returns_profile_prompt():
     profile = "You are 30 years old and identify as a Democrat."
     result = build_system_message(profile)
-    assert result == profile
+    assert profile in result
+    assert result.startswith("Before participating in this study")
 
 
 def test_build_system_message_empty_profile():

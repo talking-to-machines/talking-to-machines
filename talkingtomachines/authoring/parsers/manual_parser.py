@@ -7,7 +7,7 @@ Supports two modes for reading manual assignment data from Excel workbooks:
       (e.g. ``Manual_Treatments``).
 
 All Manual_ sheets are merged into a unified registry keyed by
-``(profile_id, task, round_number, class, name)``.
+``(profile_id, module, round_number, class, name)``.
 
 The ``id`` column corresponds to the ``ID`` column in the Profiles worksheet.
 
@@ -16,7 +16,7 @@ Accepted ``class`` values:
 
 Attributes:
     _REQUIRED_COLS (set[str]): Column names that every Manual_ sheet must
-        contain (lower-cased): ``id``, ``task``, ``round_number``, ``class``,
+        contain (lower-cased): ``id``, ``module``, ``round_number``, ``class``,
         ``name``, and ``value``.
     _VALID_CLASSES (set[str]): The set of accepted hierarchy class names.
     ManualRegistry (type alias): ``dict[tuple[Any, str, Any, str, str], Any]``
@@ -32,7 +32,7 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-_REQUIRED_COLS = {"id", "task", "round_number", "class", "name", "value"}
+_REQUIRED_COLS = {"id", "module", "round_number", "class", "name", "value"}
 _VALID_CLASSES = {"Session", "Module", "Subsession", "Group", "Agent", "Player"}
 
 ManualRegistry = dict[tuple[Any, str, Any, str, str], Any]
@@ -43,7 +43,7 @@ def _parse_manual_sheet(df: pd.DataFrame, sheet_name: str = "Manual_") -> list[d
 
     Normalises column names to lower-case, validates that all required
     columns are present, and raises a ``ValueError`` if ``id`` or
-    ``name`` is missing. At least one of ``task`` or ``class`` must
+    ``name`` is missing. At least one of ``module`` or ``class`` must
     also be provided; if both are missing, a ``ValueError`` is raised.
 
     Args:
@@ -52,7 +52,7 @@ def _parse_manual_sheet(df: pd.DataFrame, sheet_name: str = "Manual_") -> list[d
 
     Returns:
         A list of record dicts, each containing keys ``profile_id``,
-        ``task``, ``round_number``, ``class``, ``name``, ``value``,
+        ``module``, ``round_number``, ``class``, ``name``, ``value``,
         and ``_sheet``.
 
     Raises:
@@ -72,7 +72,7 @@ def _parse_manual_sheet(df: pd.DataFrame, sheet_name: str = "Manual_") -> list[d
     records: list[dict] = []
     for row_num, row in df.iterrows():
         profile_id = row.get("id")
-        task = str(row.get("task", "")).strip()
+        module = str(row.get("module", "")).strip()
         round_number = row.get("round_number")
         cls = str(row.get("class", "")).strip()
         name = str(row.get("name", "")).strip()
@@ -88,10 +88,10 @@ def _parse_manual_sheet(df: pd.DataFrame, sheet_name: str = "Manual_") -> list[d
                 f"Manual sheet '{sheet_name}' row {row_num}: missing required value(s): "
                 f"{', '.join(missing_parts)}. Every row must have an id and name."
             )
-        if not task and not cls:
+        if not module and not cls:
             raise ValueError(
-                f"Manual sheet '{sheet_name}' row {row_num}: both 'task' and 'class' are empty. "
-                "At least one of 'task' or 'class' must be provided."
+                f"Manual sheet '{sheet_name}' row {row_num}: both 'module' and 'class' are empty. "
+                "At least one of 'module' or 'class' must be provided."
             )
 
         if cls not in _VALID_CLASSES:
@@ -106,7 +106,7 @@ def _parse_manual_sheet(df: pd.DataFrame, sheet_name: str = "Manual_") -> list[d
         records.append(
             {
                 "profile_id": profile_id,
-                "task": task,
+                "module": module,
                 "round_number": round_number,
                 "class": cls,
                 "name": name,
@@ -139,7 +139,7 @@ def parse_manual_sheets(
 
     Returns:
         A :data:`ManualRegistry` dict keyed by
-        ``(profile_id, task, round_number, class, name)`` with the
+        ``(profile_id, module, round_number, class, name)`` with the
         corresponding ``value`` from the worksheet.
 
     Raises:
@@ -164,7 +164,7 @@ def parse_manual_sheets(
 
             key = (
                 rec["profile_id"],
-                rec["task"],
+                rec["module"],
                 rec["round_number"],
                 rec["class"],
                 rec["name"],

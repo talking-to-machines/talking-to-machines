@@ -4,9 +4,9 @@ This module validates that every Jinja2 variable reference found in the
 Prompts sheet resolves to a known definition in the workbook. It
 supports the following reference patterns:
 
-    - ``{{ C.<task>.<name> }}`` — Constant references, resolved against
+    - ``{{ C.<module>.<name> }}`` — Constant references, resolved against
       the Constants sheet.
-    - ``{{ <task>.<class>.<name> }}`` — Field references, resolved
+    - ``{{ <module>.<class>.<name> }}`` — Field references, resolved
       against the Fields sheet index.
     - ``{{ player.<field> }}`` / ``{{ agent.<field> }}`` — Profile
       attribute references, resolved against Profiles short names.
@@ -29,7 +29,7 @@ from .schema_validator import ValidationError
 
 logger = logging.getLogger(__name__)
 
-# Matches {{ C.task.name }} or {{ task.Class.name }} or {{ player.field }}
+# Matches {{ C.module.name }} or {{ module.Class.name }} or {{ player.field }}
 _JINJA_VAR = re.compile(r"\{\{\s*([\w.]+)\s*\}\}")
 
 
@@ -60,10 +60,10 @@ class ReferenceValidator:
 
     Attributes:
         _sheets: Mapping of sheet names to their raw ``DataFrame`` contents.
-        _constants: Nested mapping ``{task_name: {constant_name: value}}``.
-        _field_index: Set-like mapping of ``(task, class, name)`` tuples
+        _constants: Nested mapping ``{module_name: {constant_name: value}}``.
+        _field_index: Set-like mapping of ``(module, class, name)`` tuples
             parsed from the Fields sheet.
-        _task_names: Known task names from the workbook.
+        _module_names: Known module names from the workbook.
         _profile_cols: Short-name column headers from the Profiles sheet.
         _facilitator_names: Facilitator identifiers defined in the workbook.
         _errors: Accumulated validation errors from the most recent run.
@@ -74,7 +74,7 @@ class ReferenceValidator:
         sheets: dict[str, pd.DataFrame],
         constants: dict[str, dict[str, Any]],
         field_index: dict[tuple, Any],
-        task_names: list[str],
+        module_names: list[str],
         profile_short_names: list[str],
         facilitator_names: list[str],
     ):
@@ -84,11 +84,11 @@ class ReferenceValidator:
             sheets: Mapping of sheet names to their raw ``DataFrame``
                 contents.
             constants: Nested mapping of
-                ``{task_name: {constant_name: value}}`` from the
+                ``{module_name: {constant_name: value}}`` from the
                 Constants sheet.
-            field_index: Mapping of ``(task, class, name)`` tuples from
+            field_index: Mapping of ``(module, class, name)`` tuples from
                 the Fields sheet.
-            task_names: List of task names defined in the workbook.
+            module_names: List of module names defined in the workbook.
             profile_short_names: Short-name column headers from the
                 Profiles sheet.
             facilitator_names: Facilitator identifiers defined in the
@@ -97,10 +97,16 @@ class ReferenceValidator:
         self._sheets = sheets
         self._constants = constants
         self._field_index = field_index
-        self._task_names = set(task_names)
+        self._module_names = set(module_names)
         self._profile_cols = set(profile_short_names)
         self._facilitator_names = set(facilitator_names)
         self._errors: list[ValidationError] = []
+
+        # Collect all field names from the Fields worksheet keyed by scope
+        # so that runtime fields are recognised during validation.
+        self._field_names_by_class: dict[str, set[str]] = {}
+        for module, cls, name in self._field_index:
+            self._field_names_by_class.setdefault(cls, set()).add(name)
 
     def validate(self) -> list[ValidationError]:
         """Run validation on all Jinja2 references in the Prompts and Facilitator sheets.
@@ -160,46 +166,93 @@ class ReferenceValidator:
         """
         parts = ref.split(".")
 
-        # {{ C.task.name }} — constant reference
+        # {{ C.module.name }} — constant reference
         if parts[0] == "C":
             if len(parts) < 3:
                 self._err(sheet, row, col, f"Malformed constant ref '{{{{ {ref} }}}}'.")
                 return
-            task, name = parts[1], parts[2]
-            if task not in self._constants:
-                self._err(sheet, row, col, f"Constant ref: unknown task '{task}'.")
-            elif name not in self._constants.get(task, {}):
+            module, name = parts[1], parts[2]
+            if module not in self._constants:
+                self._err(sheet, row, col, f"Constant ref: unknown module '{module}'.")
+            elif name not in self._constants.get(module, {}):
                 self._err(
-                    sheet, row, col, f"Constant ref: unknown constant '{task}.{name}'."
+                    sheet,
+                    row,
+                    col,
+                    f"Constant ref: unknown constant '{module}.{name}'.",
                 )
             return
 
-        # {{ player.field }} — profile field reference
+        # {{ player.field }} / {{ agent.field }} — profile or runtime field
         if parts[0] in ("player", "agent"):
             if len(parts) >= 2:
                 field_name = parts[1]
-                if field_name not in self._profile_cols and field_name not in {
+                # Accept profile columns, built-in attributes, and any
+                # field name declared in the Fields worksheet regardless
+                # of its class (Player, Agent, Group, Session).
+                _BUILTIN_ATTRS = {
                     "treatment",
                     "role",
-                }:
+                    "agent_id",
+                    "agent_instance_id",
+                    "player_id",
+                }
+                all_field_names = (
+                    set().union(*self._field_names_by_class.values())
+                    if self._field_names_by_class
+                    else set()
+                )
+                if (
+                    field_name not in self._profile_cols
+                    and field_name not in _BUILTIN_ATTRS
+                    and field_name not in all_field_names
+                ):
                     logger.warning(
-                        "Reference '{{ %s }}' not found in Profiles short_names — "
+                        "Reference '{{ %s }}' not found in Profiles short_names, "
+                        "Fields worksheet, or built-in attributes — "
                         "possible typo (known columns: %s).",
                         ref,
                         sorted(self._profile_cols),
                     )
             return
 
-        # {{ round_number }} — runtime reference, always valid
-        if ref in ("round_number", "group_id", "session_id", "run_id"):
+        # {{ group.field }} / {{ session.field }} — runtime scoped fields
+        if parts[0] in ("group", "session"):
+            if len(parts) >= 2:
+                field_name = parts[1]
+                _BUILTIN_GROUP_ATTRS = {"group_id", "num_players"}
+                _BUILTIN_SESSION_ATTRS = {"session_id", "run_id", "experiment_id"}
+                builtin_attrs = (
+                    _BUILTIN_GROUP_ATTRS
+                    if parts[0] == "group"
+                    else _BUILTIN_SESSION_ATTRS
+                )
+                all_field_names = (
+                    set().union(*self._field_names_by_class.values())
+                    if self._field_names_by_class
+                    else set()
+                )
+                if (
+                    field_name not in builtin_attrs
+                    and field_name not in all_field_names
+                ):
+                    logger.warning(
+                        "Reference '{{ %s }}' not found in Fields worksheet "
+                        "or built-in attributes — possible typo.",
+                        ref,
+                    )
             return
 
-        # {{ task.Class.name }} — field reference
+        # {{ round_number }} — runtime reference, always valid
+        if ref in ("round_number", "group_id", "session_id", "run_id", "treatment"):
+            return
+
+        # {{ module.Class.name }} — field reference
         if len(parts) == 3:
-            task, cls, name = parts
-            if task not in self._task_names:
-                self._err(sheet, row, col, f"Field ref: unknown task '{task}'.")
-            elif (task, cls, name) not in self._field_index:
+            module, cls, name = parts
+            if module not in self._module_names:
+                self._err(sheet, row, col, f"Field ref: unknown module '{module}'.")
+            elif (module, cls, name) not in self._field_index:
                 logger.debug(
                     "Field ref '%s' not found in Fields sheet — may be valid runtime field.",
                     ref,

@@ -8,10 +8,10 @@ Derives all stable, deterministic IDs per the ID derivation scheme:
     cep_hash        → SHA256 of serialized CEP
     run_id          → {experiment_id}_{datetime_utc}_{random_suffix}
     session_id      → {run_id}_s{n}
-    module_id       → {session_id}_{task_name}
+    module_id       → {session_id}_{module_name}
     subsession_id   → {module_id}_r{round_number}
     group_id        → {subsession_id}_g{group_number}
-    agent_id        → {experiment_id}_a{profile_ID}
+    agent_id        → {profile_ID}
     agent_instance_id → {run_id}_{agent_id}
     player_id       → {agent_instance_id}_{subsession_id}
     turn_id         → {group_id}_t{turn_number}_{agent_instance_id}
@@ -115,19 +115,19 @@ def make_session_id(run_id: str, session_number: int) -> str:
     return f"{run_id}_s{session_number}"
 
 
-def make_module_id(session_id: str, task_name: str) -> str:
-    """Derive a module ID from a session ID and task name.
+def make_module_id(session_id: str, module_name: str) -> str:
+    """Derive a module ID from a session ID and module name.
 
-    Format: ``{session_id}_{task_name}``.
+    Format: ``{session_id}_{module_name}``.
 
     Args:
         session_id: The parent session identifier.
-        task_name: Name of the task (from ``TASK_SEQUENCE``).
+        module_name: Name of the module (from ``MODULE_SEQUENCE``).
 
     Returns:
         A deterministic module ID string.
     """
-    return f"{session_id}_{task_name}"
+    return f"{session_id}_{module_name}"
 
 
 def make_subsession_id(module_id: str, round_number: int) -> str:
@@ -137,7 +137,7 @@ def make_subsession_id(module_id: str, round_number: int) -> str:
 
     Args:
         module_id: The parent module identifier.
-        round_number: The round number within the task.
+        round_number: The round number within the module.
 
     Returns:
         A deterministic subsession ID string.
@@ -161,20 +161,21 @@ def make_group_id(subsession_id: str, group_number: int) -> str:
 
 
 def make_agent_id(experiment_id: str, profile_id: Any) -> str:
-    """Derive an agent ID from an experiment ID and profile ID.
+    """Derive an agent ID from a profile ID.
 
-    Format: ``{experiment_id}_a{profile_id}``.
+    Returns the raw profile ID as a string, matching the ``ID`` column
+    in the Profiles worksheet.
 
     Args:
-        experiment_id: The experiment identifier from the Settings
-            worksheet.
+        experiment_id: The experiment identifier (retained for interface
+            compatibility but not used in the ID).
         profile_id: The agent's profile identifier (from the Profiles
             worksheet).
 
     Returns:
-        A deterministic agent ID string.
+        The profile ID as a string.
     """
-    return f"{experiment_id}_a{profile_id}"
+    return str(profile_id)
 
 
 def make_agent_instance_id(run_id: str, agent_id: str) -> str:

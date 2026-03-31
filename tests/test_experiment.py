@@ -45,7 +45,7 @@ def _minimal_cep_data(**overrides) -> dict:
         },
         "fields": [],
         "prompts": {},
-        "task_sequence": [],
+        "module_sequence": [],
         "facilitator_functions": [],
         "constants": {},
         "assignment_plan": {
@@ -115,9 +115,9 @@ def test_compiled_experiment_profiles_accessible():
     assert cep.profiles["id_column"] == "ID"
 
 
-def test_compiled_experiment_task_sequence():
-    cep = _make_cep(task_sequence=["survey", "pgg"])
-    assert cep.task_sequence == ["survey", "pgg"]
+def test_compiled_experiment_module_sequence():
+    cep = _make_cep(module_sequence=["survey", "pgg"])
+    assert cep.module_sequence == ["survey", "pgg"]
 
 
 # ---------------------------------------------------------------------------

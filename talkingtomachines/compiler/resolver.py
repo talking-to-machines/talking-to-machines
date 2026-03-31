@@ -7,12 +7,12 @@ execution.
 
 References handled at compile time:
 
-    - ``{{ C.<task>.<name> }}`` — Replaced with the corresponding
+    - ``{{ C.<module>.<name> }}`` — Replaced with the corresponding
       value from the Constants sheet.
 
 References left for runtime resolution:
 
-    - ``{{ <task>.<class>.<name> }}`` — Field references.
+    - ``{{ <module>.<class>.<name> }}`` — Field references.
     - ``{{ player.<field> }}`` — Profile attribute references.
     - ``{{ round_number }}``, ``{{ group_id }}``, etc. — Built-in
       runtime variables.
@@ -35,15 +35,15 @@ def resolve_static_refs(
 ) -> str:
     """Replace constant references in *text* with their compile-time values.
 
-    Scans for ``{{ C.<task>.<name> }}`` patterns and substitutes each
+    Scans for ``{{ C.<module>.<name> }}`` patterns and substitutes each
     with the string representation of the corresponding constant value.
-    References to unknown tasks or constant names are left unchanged so
+    References to unknown modules or constant names are left unchanged so
     that downstream validation can report them.
 
     Args:
         text: The prompt text containing Jinja2 constant references.
         constants: Nested mapping of
-            ``{task_name: {constant_name: value}}`` from the Constants
+            ``{module_name: {constant_name: value}}`` from the Constants
             sheet.
 
     Returns:
@@ -55,28 +55,28 @@ def resolve_static_refs(
         """Substitute a single constant reference match with its value.
 
         Args:
-            match: A regex match object capturing the task name (group 1)
-                and constant name (group 2) from a ``{{ C.<task>.<name> }}``
+            match: A regex match object capturing the module name (group 1)
+                and constant name (group 2) from a ``{{ C.<module>.<name> }}``
                 pattern.
 
         Returns:
             The string representation of the constant value, or the
-            original matched text if the task or constant name is not
+            original matched text if the module or constant name is not
             found in *constants*.
         """
-        task, name = match.group(1), match.group(2)
-        task_consts = constants.get(task)
-        if task_consts is None:
+        module, name = match.group(1), match.group(2)
+        module_consts = constants.get(module)
+        if module_consts is None:
             logger.debug(
-                "Resolver: unknown task '%s' in constant ref — leaving as-is.", task
+                "Resolver: unknown module '%s' in constant ref — leaving as-is.", module
             )
             return match.group(0)
-        if name not in task_consts:
+        if name not in module_consts:
             logger.debug(
-                "Resolver: unknown constant '%s.%s' — leaving as-is.", task, name
+                "Resolver: unknown constant '%s.%s' — leaving as-is.", module, name
             )
             return match.group(0)
-        return str(task_consts[name])
+        return str(module_consts[name])
 
     return _CONSTANT_REF.sub(_replace, text)
 
@@ -92,11 +92,11 @@ def resolve_prompts(
     new dataclass instances with the expanded text.
 
     Args:
-        prompts: Mapping of task names to lists of ``PromptDefinition``
+        prompts: Mapping of module names to lists of ``PromptDefinition``
             dataclass instances whose ``llm_text`` may contain
-            ``{{ C.<task>.<name> }}`` references.
+            ``{{ C.<module>.<name> }}`` references.
         constants: Nested mapping of
-            ``{task_name: {constant_name: value}}`` from the Constants
+            ``{module_name: {constant_name: value}}`` from the Constants
             sheet.
 
     Returns:
@@ -107,13 +107,13 @@ def resolve_prompts(
     import dataclasses
 
     resolved: dict[str, list] = {}
-    for task, prompt_list in prompts.items():
+    for module, prompt_list in prompts.items():
         new_list = []
         for prompt in prompt_list:
             updated_text = resolve_static_refs(prompt.llm_text, constants)
             new_prompt = dataclasses.replace(prompt, llm_text=updated_text)
             new_list.append(new_prompt)
-        resolved[task] = new_list
+        resolved[module] = new_list
     return resolved
 
 
@@ -130,9 +130,9 @@ def resolve_facilitators(
     Args:
         facilitators: List of ``FacilitatorFunction`` dataclass
             instances whose ``definition`` may contain
-            ``{{ C.<task>.<name> }}`` references.
+            ``{{ C.<module>.<name> }}`` references.
         constants: Nested mapping of
-            ``{task_name: {constant_name: value}}`` from the Constants
+            ``{module_name: {constant_name: value}}`` from the Constants
             sheet.
 
     Returns:

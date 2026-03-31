@@ -85,7 +85,13 @@ def build_system_message(profile_prompt: str) -> str:
     Returns:
         The system message string to prepend to the LLM conversation.
     """
-    return profile_prompt
+    if not profile_prompt:
+        return ""
+    intro = (
+        "Before participating in this study, you were asked to share some "
+        "personal information. Your responses are provided below:"
+    )
+    return f"{intro}\n\n{profile_prompt}"
 
 
 # ---------------------------------------------------------------------------

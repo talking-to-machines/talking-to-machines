@@ -29,7 +29,7 @@ _FIELD_TYPES: dict[str, type] = {
     "BUILD_PROFILE_BACKSTORIES": bool,
     "ASSIGN_MANUALLY": str,
     "NUM_AGENTS_PER_SESSION": int,
-    "TASK_SEQUENCE": str,  # parsed further below
+    "MODULE_SEQUENCE": str,  # parsed further below
     "CONTEXT_OVERFLOW_POLICY": str,  # terminate | summarize | truncate
 }
 
@@ -40,7 +40,7 @@ _REQUIRED = {
     "MODEL_NAME",
     "RANDOM_SEED",
     "NUM_AGENTS_PER_SESSION",
-    "TASK_SEQUENCE",
+    "MODULE_SEQUENCE",
 }
 
 _BOOL_MAP = {
@@ -98,7 +98,7 @@ def parse_settings(df: pd.DataFrame) -> SettingsConfig:
 
     The first column is treated as the setting name and the second as
     the value, regardless of header labels. Required fields are
-    enforced and ``TASK_SEQUENCE`` is split into an ordered list.
+    enforced and ``MODULE_SEQUENCE`` is split into an ordered list.
 
     Args:
         df: A DataFrame with at least two columns where column 0
@@ -137,11 +137,11 @@ def parse_settings(df: pd.DataFrame) -> SettingsConfig:
     if missing:
         raise ValueError(f"Settings: missing required field(s): {sorted(missing)}")
 
-    # Parse TASK_SEQUENCE from comma-separated string
-    task_seq_raw = settings_raw.get("TASK_SEQUENCE", "")
-    task_sequence = (
-        [t.strip() for t in str(task_seq_raw).split(",") if t.strip()]
-        if task_seq_raw
+    # Parse MODULE_SEQUENCE from comma-separated string
+    module_seq_raw = settings_raw.get("MODULE_SEQUENCE", "")
+    module_sequence = (
+        [t.strip() for t in str(module_seq_raw).split(",") if t.strip()]
+        if module_seq_raw
         else []
     )
 
@@ -181,6 +181,6 @@ def parse_settings(df: pd.DataFrame) -> SettingsConfig:
         or False,
         assign_manually=assign_manually_raw,
         num_agents_per_session=settings_raw["NUM_AGENTS_PER_SESSION"],
-        task_sequence=task_sequence,
+        module_sequence=module_sequence,
         context_overflow_policy=overflow_policy,
     )

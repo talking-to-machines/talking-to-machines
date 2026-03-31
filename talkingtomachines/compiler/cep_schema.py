@@ -32,12 +32,12 @@ class AssignmentPlan:
         random_seed: Seed used for deterministic randomisation.
         treatment_assignments: When ``treatment_strategy`` is
             ``"manual"``, a nested mapping
-            ``{task: {round: {agent_id: treatment_label}}}``.
+            ``{module: {round: {agent_id: treatment_label}}}``.
             When random, a flat mapping
             ``{agent_id: treatment_label}`` applied across all
-            tasks and rounds.
-        group_assignments: Nested mapping of group formations per task
-            and round (``{task: {round: {group_id: [agent_id]}}}``).
+            modules and rounds.
+        group_assignments: Nested mapping of group formations per module
+            and round (``{module: {round: {group_id: [agent_id]}}}``).
     """
 
     treatment_strategy: str
@@ -47,18 +47,18 @@ class AssignmentPlan:
     group_assignments: dict[str, dict] = field(default_factory=dict)
 
     def get_treatment(
-        self, agent_id: str, task: str = "", round_number: int = 0
+        self, agent_id: str, module: str = "", round_number: int = 0
     ) -> str:
         """Resolve the treatment label for an agent.
 
         For random assignments (flat ``{agent_id: label}``), the label
-        is the same regardless of task and round.  For manual
-        assignments (nested ``{task: {round: {agent_id: label}}}``),
-        the label is looked up by task and round number.
+        is the same regardless of module and round.  For manual
+        assignments (nested ``{module: {round: {agent_id: label}}}``),
+        the label is looked up by module and round number.
 
         Args:
             agent_id: The agent identifier.
-            task: Task name (used only for manual assignments).
+            module: Module name (used only for manual assignments).
             round_number: Round number (used only for manual assignments).
 
         Returns:
@@ -66,9 +66,9 @@ class AssignmentPlan:
         """
         ta = self.treatment_assignments
         if self.treatment_strategy == "manual":
-            task_dict = ta.get(task, {})
+            module_dict = ta.get(module, {})
             # Round keys may be int (in-memory) or str (after JSON round-trip)
-            round_dict = task_dict.get(round_number) or task_dict.get(
+            round_dict = module_dict.get(round_number) or module_dict.get(
                 str(round_number), {}
             )
             return round_dict.get(agent_id, "")
@@ -130,15 +130,15 @@ class CompiledExperiment:
         run_id: Unique run identifier incorporating a UTC timestamp
             and random suffix.
         settings: Flat dictionary of experiment settings.
-        constants: Nested dictionary of constants per task
-            (``{task: {name: typed_value}}``).
+        constants: Nested dictionary of constants per module
+            (``{module: {name: typed_value}}``).
         fields: List of field definition dictionaries.
         facilitator_functions: List of facilitator function
             dictionaries.
-        prompts: Task-grouped prompt dictionaries
-            (``{task: [prompt_dict, ...]}``).
+        prompts: Module-grouped prompt dictionaries
+            (``{module: [prompt_dict, ...]}``).
         profiles: Agent profile data from the Profiles worksheet.
-        task_sequence: Ordered list of task names.
+        module_sequence: Ordered list of module names.
         assignment_plan: Pre-computed treatment and group assignments.
     """
 
@@ -153,7 +153,7 @@ class CompiledExperiment:
     facilitator_functions: list[dict]
     prompts: dict[str, list[dict]]
     profiles: dict
-    task_sequence: list[str]
+    module_sequence: list[str]
     assignment_plan: AssignmentPlan
 
     def to_dict(self) -> dict:
@@ -178,7 +178,7 @@ class CompiledExperiment:
             "facilitator_functions": self.facilitator_functions,
             "prompts": self.prompts,
             "profiles": self.profiles,
-            "task_sequence": self.task_sequence,
+            "module_sequence": self.module_sequence,
             "assignment_plan": self.assignment_plan.to_dict(),
         }
 
@@ -227,7 +227,7 @@ class CompiledExperiment:
             facilitator_functions=data.get("facilitator_functions", []),
             prompts=data.get("prompts", {}),
             profiles=data.get("profiles", {}),
-            task_sequence=data.get("task_sequence", []),
+            module_sequence=data.get("module_sequence", []),
             assignment_plan=AssignmentPlan.from_dict(data.get("assignment_plan", {})),
         )
 

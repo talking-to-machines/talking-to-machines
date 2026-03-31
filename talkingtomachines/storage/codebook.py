@@ -41,19 +41,19 @@ def generate_codebook(cep: CompiledExperiment) -> dict[str, Any]:
         "Session": "session_table",
         "Agent": "agent_table",
         "Group": "group_table",
-        "Player": "responses",
+        "Player": "player",
     }
 
     for field_dict in cep.fields:
         scope = field_dict.get("field_class", "Player")
-        table = scope_to_table.get(scope, "responses")
-        task = field_dict.get("task", "")
+        table = scope_to_table.get(scope, "player")
+        module = field_dict.get("module", "")
         name = field_dict.get("name", "")
-        full_name = f"{task}.{name}" if task else name
+        full_name = f"{module}.{name}" if module else name
 
         entry: dict[str, Any] = {
             "field": name,
-            "task": task,
+            "module": module,
             "scope": scope,
             "type": field_dict.get("type", "text"),
             "response_options": field_dict.get("response_options"),
@@ -69,10 +69,10 @@ def generate_codebook(cep: CompiledExperiment) -> dict[str, Any]:
 
     # Prompt definitions
     codebook["prompts"] = {}
-    for task, prompt_list in cep.prompts.items():
-        codebook["prompts"][task] = [
+    for module, prompt_list in cep.prompts.items():
+        codebook["prompts"][module] = [
             {
-                "task": task,
+                "module": module,
                 "sequence": p.get("prompt_sequence"),
                 "type": p.get("type"),
                 "is_displayed": p.get("is_displayed"),

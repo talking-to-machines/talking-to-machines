@@ -38,7 +38,7 @@ class SettingsConfig:
             ``"Treatment, Group"``. Empty means all assignments are
             random at session level.
         num_agents_per_session: Number of agents in each session.
-        task_sequence: Ordered list of task names to execute.
+        module_sequence: Ordered list of module names to execute.
         context_overflow_policy: Strategy when the context window is
             exceeded (``"terminate"``, ``"summarize"``, or ``"truncate"``).
     """
@@ -53,7 +53,7 @@ class SettingsConfig:
     build_profile_backstories: bool = False
     assign_manually: str = ""
     num_agents_per_session: int = 1
-    task_sequence: list[str] = field(default_factory=list)
+    module_sequence: list[str] = field(default_factory=list)
     context_overflow_policy: str = "terminate"
 
     def to_dict(self) -> dict:
@@ -73,7 +73,7 @@ class SettingsConfig:
             "build_profile_backstories": self.build_profile_backstories,
             "assign_manually": self.assign_manually,
             "num_agents_per_session": self.num_agents_per_session,
-            "task_sequence": self.task_sequence,
+            "module_sequence": self.module_sequence,
             "context_overflow_policy": self.context_overflow_policy,
         }
 
@@ -86,7 +86,7 @@ class FieldDefinition:
         field_class: Hierarchy level the field belongs to
             (``Session``, ``Subsession``, ``Agent``, ``Group``, or
             ``Player``).
-        task: Task name this field is associated with.
+        module: Module name this field is associated with.
         name: Field name used as a variable identifier.
         type: Data type (``integer``, ``float``, ``text``,
             ``category``, or ``boolean``).
@@ -104,7 +104,7 @@ class FieldDefinition:
     """
 
     field_class: str
-    task: str
+    module: str
     name: str
     type: str
     response_options: Any = None
@@ -122,7 +122,7 @@ class FieldDefinition:
         """
         return {
             "field_class": self.field_class,
-            "task": self.task,
+            "module": self.module,
             "name": self.name,
             "type": self.type,
             "response_options": self.response_options,
@@ -139,8 +139,8 @@ class PromptDefinition:
     """A single prompt entry from the Prompts worksheet.
 
     Attributes:
-        task: Task name this prompt belongs to.
-        prompt_sequence: Ordering index within the task.
+        module: Module name this prompt belongs to.
+        prompt_sequence: Ordering index within the module.
         type: Prompt category (``CONTEXT``, ``DISCUSSION``,
             ``PUBLIC_QUESTION``, ``PRIVATE_QUESTION``, or
             ``FACILITATOR``).
@@ -156,7 +156,7 @@ class PromptDefinition:
             retrieval-augmented generation.
     """
 
-    task: str
+    module: str
     prompt_sequence: int
     type: str
     is_displayed: Optional[str] = None
@@ -174,7 +174,7 @@ class PromptDefinition:
             A dictionary containing all prompt attributes.
         """
         return {
-            "task": self.task,
+            "module": self.module,
             "prompt_sequence": self.prompt_sequence,
             "type": self.type,
             "is_displayed": self.is_displayed,
@@ -220,13 +220,13 @@ class ExperimentConfig:
 
     Attributes:
         settings: Parsed Settings worksheet.
-        constants: Nested dictionary ``{task: {name: value}}`` from
+        constants: Nested dictionary ``{module: {name: value}}`` from
             the C worksheet.
         fields: Ordered list of field definitions from the Fields
             worksheet.
         facilitator_functions: List of facilitator functions from the
             Facilitator worksheet.
-        prompts: Dictionary ``{task: [PromptDefinition]}`` from the
+        prompts: Dictionary ``{module: [PromptDefinition]}`` from the
             Prompts worksheet.
         profiles: Profile data with keys ``"short_names"``,
             ``"full_names"``, and ``"rows"``.
@@ -254,7 +254,7 @@ class ExperimentConfig:
             "fields": [f.to_dict() for f in self.fields],
             "facilitator_functions": [f.to_dict() for f in self.facilitator_functions],
             "prompts": {
-                task: [p.to_dict() for p in ps] for task, ps in self.prompts.items()
+                module: [p.to_dict() for p in ps] for module, ps in self.prompts.items()
             },
             "profiles": self.profiles,
             "config_hash": self.config_hash,
@@ -375,7 +375,7 @@ class Agent:
         is_human: Whether this agent represents a human participant.
         message_history: Session-wide conversation history containing
             all messages from groups this agent has participated in.
-            Persists across rounds and tasks.
+            Persists across rounds and modules.
         state: Mutable state dictionary that persists across
             subsessions.
     """
@@ -544,7 +544,7 @@ class Group:
 
 @dataclass
 class Subsession:
-    """One round within a module (task block).
+    """One round within a module.
 
     Attributes:
         subsession_id: Unique identifier for this subsession.
@@ -595,15 +595,15 @@ class Subsession:
 
 @dataclass
 class Module:
-    """One task block within a session.
+    """One module block within a session.
 
-    Maps to a single task in the ``TASK_SEQUENCE`` setting and
+    Maps to a single entry in the ``MODULE_SEQUENCE`` setting and
     contains one or more subsessions (rounds).
 
     Attributes:
         module_id: Unique identifier for this module.
         session_id: Back-reference to the parent session.
-        task_name: Name of the task this module executes.
+        module_name: Name of the module this block executes.
         subsessions: Ordered list of subsessions (rounds) in this
             module.
         state: Mutable state dictionary scoped to this module.
@@ -611,7 +611,7 @@ class Module:
 
     module_id: str
     session_id: str
-    task_name: str
+    module_name: str
     subsessions: list[Subsession] = field(default_factory=list)
     state: dict = field(default_factory=dict)
 
@@ -624,7 +624,7 @@ class Module:
         return {
             "module_id": self.module_id,
             "session_id": self.session_id,
-            "task_name": self.task_name,
+            "module_name": self.module_name,
             "subsessions": [s.to_dict() for s in self.subsessions],
             "state": self.state,
         }
@@ -643,7 +643,7 @@ class Module:
         return cls(
             module_id=data["module_id"],
             session_id=data["session_id"],
-            task_name=data["task_name"],
+            module_name=data["module_name"],
             subsessions=[Subsession.from_dict(s) for s in data.get("subsessions", [])],
             state=data.get("state", {}),
         )
@@ -653,7 +653,7 @@ class Module:
 class Session:
     """One complete run execution.
 
-    Contains all modules (tasks) and all agents participating in the
+    Contains all modules and all agents participating in the
     session.
 
     Attributes:
@@ -663,7 +663,7 @@ class Session:
         cep_hash: Hash of the compiled experiment package used for
             this session.
         agents: List of agents participating in this session.
-        modules: Ordered list of modules (task blocks) to execute.
+        modules: Ordered list of modules to execute.
         state: Mutable state dictionary scoped to this session.
     """
 

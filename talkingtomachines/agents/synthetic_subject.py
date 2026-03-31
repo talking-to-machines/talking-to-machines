@@ -124,6 +124,8 @@ class ConversationalSyntheticSubject:
             temperature=temperature,
         )
         self._system_message = build_system_message(profile_prompt)
+        # Persist on the Agent so exporters can capture it
+        agent.state["system_message"] = self._system_message
         self._context_builder = ContextBuilder(state=state)
 
     # ------------------------------------------------------------------
@@ -132,11 +134,11 @@ class ConversationalSyntheticSubject:
 
     def respond(
         self,
-        task: str,
+        module: str,
         round_number: int,
         prompt: PromptDefinition,
         field_def: Optional[FieldDefinition] = None,
-    ) -> str:
+    ) -> tuple[str, str]:
         """Generate a response to the given prompt.
 
         Builds the full message context, optionally applies a context-window
@@ -144,26 +146,24 @@ class ConversationalSyntheticSubject:
         required, and persists the result to the appropriate state scope.
 
         Args:
-            task: The task identifier (e.g., app name in oTree terms).
-            round_number: The current round number within the task.
+            module: The module identifier (e.g., app name in oTree terms).
+            round_number: The current round number within the module.
             prompt: The ``PromptDefinition`` containing the LLM text template
                 and prompt metadata.
             field_def: Optional ``FieldDefinition`` describing the expected
                 response format, validation rules, and storage scope.
 
         Returns:
-            The raw response string from the LLM.
-
-        Raises:
-            No exceptions are raised directly; LLM and validation errors are
-            logged and handled with retry logic.
+            A tuple of ``(content, rendered_prompt)`` where *content* is the
+            raw LLM response string and *rendered_prompt* is the final user
+            message sent to the LLM.
         """
         messages = self._context_builder.build(
             agent=self.agent,
             player=self.player,
             group=self.group,
             session=self.session,
-            task=task,
+            module=module,
             round_number=round_number,
             prompt=prompt,
             system_message=self._system_message,
@@ -171,6 +171,14 @@ class ConversationalSyntheticSubject:
             constants=self._constants,
             rng=self._rng,
         )
+
+        # Capture the rendered prompt (final user message) for trace logging
+        rendered_prompt = ""
+        if messages:
+            last_content = messages[-1].get("content", "")
+            rendered_prompt = (
+                last_content if isinstance(last_content, str) else str(last_content)
+            )
 
         # Apply context window guard before sending to LLM
         if self._context_guard is not None:
@@ -215,41 +223,45 @@ class ConversationalSyntheticSubject:
         # Store response in Player.state
         if field_def and field_def.name:
             parsed, speculation_score = self._parse_json_response(content, field_def)
-            self._state.set_player(self.player.player_id, task, field_def.name, parsed)
+            self._state.set_player(
+                self.player.player_id, module, field_def.name, parsed
+            )
             if speculation_score is not None:
                 self._state.set_player(
                     self.player.player_id,
-                    task,
+                    module,
                     f"{field_def.name}_speculation_score",
                     speculation_score,
                 )
             if field_def.field_class == "Agent":
-                self._state.set_agent(self.agent.agent_id, task, field_def.name, parsed)
+                self._state.set_agent(
+                    self.agent.agent_id, module, field_def.name, parsed
+                )
             elif field_def.field_class == "Group":
                 if prompt.type == "PRIVATE_QUESTION":
                     self._state.accumulate_group(
                         self.group.group_id,
-                        task,
+                        module,
                         field_def.name,
                         self.player.player_id,
                         parsed,
                     )
                 else:
                     self._state.set_group(
-                        self.group.group_id, task, field_def.name, parsed
+                        self.group.group_id, module, field_def.name, parsed
                     )
             elif field_def.field_class == "Session":
                 if prompt.type == "PRIVATE_QUESTION":
                     self._state.accumulate_session(
-                        task,
+                        module,
                         field_def.name,
                         self.player.player_id,
                         parsed,
                     )
                 else:
-                    self._state.set_session(task, field_def.name, parsed)
+                    self._state.set_session(module, field_def.name, parsed)
 
-        return content
+        return content, rendered_prompt
 
     def get_system_message(self) -> str:
         """Return the pre-built system message for this subject.

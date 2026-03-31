@@ -1,7 +1,7 @@
 """Prompts worksheet parser.
 
 Converts each row of the Prompts worksheet into a
-``PromptDefinition`` dataclass, grouped by task and sorted by
+``PromptDefinition`` dataclass, grouped by module and sorted by
 ``prompt_sequence``.
 """
 
@@ -16,7 +16,7 @@ from talkingtomachines.core.models import PromptDefinition
 
 logger = logging.getLogger(__name__)
 
-_REQUIRED_COLS = {"task", "prompt_sequence", "type", "llm_text"}
+_REQUIRED_COLS = {"module", "prompt_sequence", "type", "llm_text"}
 _VALID_TYPES = {
     "CONTEXT",
     "DISCUSSION",
@@ -71,20 +71,20 @@ def _parse_optional_str(value: Any) -> Optional[str]:
 
 
 def parse_prompts(df: pd.DataFrame) -> dict[str, list[PromptDefinition]]:
-    """Parse the Prompts worksheet into task-grouped prompt definitions.
+    """Parse the Prompts worksheet into module-grouped prompt definitions.
 
     Each row is converted into a ``PromptDefinition``. Rows missing a
-    ``task`` or ``llm_text`` value raise a ``ValueError``. Unknown
+    ``module`` or ``llm_text`` value raise a ``ValueError``. Unknown
     prompt types are accepted with a warning. Results are grouped by
-    task and sorted by ``prompt_sequence`` within each group.
+    module and sorted by ``prompt_sequence`` within each group.
 
     Args:
         df: DataFrame for the Prompts worksheet with at least the
-            columns ``task``, ``prompt_sequence``, ``type``, and
+            columns ``module``, ``prompt_sequence``, ``type``, and
             ``llm_text``.
 
     Returns:
-        A dictionary ``{task_name: [PromptDefinition, ...]}`` where
+        A dictionary ``{module_name: [PromptDefinition, ...]}`` where
         each list is sorted by ``prompt_sequence``.
 
     Raises:
@@ -104,19 +104,19 @@ def parse_prompts(df: pd.DataFrame) -> dict[str, list[PromptDefinition]]:
     all_prompts: list[PromptDefinition] = []
 
     for row_num, row in df.iterrows():
-        task = str(row.get("task", "")).strip()
+        module = str(row.get("module", "")).strip()
         prompt_type = str(row.get("type", "")).strip().upper()
         llm_text = str(row.get("llm_text", "")).strip()
 
-        if not task or not llm_text:
+        if not module or not llm_text:
             missing_parts = []
-            if not task:
-                missing_parts.append("task")
+            if not module:
+                missing_parts.append("module")
             if not llm_text:
                 missing_parts.append("llm_text")
             raise ValueError(
                 f"Prompts row {row_num}: missing required value(s): {', '.join(missing_parts)}. "
-                "Every row must have a task and llm_text."
+                "Every row must have a module and llm_text."
             )
 
         try:
@@ -150,7 +150,7 @@ def parse_prompts(df: pd.DataFrame) -> dict[str, list[PromptDefinition]]:
 
         all_prompts.append(
             PromptDefinition(
-                task=task,
+                module=module,
                 prompt_sequence=seq,
                 type=prompt_type,
                 is_displayed=_parse_optional_str(row.get("is_displayed")),
@@ -163,9 +163,9 @@ def parse_prompts(df: pd.DataFrame) -> dict[str, list[PromptDefinition]]:
             )
         )
 
-    # Group by task and sort by prompt_sequence
+    # Group by module and sort by prompt_sequence
     result: dict[str, list[PromptDefinition]] = {}
-    for pd_obj in sorted(all_prompts, key=lambda p: (p.task, p.prompt_sequence)):
-        result.setdefault(pd_obj.task, []).append(pd_obj)
+    for pd_obj in sorted(all_prompts, key=lambda p: (p.module, p.prompt_sequence)):
+        result.setdefault(pd_obj.module, []).append(pd_obj)
 
     return result

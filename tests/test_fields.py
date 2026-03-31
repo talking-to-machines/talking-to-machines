@@ -75,14 +75,14 @@ def test_session_get_default():
     assert state.get_session("pgg", "missing", default=-1) == -1
 
 
-def test_session_get_task_returns_dict_copy():
+def test_session_get_module_returns_dict_copy():
     state = ExperimentState()
     state.set_session("pgg", "x", 1)
     state.set_session("pgg", "y", 2)
-    task_data = state.get_session_task("pgg")
-    assert task_data == {"x": 1, "y": 2}
+    module_data = state.get_session_module("pgg")
+    assert module_data == {"x": 1, "y": 2}
     # Mutation of copy should not affect stored state
-    task_data["x"] = 999
+    module_data["x"] = 999
     assert state.get_session("pgg", "x") == 1
 
 
@@ -188,7 +188,7 @@ def test_build_jinja_context_basic():
         player=player,
         group=group,
         session=session,
-        task="pgg",
+        module="pgg",
         round_number=2,
     )
 
@@ -211,7 +211,7 @@ def test_build_jinja_context_player_profile_fields():
         player=player,
         group=group,
         session=session,
-        task="pgg",
+        module="pgg",
         round_number=1,
     )
     # profile fields accessible via player namespace
@@ -232,7 +232,7 @@ def test_build_jinja_context_includes_player_state():
         player=player,
         group=group,
         session=session,
-        task="pgg",
+        module="pgg",
         round_number=1,
     )
     assert ctx["player"].payoff == 99
@@ -251,7 +251,7 @@ def test_build_jinja_context_constants_namespace():
         player=player,
         group=group,
         session=session,
-        task="pgg",
+        module="pgg",
         round_number=1,
         constants=constants,
     )
@@ -271,7 +271,7 @@ def test_build_jinja_context_no_constants_key():
         player=player,
         group=group,
         session=session,
-        task="pgg",
+        module="pgg",
         round_number=1,
     )
     assert "C" not in ctx

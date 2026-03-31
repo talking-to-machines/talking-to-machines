@@ -166,12 +166,12 @@ talkingtomachines validate path/to/template.xlsx
 talkingtomachines validate path/to/csv_directory/
 ```
 
-Runs all validators (schema, reference, flow, provider, context window) and reports any errors. On success, displays the experiment ID, config hash, task sequence, context window size, and model name.
+Runs all validators (schema, reference, flow, provider, context window) and reports any errors. On success, displays the experiment ID, config hash, module sequence, context window size, and model name.
 
 #### `run` — Compile and execute an experiment
 
 ```bash
-# Run in test mode (default): one group per task, sequential execution
+# Run in test mode (default): one group per module, sequential execution
 talkingtomachines run path/to/template.xlsx 
 # Alternatively,
 talkingtomachines run path/to/template.xlsx --test
@@ -188,15 +188,15 @@ talkingtomachines run path/to/template.xlsx --output my_results
 
 | Flag | Description |
 |------|-------------|
-| `--test` / `--full-run` | Test mode (default) runs one group per task; full run executes all groups in parallel |
+| `--test` / `--full-run` | Test mode (default) runs one group per module; full run executes all groups in parallel |
 | `--budget` | Budget cap in USD (default: 0 = no cap) |
-| `--output, -o` | Output base directory (default: `experiment_results`) |
+| `--output, -o` | Output base directory (default: same directory as the template) |
 
 #### `resume` — Resume an interrupted experiment run
 
 ```bash
-talkingtomachines resume experiment_results/my_experiment/run_abc123
-talkingtomachines resume experiment_results/my_experiment/run_abc123 --budget 5.0
+talkingtomachines resume my_experiment/results/run_abc123
+talkingtomachines resume my_experiment/results/run_abc123 --budget 5.0
 ```
 
 Loads the most recent checkpoint from the run directory and resumes execution from where it was interrupted, restoring session state, completed modules, and experiment state variables.
@@ -221,6 +221,26 @@ Re-exports artifacts from an existing run folder. If checkpoints exist, performs
 | `--format, -fmt` | Export format: `csv` (default), `jsonl`, or `all` |
 | `--output, -o` | Output directory (default: run folder) |
 | `--base` | Base experiment results directory (default: `experiment_results`) |
+
+#### Output Files
+
+After a run completes, the following files are produced in the run directory (`<template_dir>/results/<run_id>/`):
+
+| File | Description |
+|------|-------------|
+| `compiled_experiment.json` | The full Compiled Experiment Package (CEP) containing all settings, field definitions, prompts, assignment plans, and hashes. Created before execution begins. |
+| `config.json` | Lightweight copy of experiment settings for quick reference. Created before execution begins. |
+| `codebook.json` | Data dictionary documenting all field definitions, response options, data types, prompt definitions, and profile columns. Organised by table (session, agent, group, player). |
+| `session_table.csv` | One row per session with run identifiers, timing, cumulative API cost (USD), and stop reason. |
+| `agent_table.csv` | One row per agent per session. Includes profile fields, agent-scoped field values for each module, system message, and full message history (JSON). |
+| `group_table.csv` | One row per group per subsession. Includes group metadata, round number, and group-scoped field values. |
+| `player.csv` | One row per player per subsession. Includes player/agent/group identifiers, round number, and player-scoped field values. |
+| `assignments.csv` | One row per agent per module per round. Documents group membership and treatment labels. |
+| `metrics.csv` | Aggregate experiment metrics: agent count, module count, total rounds, groups, players, messages, API cost, and timing. |
+| `traces.jsonl` | Complete event log written live during execution. Each line is a JSON record covering LLM calls, retries, facilitator calls, validation outcomes, checkpoint events, randomisation, and assignments. |
+| `events.csv` | Filtered view of `traces.jsonl` containing non-routine events (retries, errors, validation, checkpoints, assignments). Only generated if `traces.jsonl` exists. |
+| `checkpoints/<session_id>.json` | Session checkpoint saved at subsession boundaries for fault-tolerant resumption. Contains the serialised Session object hierarchy. |
+| `checkpoints/<session_id>_state.json` | Experiment state checkpoint saved alongside the session checkpoint. Contains all recorded field values across all scopes. |
 
 ---
 
@@ -269,13 +289,13 @@ v0.3.0 uses 7 worksheets that map to the oTree-inspired hierarchy.
 
 | Worksheet | Purpose |
 |-----------|---------|
-| **Settings** | Global experiment settings: model name, temperature, random seed, task sequence, context window overflow policy. |
-| **C** | Constants defined per task (e.g., `ENDOWMENT`, `MAX_NUM_ROUNDS`, `PLAYERS_PER_GROUP`). Columns: `task`, `name`, `value`, `type`. Accessed via `{{ C.task_name.constant_name }}` in prompts. |
-| **Fields** | Data variables that agents write to during the experiment. Columns: `task`, `class`, `name`, `type`, `response_options`, `response_options_intro`, `randomise_options_order`, `validate`, `generate_speculation_score`, `format_response`. |
+| **Settings** | Global experiment settings: model name, temperature, random seed, module sequence, context window overflow policy. |
+| **C** | Constants defined per module (e.g., `ENDOWMENT`, `MAX_NUM_ROUNDS`, `PLAYERS_PER_GROUP`). Columns: `module`, `name`, `value`, `type`. Accessed via `{{ C.module_name.constant_name }}` in prompts. |
+| **Fields** | Data variables that agents write to during the experiment. Columns: `module`, `class`, `name`, `type`, `response_options`, `response_options_intro`, `randomise_options_order`, `validate`, `generate_speculation_score`, `format_response`. |
 | **Facilitator** | Built-in and custom facilitator functions. Columns: `name`, `definition`, `args`. Built-in functions: `creating_session`, `assign_treatment`, `assign_groups`. Custom functions use natural-language LLM instructions. |
-| **Prompts** | The prompt sequence for each task. Columns: `task`, `prompt_sequence`, `type`, `is_displayed`, `is_adapted`, `human_text`, `llm_text`, `rag_vector_store_id`, `field_class`, `field_name`. |
+| **Prompts** | The prompt sequence for each module. Columns: `module`, `prompt_sequence`, `type`, `is_displayed`, `is_adapted`, `human_text`, `llm_text`, `rag_vector_store_id`, `field_class`, `field_name`. |
 | **Profiles** | Agent profile attributes. Row 0 = short names (Jinja2 identifiers), Row 1 = full question wording, Rows 2+ = profile data. First column must be `ID` with unique values. |
-| **Manual_** | Optional manual overrides for treatment assignments, group memberships, and field values. Columns: `ID`, `task`, `round_number`, `class`, `name`, `value`. |
+| **Manual_** | Optional manual overrides for treatment assignments, group memberships, and field values. Columns: `ID`, `module`, `round_number`, `class`, `name`, `value`. |
 
 ---
 

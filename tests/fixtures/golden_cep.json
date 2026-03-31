@@ -26,7 +26,7 @@
   "fields": [
     {
       "field_class": "Player",
-      "task": "pgg",
+      "module": "pgg",
       "name": "contribution",
       "type": "integer",
       "response_options": null,
@@ -55,7 +55,7 @@
       }
     ]
   },
-  "task_sequence": ["pgg"],
+  "module_sequence": ["pgg"],
   "facilitator_functions": [],
   "constants": {
     "pgg": {

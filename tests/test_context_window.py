@@ -316,7 +316,7 @@ def test_context_window_validator_no_error_small_experiment():
         model_name="gpt-4o",
         prompts=prompts,
         constants={"task1": {"MAX_NUM_ROUNDS": 2, "PLAYERS_PER_GROUP": 2}},
-        task_sequence=["task1"],
+        module_sequence=["task1"],
         num_agents_per_session=2,
     )
     errors = validator.validate()
@@ -334,7 +334,7 @@ def test_context_window_validator_error_exceeds_limit():
         model_name="open-mistral-7b",  # 32,000 context window
         prompts=prompts,
         constants={"task1": {"MAX_NUM_ROUNDS": 100, "PLAYERS_PER_GROUP": 10}},
-        task_sequence=["task1"],
+        module_sequence=["task1"],
         num_agents_per_session=10,
     )
     errors = validator.validate()
@@ -352,7 +352,7 @@ def test_context_window_validator_warning_near_limit(caplog):
         model_name="open-mistral-7b",
         prompts=prompts,
         constants={"task1": {"MAX_NUM_ROUNDS": 50, "PLAYERS_PER_GROUP": 3}},
-        task_sequence=["task1"],
+        module_sequence=["task1"],
         num_agents_per_session=3,
     )
     with caplog.at_level(logging.WARNING):
@@ -370,7 +370,7 @@ def test_context_window_validator_summary():
         model_name="gpt-4o",
         prompts={},
         constants={},
-        task_sequence=[],
+        module_sequence=[],
         num_agents_per_session=1,
     )
     summary = validator.get_summary()
@@ -394,7 +394,7 @@ def test_settings_parser_valid_overflow_policy():
                 {"name": "MODEL_NAME", "value": "gpt-4o"},
                 {"name": "RANDOM_SEED", "value": 42},
                 {"name": "NUM_AGENTS_PER_SESSION", "value": 2},
-                {"name": "TASK_SEQUENCE", "value": "task1"},
+                {"name": "MODULE_SEQUENCE", "value": "task1"},
                 {"name": "CONTEXT_OVERFLOW_POLICY", "value": policy},
             ]
         )
@@ -412,7 +412,7 @@ def test_settings_parser_invalid_overflow_policy():
             {"name": "MODEL_NAME", "value": "gpt-4o"},
             {"name": "RANDOM_SEED", "value": 42},
             {"name": "NUM_AGENTS_PER_SESSION", "value": 2},
-            {"name": "TASK_SEQUENCE", "value": "task1"},
+            {"name": "MODULE_SEQUENCE", "value": "task1"},
             {"name": "CONTEXT_OVERFLOW_POLICY", "value": "invalid_policy"},
         ]
     )
@@ -430,7 +430,7 @@ def test_settings_parser_default_overflow_policy():
             {"name": "MODEL_NAME", "value": "gpt-4o"},
             {"name": "RANDOM_SEED", "value": 42},
             {"name": "NUM_AGENTS_PER_SESSION", "value": 2},
-            {"name": "TASK_SEQUENCE", "value": "task1"},
+            {"name": "MODULE_SEQUENCE", "value": "task1"},
         ]
     )
     config = parse_settings(df)

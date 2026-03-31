@@ -96,7 +96,7 @@ def _make_pgg_cep(tmp_path, max_rounds=3, num_agents=4):
             "fields": [
                 {
                     "field_class": "Player",
-                    "task": "pgg",
+                    "module": "pgg",
                     "name": "contribution",
                     "type": "integer",
                     "response_options": None,
@@ -111,7 +111,7 @@ def _make_pgg_cep(tmp_path, max_rounds=3, num_agents=4):
                 "pgg": [
                     {
                         "type": "CONTEXT",
-                        "task": "pgg",
+                        "module": "pgg",
                         "prompt_sequence": 1,
                         "llm_text": "Round {{ round_number }} begins. You have an endowment.",
                         "is_displayed": None,
@@ -120,7 +120,7 @@ def _make_pgg_cep(tmp_path, max_rounds=3, num_agents=4):
                     },
                     {
                         "type": "DISCUSSION",
-                        "task": "pgg",
+                        "module": "pgg",
                         "prompt_sequence": 2,
                         "llm_text": "Discuss your strategy for this round.",
                         "is_displayed": None,
@@ -129,7 +129,7 @@ def _make_pgg_cep(tmp_path, max_rounds=3, num_agents=4):
                     },
                     {
                         "type": "PRIVATE_QUESTION",
-                        "task": "pgg",
+                        "module": "pgg",
                         "prompt_sequence": 3,
                         "llm_text": "How much will you contribute? (0-20)",
                         "is_displayed": None,
@@ -138,7 +138,7 @@ def _make_pgg_cep(tmp_path, max_rounds=3, num_agents=4):
                     },
                 ]
             },
-            "task_sequence": ["pgg"],
+            "module_sequence": ["pgg"],
             "facilitator_functions": [],
             "constants": {
                 "pgg": {"MAX_NUM_ROUNDS": max_rounds, "PLAYERS_PER_GROUP": num_agents}
@@ -176,7 +176,7 @@ def test_multi_agent_pgg_completes(tmp_path):
     assert session is not None
     assert len(session.modules) == 1
     module = session.modules[0]
-    assert module.task_name == "pgg"
+    assert module.module_name == "pgg"
     # 3 rounds = 3 subsessions
     assert len(module.subsessions) == 3
 

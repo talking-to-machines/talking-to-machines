@@ -13,7 +13,7 @@ Runtime loop::
         for each subsession in module:
           form_groups()
           for each group in subsession:
-            for each prompt in task (filtered by is_displayed):
+            for each prompt in module (filtered by is_displayed):
               if FACILITATOR      -> execute_facilitator()
               if CONTEXT          -> broadcast_context()
               if DISCUSSION       -> run_discussion_turn()
@@ -184,18 +184,18 @@ class ExperimentRuntime:
         session_number: int = 1,
         test_mode: bool = False,
         resume_session: Optional[Session] = None,
-        on_task_complete: Optional[callable] = None,
+        on_module_complete: Optional[callable] = None,
     ) -> Session:
         """
         Execute the full experiment session.
 
         Args:
             session_number:  Numeric index of this session (for ID derivation).
-            test_mode:       If True, run only one group per task.
+            test_mode:       If True, run only one group per module.
             resume_session:  If provided, resume from this checkpoint. Already-completed
                              modules (those with subsessions) are skipped.
-            on_task_complete: Optional callback invoked after each task
-                completes. Called with ``(task_index, task_name, total_tasks)``
+            on_module_complete: Optional callback invoked after each module
+                completes. Called with ``(module_index, module_name, total_modules)``
                 to support progress reporting.
 
         Returns:
@@ -206,13 +206,13 @@ class ExperimentRuntime:
         if resume_session is not None:
             session = resume_session
             session_id = session.session_id
-            completed_task_names = {
-                m.task_name for m in session.modules if m.subsessions
+            completed_module_names = {
+                m.module_name for m in session.modules if m.subsessions
             }
             logger.info(
                 "Resuming session %s — %d module(s) already completed.",
                 session_id,
-                len(completed_task_names),
+                len(completed_module_names),
             )
         else:
             session_id = make_session_id(cep.run_id, session_number)
@@ -222,7 +222,7 @@ class ExperimentRuntime:
                 experiment_id=cep.experiment_id,
                 cep_hash=cep.cep_hash,
             )
-            completed_task_names = set()
+            completed_module_names = set()
 
         # Build agents from profiles
         profiles = cep.profiles
@@ -252,41 +252,41 @@ class ExperimentRuntime:
             self._initialize_session(session, cep)
 
         stop_signal = "continue"
-        # In test mode, lock to the first group's agents across all tasks
+        # In test mode, lock to the first group's agents across all modules
         test_group_agent_ids: set[str] | None = None
 
-        # Execute modules (tasks)
-        for task_idx, task_name in enumerate(cep.task_sequence):
+        # Execute modules
+        for module_idx, module_name in enumerate(cep.module_sequence):
             if stop_signal == "end_session":
                 break
 
             # Skip already-completed modules when resuming
-            if task_name in completed_task_names:
-                logger.info("Skipping already-completed module: %s", task_name)
+            if module_name in completed_module_names:
+                logger.info("Skipping already-completed module: %s", module_name)
                 continue
 
-            module_id = make_module_id(session_id, task_name)
+            module_id = make_module_id(session_id, module_name)
             module = Module(
                 module_id=module_id,
                 session_id=session_id,
-                task_name=task_name,
+                module_name=module_name,
             )
             session.modules.append(module)
 
-            task_consts = cep.constants.get(task_name, {})
-            max_rounds = int(task_consts.get("MAX_NUM_ROUNDS", 1))
+            module_consts = cep.constants.get(module_name, {})
+            max_rounds = int(module_consts.get("MAX_NUM_ROUNDS", 1))
 
-            prompts = [PromptDefinition(**p) for p in cep.prompts.get(task_name, [])]
+            prompts = [PromptDefinition(**p) for p in cep.prompts.get(module_name, [])]
 
             for round_num in range(1, max_rounds + 1):
                 if stop_signal == "end_session":
                     break
 
-                # Resolve treatment labels for this task/round
+                # Resolve treatment labels for this module/round
                 for agent in agents:
                     agent.treatment_label = assignment_plan.get_treatment(
                         agent.agent_id,
-                        task_name,
+                        module_name,
                         round_num,
                     )
 
@@ -300,7 +300,7 @@ class ExperimentRuntime:
 
                 # Form groups for this round
                 precomputed_groups = assignment_plan.group_assignments.get(
-                    task_name, {}
+                    module_name, {}
                 ).get(round_num, {})
 
                 groups: list[Group] = []
@@ -330,11 +330,11 @@ class ExperimentRuntime:
 
                 if test_mode and groups:
                     if test_group_agent_ids is None:
-                        # First task: capture agents from the first group
+                        # First module: capture agents from the first group
                         test_group_agent_ids = {p.agent_id for p in groups[0].players}
                         groups = groups[:1]
                     else:
-                        # Subsequent tasks: pick the group whose members
+                        # Subsequent modules: pick the group whose members
                         # best overlap with the locked test group agents
                         best = max(
                             groups,
@@ -356,7 +356,7 @@ class ExperimentRuntime:
                             group=grp,
                             session=session,
                             agents_map=agents_map,
-                            task_name=task_name,
+                            module_name=module_name,
                             round_number=round_num,
                             prompts=prompts,
                             cep=cep,
@@ -378,7 +378,7 @@ class ExperimentRuntime:
                             group=group,
                             session=session,
                             agents_map=agents_map,
-                            task_name=task_name,
+                            module_name=module_name,
                             round_number=round_num,
                             prompts=prompts,
                             cep=cep,
@@ -392,9 +392,9 @@ class ExperimentRuntime:
                 # Checkpoint at subsession boundary
                 self._checkpointer.save(session, self._state)
 
-            # Notify progress after each task completes
-            if on_task_complete is not None:
-                on_task_complete(task_idx, task_name, len(cep.task_sequence))
+            # Notify progress after each module completes
+            if on_module_complete is not None:
+                on_module_complete(module_idx, module_name, len(cep.module_sequence))
 
         self._finalize_session(session)
         return session
@@ -468,14 +468,14 @@ class ExperimentRuntime:
         group: Group,
         session: Session,
         agents_map: dict[str, Agent],
-        task_name: str,
+        module_name: str,
         round_number: int,
         prompts: list[PromptDefinition],
         cep: CompiledExperiment,
     ) -> str:
         """Execute all prompts for a single group within a subsession.
 
-        Iterates through each prompt in the task, dispatching to the
+        Iterates through each prompt in the module, dispatching to the
         appropriate handler based on prompt type (FACILITATOR, CONTEXT,
         DISCUSSION, PUBLIC_QUESTION, PRIVATE_QUESTION). Builds synthetic
         subjects for each player and evaluates flow-control expressions.
@@ -484,9 +484,9 @@ class ExperimentRuntime:
             group: The group to execute prompts for.
             session: The parent session object.
             agents_map: Mapping from agent_instance_id to Agent objects.
-            task_name: Name of the current task/module.
+            module_name: Name of the current module.
             round_number: Current round (subsession) number.
-            prompts: Ordered list of prompt definitions for this task.
+            prompts: Ordered list of prompt definitions for this module.
             cep: Compiled experiment for accessing settings and constants.
 
         Returns:
@@ -523,10 +523,8 @@ class ExperimentRuntime:
             subjects[player.agent_instance_id] = subject
 
         # Build field definitions lookup once (not per-prompt)
-        from talkingtomachines.core.models import FieldDefinition
-
         field_defs_by_key = {
-            (f["task"], f["field_class"], f["name"]): FieldDefinition(**f)
+            (f["module"], f["field_class"], f["name"]): FieldDefinition(**f)
             for f in cep.fields
         }
 
@@ -542,7 +540,7 @@ class ExperimentRuntime:
                     player=rep_player,
                     group=group,
                     session=session,
-                    task=task_name,
+                    module=module_name,
                     round_number=round_number,
                     constants=cep.constants,
                 )
@@ -551,48 +549,82 @@ class ExperimentRuntime:
         else:
             jinja_ctx = {"round_number": round_number, "group_id": group.group_id}
 
+        def _is_player_specific(expr: str) -> bool:
+            """Check if an ``is_displayed`` expression references player/agent attributes.
+
+            Args:
+                expr: A Jinja2 boolean expression string.
+
+            Returns:
+                ``True`` if the expression contains ``player.`` or ``agent.``.
+            """
+            if not expr:
+                return False
+            return "player." in expr or "agent." in expr
+
+        def _player_jinja_ctx(player, agent):
+            """Build a per-player Jinja context for ``is_displayed`` evaluation.
+
+            Args:
+                player: The ``Player`` instance.
+                agent: The ``Agent`` instance.
+
+            Returns:
+                A Jinja2 context dict for the given player/agent.
+            """
+            return self._state.build_jinja_context(
+                agent=agent,
+                player=player,
+                group=group,
+                session=session,
+                module=module_name,
+                round_number=round_number,
+                constants=cep.constants,
+            )
+
         stop_signal = "continue"
 
         for prompt in prompts:
-            # Evaluate is_displayed
-            if not self._flow.is_displayed(prompt.is_displayed, jinja_ctx):
-                continue
+            # Evaluate is_displayed — per-player if expression references player/agent
+            is_disp_expr = prompt.is_displayed
+            per_player_filter = _is_player_specific(is_disp_expr)
+            if not per_player_filter:
+                # Non-player expression: evaluate once with representative context
+                if not self._flow.is_displayed(is_disp_expr, jinja_ctx):
+                    continue
 
             # Fetch field definition if applicable
             field_def = None
             if prompt.field_class and prompt.field_name:
-                field_key = (task_name, prompt.field_class, prompt.field_name)
+                field_key = (module_name, prompt.field_class, prompt.field_name)
                 field_def = field_defs_by_key.get(field_key)
 
             if prompt.type == "FACILITATOR":
-                self._event_logger.log(
-                    "facilitator_call",
-                    run_id=cep.run_id,
-                    session_id=session.session_id,
-                    group_id=group.group_id,
-                    data={
-                        "prompt_name": prompt.field_name,
-                        "task": task_name,
-                        "round": round_number,
-                    },
-                )
                 stop_signal = self._execute_facilitator_prompt(
                     prompt,
                     group,
                     agents_map,
                     cep,
-                    task_name,
+                    module_name,
                     field_def,
                     jinja_ctx,
                     session=session,
                     round_number=round_number,
+                    is_displayed_expr=is_disp_expr if per_player_filter else None,
                 )
                 if stop_signal in ("end_round", "end_session"):
                     break
 
             elif prompt.type == "CONTEXT":
                 self._broadcast_context(
-                    prompt, group, session, task_name, round_number, agents_map, cep
+                    prompt,
+                    group,
+                    session,
+                    module_name,
+                    round_number,
+                    agents_map,
+                    cep,
+                    is_displayed_expr=is_disp_expr if per_player_filter else None,
                 )
 
             elif prompt.type == "DISCUSSION":
@@ -607,9 +639,15 @@ class ExperimentRuntime:
                     )
                     if player is None:
                         continue
+                    if per_player_filter:
+                        agent_obj_check = agents_map.get(agent_id)
+                        if agent_obj_check and not self._flow.is_displayed(
+                            is_disp_expr, _player_jinja_ctx(player, agent_obj_check)
+                        ):
+                            continue
                     t0 = time.perf_counter()
-                    content = subject.respond(
-                        task_name, round_number, prompt, field_def
+                    content, rendered_prompt = subject.respond(
+                        module_name, round_number, prompt, field_def
                     )
                     latency_ms = (time.perf_counter() - t0) * 1000
                     with self._turn_counter_lock:
@@ -631,22 +669,23 @@ class ExperimentRuntime:
                         agent_instance_id=agent_id,
                         data={
                             "prompt_type": "DISCUSSION",
-                            "task": task_name,
+                            "module": module_name,
                             "round": round_number,
                             "turn_id": turn_id,
                             "latency_ms": round(latency_ms, 2),
+                            "rendered_prompt": rendered_prompt,
+                            "response": content,
                         },
                     )
+                    agent_obj = agents_map.get(agent_id, Agent("", "", {}))
                     msg = make_message(
                         role="assistant",
                         content=content,
-                        sender_agent_instance_id=agent_id,
+                        sender_agent_id=agent_obj.agent_id,
                         group_id=group.group_id,
-                        treatment_label=agents_map.get(
-                            agent_id, Agent("", "", {})
-                        ).treatment_label,
+                        treatment_label=agent_obj.treatment_label,
                         visibility=VISIBILITY_GROUP_ONLY,
-                        task=task_name,
+                        module=module_name,
                         round_number=round_number,
                     )
                     self._append_to_agent_histories(msg, group, agents_map)
@@ -660,9 +699,28 @@ class ExperimentRuntime:
                     subject = subjects.get(agent_id)
                     if subject is None:
                         continue
+                    if per_player_filter:
+                        pq_player = next(
+                            (
+                                p
+                                for p in group.players
+                                if p.agent_instance_id == agent_id
+                            ),
+                            None,
+                        )
+                        agent_obj_check = agents_map.get(agent_id)
+                        if (
+                            pq_player
+                            and agent_obj_check
+                            and not self._flow.is_displayed(
+                                is_disp_expr,
+                                _player_jinja_ctx(pq_player, agent_obj_check),
+                            )
+                        ):
+                            continue
                     t0 = time.perf_counter()
-                    content = subject.respond(
-                        task_name, round_number, prompt, field_def
+                    content, rendered_prompt = subject.respond(
+                        module_name, round_number, prompt, field_def
                     )
                     latency_ms = (time.perf_counter() - t0) * 1000
                     with self._turn_counter_lock:
@@ -684,23 +742,24 @@ class ExperimentRuntime:
                         agent_instance_id=agent_id,
                         data={
                             "prompt_type": "PUBLIC_QUESTION",
-                            "task": task_name,
+                            "module": module_name,
                             "round": round_number,
                             "field_name": prompt.field_name,
                             "latency_ms": round(latency_ms, 2),
+                            "rendered_prompt": rendered_prompt,
+                            "response": content,
                         },
                     )
+                    agent_obj = agents_map.get(agent_id, Agent("", "", {}))
                     pending_messages.append(
                         make_message(
                             role="assistant",
                             content=content,
-                            sender_agent_instance_id=agent_id,
+                            sender_agent_id=agent_obj.agent_id,
                             group_id=group.group_id,
-                            treatment_label=agents_map.get(
-                                agent_id, Agent("", "", {})
-                            ).treatment_label,
+                            treatment_label=agent_obj.treatment_label,
                             visibility=VISIBILITY_GROUP_ONLY,
-                            task=task_name,
+                            module=module_name,
                             round_number=round_number,
                         )
                     )
@@ -711,12 +770,39 @@ class ExperimentRuntime:
             elif prompt.type == "PRIVATE_QUESTION":
                 # Parallel: each agent's private answer is invisible to others
                 def _respond_private(agent_id: str):
+                    """Execute a private question for a single agent.
+
+                    Args:
+                        agent_id: The agent instance ID to respond.
+
+                    Returns:
+                        Tuple of (agent_id, raw_response, parsed_value, cost).
+                    """
                     subj = subjects.get(agent_id)
                     if subj is None:
-                        return agent_id, "", 0.0
+                        return agent_id, "", "", 0.0
+                    if per_player_filter:
+                        priv_player = next(
+                            (
+                                p
+                                for p in group.players
+                                if p.agent_instance_id == agent_id
+                            ),
+                            None,
+                        )
+                        agent_obj_check = agents_map.get(agent_id)
+                        if (
+                            priv_player
+                            and agent_obj_check
+                            and not self._flow.is_displayed(
+                                is_disp_expr,
+                                _player_jinja_ctx(priv_player, agent_obj_check),
+                            )
+                        ):
+                            return agent_id, "", "", 0.0
                     t0 = time.perf_counter()
-                    cnt = subj.respond(task_name, round_number, prompt, field_def)
-                    return agent_id, cnt, (time.perf_counter() - t0) * 1000
+                    cnt, rp = subj.respond(module_name, round_number, prompt, field_def)
+                    return agent_id, cnt, rp, (time.perf_counter() - t0) * 1000
 
                 max_player_workers = int(cep.settings.get("max_player_workers", 1))
                 if max_player_workers > 1 and len(group.turn_order) > 1:
@@ -728,7 +814,7 @@ class ExperimentRuntime:
                 else:
                     raw_results = [_respond_private(aid) for aid in group.turn_order]
 
-                for agent_id, content, latency_ms in raw_results:
+                for agent_id, content, rendered_prompt, latency_ms in raw_results:
                     if not content:
                         continue
                     with self._turn_counter_lock:
@@ -750,22 +836,23 @@ class ExperimentRuntime:
                         agent_instance_id=agent_id,
                         data={
                             "prompt_type": "PRIVATE_QUESTION",
-                            "task": task_name,
+                            "module": module_name,
                             "round": round_number,
                             "field_name": prompt.field_name,
                             "latency_ms": round(latency_ms, 2),
+                            "rendered_prompt": rendered_prompt,
+                            "response": content,
                         },
                     )
+                    agent_obj = agents_map.get(agent_id, Agent("", "", {}))
                     msg = make_message(
                         role="assistant",
                         content=content,
-                        sender_agent_instance_id=agent_id,
+                        sender_agent_id=agent_obj.agent_id,
                         group_id=group.group_id,
-                        treatment_label=agents_map.get(
-                            agent_id, Agent("", "", {})
-                        ).treatment_label,
+                        treatment_label=agent_obj.treatment_label,
                         visibility=VISIBILITY_PRIVATE,
-                        task=task_name,
+                        module=module_name,
                         round_number=round_number,
                     )
                     self._append_to_agent_histories(msg, group, agents_map)
@@ -791,13 +878,13 @@ class ExperimentRuntime:
             group: The group whose agents should receive the message.
             agents_map: Mapping from agent_instance_id to Agent objects.
         """
-        sender = msg.get("sender_agent_instance_id", "")
+        sender = msg.get("sender_agent_id", "")
         for player in group.players:
             agent = agents_map.get(player.agent_instance_id)
             if agent is None:
                 continue
             agent_msg = dict(msg)
-            if sender == agent.agent_instance_id:
+            if sender == agent.agent_id:
                 agent_msg["role"] = "assistant"
             else:
                 agent_msg["role"] = "user"
@@ -808,10 +895,11 @@ class ExperimentRuntime:
         prompt: PromptDefinition,
         group: Group,
         session: Session,
-        task_name: str,
+        module_name: str,
         round_number: int,
         agents_map: dict[str, Agent],
         cep: CompiledExperiment,
+        is_displayed_expr: Optional[str] = None,
     ) -> None:
         """Render a CONTEXT prompt per player and add to the agent's message history.
 
@@ -824,21 +912,36 @@ class ExperimentRuntime:
             prompt: The CONTEXT-type prompt definition to render.
             group: The target group receiving the context message.
             session: The parent session object.
-            task_name: Name of the current task/module.
+            module_name: Name of the current module.
             round_number: Current round (subsession) number.
             agents_map: Mapping from agent_instance_id to Agent objects.
             cep: Compiled experiment for accessing constants.
+            is_displayed_expr: Optional per-player is_displayed expression.
+                If provided, evaluated per player to decide whether to
+                broadcast the context to that player.
         """
         for player in group.players:
             agent = agents_map.get(player.agent_instance_id)
             if agent is None:
                 continue
+            if is_displayed_expr:
+                player_ctx = self._state.build_jinja_context(
+                    agent=agent,
+                    player=player,
+                    group=group,
+                    session=session,
+                    module=module_name,
+                    round_number=round_number,
+                    constants=cep.constants,
+                )
+                if not self._flow.is_displayed(is_displayed_expr, player_ctx):
+                    continue
             jinja_ctx = self._state.build_jinja_context(
                 agent=agent,
                 player=player,
                 group=group,
                 session=session,
-                task=task_name,
+                module=module_name,
                 round_number=round_number,
                 constants=cep.constants,
             )
@@ -855,13 +958,27 @@ class ExperimentRuntime:
             msg = make_message(
                 role="user",
                 content=rendered,
-                sender_agent_instance_id=player.agent_instance_id,
+                sender_agent_id=agent.agent_id,
                 group_id=group.group_id,
                 visibility=VISIBILITY_PRIVATE,
-                task=task_name,
+                module=module_name,
                 round_number=round_number,
             )
             agent.message_history.append(msg)
+
+            self._event_logger.log(
+                "context_broadcast",
+                run_id=cep.run_id,
+                session_id=session.session_id,
+                group_id=group.group_id,
+                agent_instance_id=player.agent_instance_id,
+                data={
+                    "prompt_type": "CONTEXT",
+                    "module": module_name,
+                    "round": round_number,
+                    "rendered_prompt": rendered,
+                },
+            )
 
     def _execute_facilitator_prompt(
         self,
@@ -869,11 +986,12 @@ class ExperimentRuntime:
         group: Group,
         agents_map: dict[str, Agent],
         cep: CompiledExperiment,
-        task_name: str,
+        module_name: str,
         field_def: Optional[FieldDefinition] = None,
         jinja_ctx: dict | None = None,
         session: Optional[Session] = None,
         round_number: int = 0,
+        is_displayed_expr: Optional[str] = None,
     ) -> str:
         """Execute a FACILITATOR-type prompt via the FacilitatorEngine.
 
@@ -890,11 +1008,15 @@ class ExperimentRuntime:
             group: The group in whose context the facilitator runs.
             agents_map: Mapping from agent_instance_id to Agent objects.
             cep: Compiled experiment containing facilitator function definitions.
-            task_name: Name of the current task/module.
+            module_name: Name of the current module.
             field_def: Optional ``FieldDefinition`` describing where to
                 store the facilitator's response value.
             jinja_ctx: Optional Jinja context dict merged into the facilitator
                 execution context.
+            session: Optional ``Session`` instance for context.
+            round_number: Current round number (1-based).
+            is_displayed_expr: Optional Jinja2 boolean expression for
+                conditional display evaluation.
 
         Returns:
             A stop signal string: ``"continue"``, ``"end_round"``, or
@@ -924,7 +1046,7 @@ class ExperimentRuntime:
         # Build facilitator's view: union of all agents' session-wide
         # histories in this group (deduplicated, preserving insertion order).
         # This gives the facilitator visibility of everything its group
-        # members have experienced across all tasks and rounds.
+        # members have experienced across all modules and rounds.
         seen_ids: set[int] = set()
         facilitator_messages: list[dict] = []
         for player in group.players:
@@ -955,30 +1077,57 @@ class ExperimentRuntime:
                 agent = agents_map.get(player.agent_instance_id)
                 if agent is None:
                     continue
+                if is_displayed_expr:
+                    disp_ctx = self._state.build_jinja_context(
+                        agent=agent,
+                        player=player,
+                        group=group,
+                        session=session,
+                        module=module_name,
+                        round_number=round_number,
+                        constants=cep.constants,
+                    )
+                    if not self._flow.is_displayed(is_displayed_expr, disp_ctx):
+                        continue
                 player_ctx = self._state.build_jinja_context(
                     agent=agent,
                     player=player,
                     group=group,
                     session=session,
-                    task=task_name,
+                    module=module_name,
                     round_number=round_number,
                     constants=cep.constants,
                 )
                 player_context = dict(base_context)
                 player_context.update(player_ctx)
-                player_result = engine.execute(fn, player_context)
+                player_result, rendered_def = engine.execute(fn, player_context)
+                self._event_logger.log(
+                    "facilitator_call",
+                    run_id=cep.run_id,
+                    session_id=session.session_id if session else "",
+                    group_id=group.group_id,
+                    agent_instance_id=player.agent_instance_id,
+                    data={
+                        "prompt_type": "FACILITATOR",
+                        "prompt_name": prompt.field_name,
+                        "module": module_name,
+                        "round": round_number,
+                        "rendered_prompt": rendered_def,
+                        "response": player_result,
+                    },
+                )
                 if player_result:
                     result = player_result  # keep last for stop signal
                     self._state.set_player(
-                        player.player_id, task_name, field_def.name, player_result
+                        player.player_id, module_name, field_def.name, player_result
                     )
                     msg = make_message(
                         role="user",
                         content=player_result,
-                        sender_agent_instance_id="facilitator",
+                        sender_agent_id="facilitator",
                         group_id=group.group_id,
                         visibility=VISIBILITY_FACILITATOR,
-                        task=task_name,
+                        module=module_name,
                         round_number=round_number,
                     )
                     self._append_to_agent_histories(msg, group, agents_map)
@@ -987,26 +1136,40 @@ class ExperimentRuntime:
             context = dict(base_context)
             if jinja_ctx:
                 context.update(jinja_ctx)
-            result = engine.execute(fn, context)
+            result, rendered_def = engine.execute(fn, context)
+            self._event_logger.log(
+                "facilitator_call",
+                run_id=cep.run_id,
+                session_id=session.session_id if session else "",
+                group_id=group.group_id,
+                data={
+                    "prompt_type": "FACILITATOR",
+                    "prompt_name": prompt.field_name,
+                    "module": module_name,
+                    "round": round_number,
+                    "rendered_prompt": rendered_def,
+                    "response": result,
+                },
+            )
 
             if result:
                 msg = make_message(
                     role="user",
                     content=result,
-                    sender_agent_instance_id="facilitator",
+                    sender_agent_id="facilitator",
                     group_id=group.group_id,
                     visibility=VISIBILITY_FACILITATOR,
-                    task=task_name,
+                    module=module_name,
                     round_number=round_number,
                 )
                 self._append_to_agent_histories(msg, group, agents_map)
 
             if field_def and field_def.name and result:
                 if field_def.field_class == "Session":
-                    self._state.set_session(task_name, field_def.name, result)
+                    self._state.set_session(module_name, field_def.name, result)
                 elif field_def.field_class == "Group":
                     self._state.set_group(
-                        group.group_id, task_name, field_def.name, result
+                        group.group_id, module_name, field_def.name, result
                     )
 
         # Check raw text for stop signal keywords

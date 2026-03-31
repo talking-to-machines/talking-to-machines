@@ -26,17 +26,17 @@ def validate_flow(prompt_dicts: list) -> list:
     """
     Helper: wrap FlowValidator for tests that pass a flat list of prompt dicts.
 
-    Converts the list into the {task: [PromptDefinition-like]} dict that
-    FlowValidator expects, using each dict's 'type' to infer a single task.
+    Converts the list into the {module: [PromptDefinition-like]} dict that
+    FlowValidator expects, using each dict's 'type' to infer a single module.
     """
     from types import SimpleNamespace
 
-    task = "test_task"
+    module = "test_module"
     prompts_ns = [SimpleNamespace(**p) for p in prompt_dicts]
     validator = FlowValidator(
-        prompts={task: prompts_ns},
-        constants={task: {"MAX_NUM_ROUNDS": 1, "PLAYERS_PER_GROUP": 1}},
-        task_names=[task],
+        prompts={module: prompts_ns},
+        constants={module: {"MAX_NUM_ROUNDS": 1, "PLAYERS_PER_GROUP": 1}},
+        module_names=[module],
     )
     return [str(e) for e in validator.validate()]
 
@@ -138,7 +138,7 @@ def test_manual_group_assignment_via_manual_registry():
         [
             {
                 "ID": 1,
-                "task": "pgg",
+                "module": "pgg",
                 "round_number": 1,
                 "class": "Group",
                 "name": "group_label",
@@ -146,7 +146,7 @@ def test_manual_group_assignment_via_manual_registry():
             },
             {
                 "ID": 2,
-                "task": "pgg",
+                "module": "pgg",
                 "round_number": 1,
                 "class": "Group",
                 "name": "group_label",
@@ -154,7 +154,7 @@ def test_manual_group_assignment_via_manual_registry():
             },
             {
                 "ID": 3,
-                "task": "pgg",
+                "module": "pgg",
                 "round_number": 1,
                 "class": "Group",
                 "name": "group_label",
@@ -163,7 +163,7 @@ def test_manual_group_assignment_via_manual_registry():
         ]
     )
     registry = parse_manual_sheets({"Manual_": df})
-    # Should have 3 entries keyed by (profile_id, task, round_number, class, name)
+    # Should have 3 entries keyed by (profile_id, module, round_number, class, name)
     assert len(registry) == 3
     assert registry[(1, "pgg", 1, "Group", "group_label")] == "G1"
     assert registry[(3, "pgg", 1, "Group", "group_label")] == "G2"
@@ -335,7 +335,7 @@ def test_compiled_experiment_hash_stability():
         },
         "fields": [],
         "prompts": {},
-        "task_sequence": [],
+        "module_sequence": [],
         "facilitator_functions": [],
         "constants": {},
         "assignment_plan": {"treatment_assignments": {}, "group_assignments": {}},
@@ -358,7 +358,7 @@ def _make_minimal_sheets() -> dict:
             {"key": "EXPERIMENT_ID", "value": "golden_exp"},
             {"key": "MODEL_NAME", "value": "gpt-4o"},
             {"key": "RANDOM_SEED", "value": 42},
-            {"key": "TASK_SEQUENCE", "value": "task1"},
+            {"key": "MODULE_SEQUENCE", "value": "task1"},
             {"key": "NUM_AGENTS_PER_SESSION", "value": 1},
         ]
     )
@@ -367,7 +367,7 @@ def _make_minimal_sheets() -> dict:
         [
             {
                 "class": "Player",
-                "task": "task1",
+                "module": "task1",
                 "name": "answer",
                 "type": "text",
                 "format_response": False,
@@ -379,7 +379,7 @@ def _make_minimal_sheets() -> dict:
     prompts_df = pd.DataFrame(
         [
             {
-                "task": "task1",
+                "module": "task1",
                 "type": "PUBLIC_QUESTION",
                 "prompt_sequence": 1,
                 "llm_text": "What is 2+2?",

@@ -5,8 +5,8 @@ Manages the run folder structure and orchestrates artifact saving.
 
 Run folder structure::
 
-    experiment_results/
-      <experiment_id>/
+    <template_dir>/
+      results/
         <run_id>/
           config.json
           compiled_experiment.json
@@ -14,7 +14,7 @@ Run folder structure::
           traces.jsonl
           events.csv
           metrics.csv
-          responses.csv
+          player.csv
           agent_table.csv
           group_table.csv
           session_table.csv
@@ -49,7 +49,7 @@ class ArtifactManager:
 
     Attributes:
         _run_dir: Path to the run directory
-            (``<base_dir>/<experiment_id>/<run_id>``).
+            (``<base_dir>/results/<run_id>``).
     """
 
     def __init__(
@@ -65,7 +65,7 @@ class ArtifactManager:
             experiment_id: Unique identifier for the experiment.
             run_id: Unique identifier for this particular run.
         """
-        self._run_dir = Path(base_dir) / experiment_id / run_id
+        self._run_dir = Path(base_dir) / "results" / run_id
         self._run_dir.mkdir(parents=True, exist_ok=True)
 
     @property

@@ -3,7 +3,7 @@ End-to-end test: single-agent questionnaire using a MockProvider.
 
 Exercises the full runtime loop with:
   - 1 agent
-  - 1 task ("survey")
+  - 1 module ("survey")
   - 1 round
   - 2 prompts: PRIVATE_QUESTION + PUBLIC_QUESTION
   - No actual LLM calls (MockProvider always returns a fixed string)
@@ -96,7 +96,7 @@ def _make_cep(tmp_path):
             "fields": [
                 {
                     "field_class": "Player",
-                    "task": "survey",
+                    "module": "survey",
                     "name": "satisfaction",
                     "type": "integer",
                     "response_options": None,
@@ -111,7 +111,7 @@ def _make_cep(tmp_path):
                 "survey": [
                     {
                         "type": "PRIVATE_QUESTION",
-                        "task": "survey",
+                        "module": "survey",
                         "prompt_sequence": 1,
                         "llm_text": "Rate your satisfaction from 1-10.",
                         "is_displayed": None,
@@ -120,7 +120,7 @@ def _make_cep(tmp_path):
                     },
                 ]
             },
-            "task_sequence": ["survey"],
+            "module_sequence": ["survey"],
             "facilitator_functions": [],
             "constants": {"survey": {"MAX_NUM_ROUNDS": 1, "PLAYERS_PER_GROUP": 1}},
             "assignment_plan": {

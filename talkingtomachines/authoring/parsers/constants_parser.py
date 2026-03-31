@@ -1,11 +1,11 @@
 """Constants (C) worksheet parser.
 
-Converts rows of ``{task, name, value, type}`` into a nested dictionary
-keyed by task and constant name::
+Converts rows of ``{module, name, value, type}`` into a nested dictionary
+keyed by module and constant name::
 
-    {task: {name: typed_value}}
+    {module: {name: typed_value}}
 
-Jinja access pattern in prompt templates: ``{{ C.<task>.<name> }}``
+Jinja access pattern in prompt templates: ``{{ C.<module>.<name> }}``
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-_REQUIRED_COLS = {"task", "name", "value", "type"}
+_REQUIRED_COLS = {"module", "name", "value", "type"}
 
 _TYPE_MAP: dict[str, type] = {
     "integer": int,
@@ -66,18 +66,18 @@ def _coerce_value(raw: Any, type_str: str) -> Any:
 def parse_constants(df: pd.DataFrame) -> dict[str, dict[str, Any]]:
     """Parse the Constants (C) worksheet into a nested dictionary.
 
-    Each row is expected to contain a task name, constant name, raw
-    value, and type label. The function groups constants by task and
-    applies type coercion. Per-task required constants
+    Each row is expected to contain a module name, constant name, raw
+    value, and type label. The function groups constants by module and
+    applies type coercion. Per-module required constants
     (``MAX_NUM_ROUNDS``, ``PLAYERS_PER_GROUP``) are validated by the
     ``FlowValidator``.
 
     Args:
-        df: DataFrame for the C worksheet with columns ``task``,
+        df: DataFrame for the C worksheet with columns ``module``,
             ``name``, ``value``, and ``type``.
 
     Returns:
-        A nested dictionary ``{task_name: {constant_name: typed_value}}``.
+        A nested dictionary ``{module_name: {constant_name: typed_value}}``.
 
     Raises:
         ValueError: If required columns are missing.
@@ -96,15 +96,15 @@ def parse_constants(df: pd.DataFrame) -> dict[str, dict[str, Any]]:
     result: dict[str, dict[str, Any]] = {}
 
     for _, row in df.iterrows():
-        task = str(row["task"]).strip() if not pd.isna(row["task"]) else ""
+        module = str(row["module"]).strip() if not pd.isna(row["module"]) else ""
         name = str(row["name"]).strip() if not pd.isna(row["name"]) else ""
         type_str = str(row.get("type", "string")).strip()
         raw_value = row["value"]
 
-        if not task or not name:
+        if not module or not name:
             continue
 
         value = _coerce_value(raw_value, type_str)
-        result.setdefault(task, {})[name] = value
+        result.setdefault(module, {})[name] = value
 
     return result
