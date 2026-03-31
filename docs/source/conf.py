@@ -39,4 +39,16 @@ nitpick_ignore = [
     ("py:class", "pd.DataFrame"),
     ("py:class", "ProfileInfo"),
     ("py:class", "optional"),
+    ("py:exc", "json.JSONDecodeError"),
+    ("py:class", "pathlib.Path"),
+]
+
+nitpick_ignore_regex = [
+    (r"py:.*", r"talkingtomachines\.core\..*"),
+    (r"py:.*", r"talkingtomachines\.compiler\..*"),
+    (r"py:.*", r"talkingtomachines\.gateway\..*"),
+    (r"py:.*", r"talkingtomachines\.orchestrator\..*"),
+    (r"py:.*", r"talkingtomachines\.agents\..*"),
+    (r"py:.*", r"talkingtomachines\.authoring\..*"),
+    (r"py:.*", r"exporters\..*"),
 ]

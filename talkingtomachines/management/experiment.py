@@ -1,3 +1,31 @@
+"""Experiment class hierarchy for AI-to-AI conversational and interview sessions.
+
+This module defines the core experiment classes used by the legacy
+management layer of the Talking to Machines platform:
+
+* ``Experiment`` -- base class providing session ID generation.
+* ``AIConversationalExperiment`` -- adds model, profile, treatment, group
+  and role configuration with validation.
+* ``AItoAIConversationalExperiment`` -- extends the above with multi-group
+  subject initialisation and parallel execution.
+* ``AItoAIInterviewExperiment`` -- further extends with a facilitator-driven
+  prompt script (context, discussion, public/private questions).
+
+Supporting data classes ``Treatment``, ``Role``, and ``Constant`` are also
+defined here and re-exported for backward compatibility.
+
+Attributes:
+    SUPPORTED_MODELS (list[str]): Recognised LLM model identifiers.
+    SUPPORTED_TREATMENT_ASSIGNMENT_STRATEGIES (list[str]):
+        Valid treatment assignment strategies.
+    SUPPORTED_GROUP_ASSIGNMENT_STRATEGIES (list[str]):
+        Valid group assignment strategies.
+    SUPPORTED_ROLE_ASSIGNMENT_STRATEGIES (list[str]):
+        Valid role assignment strategies.
+    SPECIAL_ROLES (list[str]): Role labels that receive special handling.
+    SUPPORTED_PROMPT_TYPES (list[str]): Valid prompt type values.
+"""
+
 import datetime, random, warnings, concurrent.futures, re, math, copy
 import pandas as pd
 from collections import defaultdict
@@ -61,23 +89,20 @@ SUPPORTED_PROMPT_TYPES = [
 
 
 class Treatment:
-    """
-    A class representing a treatment with dynamically assigned attributes.
+    """A class representing a treatment with dynamically assigned attributes.
 
     Attributes:
         description (str): A description of the treatment. Defaults to an empty string if not provided.
-
-    Methods:
-        __init__(**kwargs):
-            Initializes the Treatment instance with dynamically assigned attributes.
-            If a 'description' attribute is not provided, it defaults to an empty string.
-        __repr__():
-            Returns a string representation of the Treatment instance, including all its attributes.
-        to_dict() -> dict[str, Any]:
-            Converts the Treatment object's attributes into a dictionary.
     """
 
     def __init__(self, **kwargs):
+        """Initialise a Treatment with dynamically assigned attributes.
+
+        Args:
+            **kwargs: Arbitrary keyword arguments stored as instance
+                attributes.  If ``description`` is not provided it
+                defaults to an empty string.
+        """
         # Store any attributes provided dynamically
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -87,36 +112,34 @@ class Treatment:
             self.description = ""
 
     def __repr__(self):
+        """Return a developer-friendly string representation."""
         return f"Treatment({self.__dict__})"
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert this Treatment to a plain dictionary.
+
+        Returns:
+            A dictionary of all instance attributes.
+        """
         return dict(self.__dict__)
 
 
 class Role:
-    """
-    Role is a class that represents a dynamic object with attributes that can be
-    set at runtime. It ensures that a `description` attribute always exists, even
-    if not explicitly provided during initialization.
+    """A dynamic object representing a role with a guaranteed ``description`` attribute.
 
     Attributes:
         description (str): A string attribute that defaults to an empty string if
-            not provided during initialization. Represents a description of the role.
-        **kwargs: Additional attributes can be dynamically added to the instance
-            during initialization.
-
-    Methods:
-        __init__(**kwargs):
-            Initializes the Role instance with dynamically provided attributes.
-            Ensures the `description` attribute is always present.
-        __repr__():
-            Returns a string representation of the Role instance, including all
-            its attributes.
-        to_dict() -> dict[str, Any]:
-            Converts the Role object's attributes into a dictionary.
+            not provided during initialization.
     """
 
     def __init__(self, **kwargs):
+        """Initialise a Role with dynamically assigned attributes.
+
+        Args:
+            **kwargs: Arbitrary keyword arguments stored as instance
+                attributes.  If ``description`` is not provided it
+                defaults to an empty string.
+        """
         # Store any attributes provided dynamically
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -126,34 +149,46 @@ class Role:
             self.description = ""
 
     def __repr__(self):
+        """Return a developer-friendly string representation."""
         return f"Role({self.__dict__})"
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert this Role to a plain dictionary.
+
+        Returns:
+            A dictionary of all instance attributes.
+        """
         return dict(self.__dict__)
 
 
 class Constant:
-    """
-    A class that dynamically stores attributes provided during initialization.
-    This class allows for the creation of objects with arbitrary attributes
-    that are passed as keyword arguments during instantiation.
+    """A class that dynamically stores attributes provided during initialization.
 
-    Methods:
-        __repr__():
-            Returns a string representation of the object, including its attributes.
-        to_dict() -> dict[str, Any]:
-            Converts the object's attributes into a dictionary.
+    Allows creation of objects with arbitrary attributes passed as keyword
+    arguments during instantiation.
     """
 
     def __init__(self, **kwargs):
+        """Initialise a Constant with dynamically assigned attributes.
+
+        Args:
+            **kwargs: Arbitrary keyword arguments stored as instance
+                attributes.
+        """
         # Store any attributes provided dynamically
         for key, value in kwargs.items():
             setattr(self, key, value)
 
     def __repr__(self):
+        """Return a developer-friendly string representation."""
         return f"Constant({self.__dict__})"
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert this Constant to a plain dictionary.
+
+        Returns:
+            A dictionary of all instance attributes.
+        """
         return dict(self.__dict__)
 
 
@@ -477,6 +512,22 @@ class AIConversationalExperiment(Experiment):
         treatment_column: str,
         group_assignment_strategy: str,
     ) -> str:
+        """Validate the treatment assignment strategy and related columns.
+
+        Args:
+            treatment_assignment_strategy: The strategy name to validate.
+            treatment_column: Column in profiles for manual assignment.
+            group_assignment_strategy: The group assignment strategy, checked
+                for consistency when manual treatment assignment is used.
+
+        Returns:
+            The validated treatment assignment strategy string.
+
+        Raises:
+            ValueError: If the strategy is unsupported, or if manual
+                assignment is selected but required columns or a matching
+                group strategy are missing.
+        """
         if (
             treatment_assignment_strategy
             not in SUPPORTED_TREATMENT_ASSIGNMENT_STRATEGIES
@@ -1890,6 +1941,29 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
         prompts: List[dict[str, str]],
         test_mode: bool = False,
     ) -> dict[str, Any]:
+        """Execute the facilitator-driven interview script for a single group.
+
+        Iterates through the sorted prompt list, rendering Jinja templates,
+        collecting subject responses, and building the session message
+        history.  Supports ``context``, ``discussion``, ``public_question``,
+        ``repeat_public_question``, ``private_question``, and
+        ``repeat_private_question`` prompt types.
+
+        Args:
+            group_info: Dictionary containing group metadata, subjects,
+                treatment, roles, and experiment context.
+            prompts: Ordered list of prompt dictionaries (excluding the
+                initial context prompt which has already been consumed).
+            test_mode: If ``True``, print each message to stdout for
+                debugging.
+
+        Returns:
+            The updated *group_info* dictionary with a
+            ``"message_history"`` key containing the full conversation log.
+
+        Raises:
+            ValueError: If an unsupported prompt type is encountered.
+        """
         session_message_history = []
         subject_message_history = {}
 
@@ -2210,3 +2284,18 @@ class AItoAIInterviewExperiment(AItoAIConversationalExperiment):
 
         group_info["message_history"] = session_message_history
         return group_info
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatible re-exports from core/models.py (v0.3.0)
+# ---------------------------------------------------------------------------
+# Existing user code that imports Treatment/Role/Constant from
+# management.experiment continues to work unchanged.
+try:
+    from talkingtomachines.core.models import (  # noqa: F401
+        Treatment as _NewTreatment,
+        Role as _NewRole,
+        Constant as _NewConstant,
+    )
+except ImportError:
+    pass  # Graceful fallback if core is not yet importable

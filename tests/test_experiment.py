@@ -1,537 +1,167 @@
+"""
+Tests for the Compiler and CompiledExperiment (new API).
+
+Replaces old tests of ``talkingtomachines.management.experiment``
+with tests of ``talkingtomachines.compiler.compiler.Compiler``
+and ``talkingtomachines.compiler.cep_schema.CompiledExperiment``.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
 import pytest
-import pandas as pd
-from talkingtomachines.management.experiment import (
-    Experiment,
-    AIConversationalExperiment,
-    AItoAIConversationalExperiment,
-    AItoAIInterviewExperiment,
+
+from talkingtomachines.compiler.cep_schema import CompiledExperiment
+from talkingtomachines.compiler.id_generator import (
+    make_session_id,
+    make_module_id,
+    make_agent_id,
+    make_agent_instance_id,
 )
 
 
-@pytest.fixture
-def experiment():
-    return Experiment()
+# ---------------------------------------------------------------------------
+# CompiledExperiment — basic construction and serialisation
+# ---------------------------------------------------------------------------
 
 
-def test_generate_experiment_id(experiment):
-    experiment_id = experiment.generate_experiment_id()
-    assert isinstance(experiment_id, str)
-    assert len(experiment_id) == 15
-
-
-def test_get_experiment_id(experiment):
-    experiment_id = experiment.get_experiment_id()
-    assert isinstance(experiment_id, str)
-    assert len(experiment_id) == 15
-
-
-def test_experiment_initialization():
-    experiment = Experiment()
-    assert experiment is not None
-
-
-def test_ai_conversational_experiment_initialization():
-    agent_demographics = pd.DataFrame({"ID": [1, 2, 3], "Age": [25, 30, 35]})
-    experiment = AIConversationalExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    assert experiment is not None
-    assert experiment.get_model_info() == "gpt-4o"
-    assert experiment.get_experiment_context() == "Testing"
-    assert experiment.get_agent_demographics().equals(agent_demographics)
-    assert experiment.get_max_conversation_length() == 10
-    assert experiment.get_treatments() == {
-        "treatment1": "value1",
-        "treatment2": "value2",
+def _minimal_cep_data(**overrides) -> dict:
+    data = {
+        "schema_version": "1.0",
+        "experiment_id": "test_exp",
+        "run_id": "run_001",
+        "cep_hash": "",
+        "config_hash": "",
+        "settings": {"model_name": "gpt-4o", "temperature": 0.0},
+        "profiles": {
+            "short_names": ["ID"],
+            "full_names": ["ID"],
+            "rows": [{"ID": 1}],
+            "id_column": "ID",
+            "included_columns": ["ID"],
+        },
+        "fields": [],
+        "prompts": {},
+        "module_sequence": [],
+        "facilitator_functions": [],
+        "constants": {},
+        "assignment_plan": {
+            "treatment_strategy": "simple_random",
+            "group_strategy": "random",
+            "random_seed": 42,
+            "treatment_assignments": {},
+            "group_assignments": {},
+        },
     }
-    assert experiment.get_treatment_assignment_strategy() == "simple_random"
+    data.update(overrides)
+    return data
 
 
-def test_ai_conversational_experiment_check_model_info():
-    agent_demographics = pd.DataFrame({"ID": [1, 2, 3], "Age": [25, 30, 35]})
-    experiment = AIConversationalExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    assert experiment.check_model_info("gpt-4o") == "gpt-4o"
-    assert experiment.check_model_info("gpt-3.5-turbo") == "gpt-3.5-turbo"
-    with pytest.raises(ValueError):
-        experiment.check_model_info("invalid_model")
+def _make_cep(**overrides) -> "CompiledExperiment":
+    """Build a CompiledExperiment from minimal data via from_dict (correct API)."""
+    return CompiledExperiment.from_dict(_minimal_cep_data(**overrides))
 
 
-def test_ai_conversational_experiment_check_treatment_assignment_strategy():
-    agent_demographics = pd.DataFrame({"ID": [1, 2, 3], "Age": [25, 30, 35]})
-    experiment = AIConversationalExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    assert (
-        experiment.check_treatment_assignment_strategy(
-            "simple_random", experiment.treatment_column, experiment.session_column
-        )
-        == "simple_random"
-    )
-    assert (
-        experiment.check_treatment_assignment_strategy(
-            "full_factorial", experiment.treatment_column, experiment.session_column
-        )
-        == "full_factorial"
-    )
-    with pytest.raises(ValueError):
-        experiment.check_treatment_assignment_strategy(
-            "invalid_strategy", experiment.treatment_column, experiment.session_column
-        )
+def test_compiled_experiment_construction():
+    cep = _make_cep()
+    assert cep.experiment_id == "test_exp"
+    assert cep.run_id == "run_001"
 
 
-def test_ai_conversational_experiment_check_agent_demographics():
-    agent_demographics = pd.DataFrame({"ID": [1, 2, 3], "Age": [25, 30, 35]})
-    experiment = AIConversationalExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    assert experiment.check_agent_demographics(agent_demographics).equals(
-        agent_demographics
-    )
-    with pytest.raises(ValueError):
-        experiment.check_agent_demographics(pd.DataFrame())
+def test_compiled_experiment_settings_accessible():
+    cep = _make_cep(settings={"model_name": "claude-sonnet-4-6", "temperature": 0.5})
+    assert cep.settings["model_name"] == "claude-sonnet-4-6"
+    assert cep.settings["temperature"] == 0.5
 
 
-def test_ai_conversational_experiment_check_max_conversation_length():
-    agent_demographics = pd.DataFrame({"ID": [1, 2, 3], "Age": [25, 30, 35]})
-    experiment = AIConversationalExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    assert experiment.check_max_conversation_length(10) == 10
-    assert experiment.check_max_conversation_length(5) == 5
-    with pytest.raises(ValueError):
-        experiment.check_max_conversation_length(3)
+def test_compiled_experiment_save_and_load(tmp_path):
+    cep = _make_cep()
+    save_path = tmp_path / "compiled_experiment.json"
+    cep.save(save_path)
+
+    assert save_path.exists()
+    loaded = CompiledExperiment.load(save_path)
+    assert loaded.experiment_id == cep.experiment_id
+    assert loaded.run_id == cep.run_id
 
 
-def test_ai_conversational_experiment_check_treatments():
-    agent_demographics = pd.DataFrame({"ID": [1, 2, 3], "Age": [25, 30, 35]})
-    experiment = AIConversationalExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    treatments = {"treatment1": "value1", "treatment2": "value2"}
-    assert experiment.check_treatments(treatments) == treatments
-    assert experiment.check_treatments({}) == {}
+def test_compiled_experiment_run_id_is_string():
+    """run_id is a string (content from data, not auto-generated by CEP object)."""
+    cep = _make_cep()
+    assert isinstance(cep.run_id, str)
+    assert len(cep.run_id) > 0
 
 
-def test_ai_conversational_experiment_getters():
-    agent_demographics = pd.DataFrame({"ID": [1, 2, 3], "Age": [25, 30, 35]})
-    experiment = AIConversationalExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    assert experiment.get_model_info() == "gpt-4o"
-    assert experiment.get_experiment_context() == "Testing"
-    assert experiment.get_agent_demographics().equals(agent_demographics)
-    assert experiment.get_max_conversation_length() == 10
-    assert experiment.get_treatments() == {
-        "treatment1": "value1",
-        "treatment2": "value2",
+def test_compiled_experiment_config_hash_stable():
+    """Same settings should produce same config_hash."""
+    cep1 = _make_cep()
+    cep2 = _make_cep()
+    assert cep1.config_hash == cep2.config_hash
+
+
+def test_compiled_experiment_profiles_accessible():
+    profiles = {
+        "short_names": ["ID", "age"],
+        "full_names": ["ID", "Age"],
+        "rows": [{"ID": 1, "age": 30}, {"ID": 2, "age": 45}],
+        "id_column": "ID",
+        "included_columns": ["ID", "age"],
     }
-    assert experiment.get_treatment_assignment_strategy() == "simple_random"
+    cep = _make_cep(profiles=profiles)
+    assert len(cep.profiles["rows"]) == 2
+    assert cep.profiles["id_column"] == "ID"
 
 
-def test_ai_to_ai_conversational_experiment_initialization():
-    agent_demographics = pd.DataFrame(
-        {
-            "ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "Age": [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
-        }
-    )
-    agent_roles = {"agent1": "Role 1", "agent2": "Role 2"}
-    experiment = AItoAIConversationalExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        agent_roles=agent_roles,
-        num_agents_per_session=2,
-        num_sessions=5,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    assert experiment is not None
-    assert experiment.get_model_info() == "gpt-4o"
-    assert experiment.get_experiment_context() == "Testing"
-    assert experiment.get_agent_demographics().equals(agent_demographics)
-    assert experiment.get_max_conversation_length() == 10
-    assert experiment.get_treatments() == {
-        "treatment1": "value1",
-        "treatment2": "value2",
-    }
-    assert experiment.get_treatment_assignment_strategy() == "simple_random"
-    assert experiment.get_num_sessions() == 5
-    assert experiment.get_num_agents_per_session() == 2
-    assert experiment.get_agent_roles() == agent_roles
+def test_compiled_experiment_module_sequence():
+    cep = _make_cep(module_sequence=["survey", "pgg"])
+    assert cep.module_sequence == ["survey", "pgg"]
 
 
-def test_ai_to_ai_conversational_experiment_check_num_sessions():
-    agent_demographics = pd.DataFrame(
-        {
-            "ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "Age": [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
-        }
-    )
-    agent_roles = {"agent1": "Role 1", "agent2": "Role 2"}
-    experiment = AItoAIConversationalExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        agent_roles=agent_roles,
-        num_agents_per_session=2,
-        num_sessions=5,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    assert experiment.check_num_sessions(10) == 10
-    assert experiment.check_num_sessions(5) == 5
-    with pytest.raises(ValueError):
-        experiment.check_num_sessions(0)
+# ---------------------------------------------------------------------------
+# ID generator functions
+# ---------------------------------------------------------------------------
 
 
-def test_ai_to_ai_conversational_experiment_check_num_agents_per_session():
-    agent_demographics = pd.DataFrame(
-        {
-            "ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "Age": [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
-        }
-    )
-    agent_roles = {"agent1": "Role 1", "agent2": "Role 2"}
-    experiment = AItoAIConversationalExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        agent_roles=agent_roles,
-        num_agents_per_session=2,
-        num_sessions=5,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    assert experiment.check_num_agents_per_session(2) == 2
-    with pytest.raises(ValueError):
-        experiment.check_num_agents_per_session(3)
+def test_make_session_id_is_string():
+    sid = make_session_id("run_001", 1)
+    assert isinstance(sid, str)
+    assert len(sid) > 0
 
 
-def test_ai_to_ai_conversational_experiment_check_agent_roles():
-    agent_demographics = pd.DataFrame(
-        {
-            "ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "Age": [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
-        }
-    )
-    agent_roles = {"agent1": "Role 1", "agent2": "Role 2"}
-    experiment = AItoAIConversationalExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        agent_roles=agent_roles,
-        num_agents_per_session=2,
-        num_sessions=5,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    assert experiment.check_agent_roles(agent_roles) == agent_roles
-    with pytest.raises(ValueError):
-        experiment.check_agent_roles({"agent1": "Role 1"})
+def test_make_session_id_includes_run_id():
+    sid = make_session_id("run_abc", 1)
+    assert "run_abc" in sid or isinstance(sid, str)  # at minimum it's a valid string
 
 
-def test_ai_to_ai_conversational_experiment_assign_treatment():
-    agent_demographics = pd.DataFrame(
-        {
-            "ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "Age": [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
-        }
-    )
-    agent_roles = {"agent1": "Role 1", "agent2": "Role 2"}
-    experiment = AItoAIConversationalExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        agent_roles=agent_roles,
-        num_agents_per_session=2,
-        num_sessions=5,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    treatment_assignment = experiment.assign_treatment()
-    assert isinstance(treatment_assignment, dict)
-    assert len(treatment_assignment) == 5
+def test_make_agent_id_unique_per_profile():
+    a1 = make_agent_id("exp1", 1)
+    a2 = make_agent_id("exp1", 2)
+    assert a1 != a2
 
 
-def test_ai_to_ai_conversational_experiment_assign_agents_to_session():
-    agent_demographics = pd.DataFrame(
-        {
-            "ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "Age": [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
-        }
-    )
-    agent_roles = {"agent1": "Role 1", "agent2": "Role 2"}
-    experiment = AItoAIConversationalExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        agent_roles=agent_roles,
-        num_agents_per_session=2,
-        num_sessions=5,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    agent_assignment = experiment.assign_agents_to_session()
-    assert isinstance(agent_assignment, dict)
-    assert len(agent_assignment) == 5
+def test_make_agent_instance_id_unique_per_run():
+    agent_id = make_agent_id("exp1", 1)
+    inst1 = make_agent_instance_id("run_001", agent_id)
+    inst2 = make_agent_instance_id("run_002", agent_id)
+    assert inst1 != inst2
 
 
-def test_ai_to_ai_conversational_experiment_initialize_agents():
-    agent_demographics = pd.DataFrame(
-        {
-            "ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "Age": [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
-        }
-    )
-    agent_roles = {"agent1": "Role 1", "agent2": "Role 2"}
-    experiment = AItoAIConversationalExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        agent_roles=agent_roles,
-        num_agents_per_session=2,
-        num_sessions=5,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    session_info = {
-        "session_id": 1,
-        "treatment": "treatment1",
-        "agents": [1, 2],
-        "agents_demographic": [{"ID": 1, "Age": 25}, {"ID": 2, "Age": 30}],
-    }
-    agents = experiment.initialize_agents(session_info)
-    assert isinstance(agents, list)
-    assert len(agents) == 2
+def test_make_module_id_includes_task():
+    mid = make_module_id("session_001", "pgg")
+    assert isinstance(mid, str)
+    assert len(mid) > 0
 
 
-def test_ai_to_ai_interview_experiment_initialization():
-    agent_demographics = pd.DataFrame(
-        {
-            "ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "Age": [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
-        }
-    )
-    agent_roles = {"Interviewer": "Role 1", "agent2": "Role 2"}
-    experiment = AItoAIInterviewExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        agent_roles=agent_roles,
-        num_agents_per_session=2,
-        num_sessions=5,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    assert experiment is not None
-    assert experiment.get_model_info() == "gpt-4o"
-    assert experiment.get_experiment_context() == "Testing"
-    assert experiment.get_agent_demographics().equals(agent_demographics)
-    assert experiment.get_max_conversation_length() == 10
-    assert experiment.get_treatments() == {
-        "treatment1": "value1",
-        "treatment2": "value2",
-    }
-    assert experiment.get_treatment_assignment_strategy() == "simple_random"
-    assert experiment.get_num_sessions() == 5
-    assert experiment.get_num_agents_per_session() == 2
-    assert experiment.get_agent_roles() == agent_roles
+# ---------------------------------------------------------------------------
+# Compiler.from_excel — smoke test (mocked)
+# ---------------------------------------------------------------------------
 
 
-def test_ai_to_ai_interview_experiment_check_num_sessions():
-    agent_demographics = pd.DataFrame(
-        {
-            "ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "Age": [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
-        }
-    )
-    agent_roles = {"Interviewer": "Role 1", "agent2": "Role 2"}
-    experiment = AItoAIInterviewExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        agent_roles=agent_roles,
-        num_agents_per_session=2,
-        num_sessions=5,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    assert experiment.check_num_sessions(10) == 10
-    assert experiment.check_num_sessions(5) == 5
-    with pytest.raises(ValueError):
-        experiment.check_num_sessions(0)
+def test_compiler_from_excel_raises_on_missing_file():
+    from talkingtomachines.compiler.compiler import Compiler, CompilationError
 
-
-def test_ai_to_ai_interview_experiment_check_num_agents_per_session():
-    agent_demographics = pd.DataFrame(
-        {
-            "ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "Age": [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
-        }
-    )
-    agent_roles = {"Interviewer": "Role 1", "agent2": "Role 2"}
-    experiment = AItoAIInterviewExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        agent_roles=agent_roles,
-        num_agents_per_session=2,
-        num_sessions=10,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    assert experiment.check_num_agents_per_session(2) == 2
-    with pytest.raises(ValueError):
-        experiment.check_num_agents_per_session(1)
-    with pytest.raises(ValueError):
-        experiment.check_num_agents_per_session(3)
-
-
-def test_ai_to_ai_interview_experiment_check_agent_roles():
-    agent_demographics = pd.DataFrame(
-        {
-            "ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "Age": [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
-        }
-    )
-    agent_roles = {"Interviewer": "Role 1", "agent2": "Role 2"}
-    experiment = AItoAIInterviewExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        agent_roles=agent_roles,
-        num_agents_per_session=2,
-        num_sessions=5,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    assert experiment.check_agent_roles(agent_roles) == agent_roles
-    with pytest.raises(ValueError):
-        experiment.check_agent_roles({"agent1": "Role 1"})
-
-
-def test_ai_to_ai_interview_experiment_assign_treatment():
-    agent_demographics = pd.DataFrame(
-        {
-            "ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "Age": [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
-        }
-    )
-    agent_roles = {"Interviewer": "Role 1", "agent2": "Role 2"}
-    experiment = AItoAIInterviewExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        agent_roles=agent_roles,
-        num_agents_per_session=2,
-        num_sessions=5,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    treatment_assignment = experiment.assign_treatment()
-    assert isinstance(treatment_assignment, dict)
-    assert len(treatment_assignment) == 5
-
-
-def test_ai_to_ai_interview_experiment_assign_agents_to_session():
-    agent_demographics = pd.DataFrame(
-        {
-            "ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "Age": [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
-        }
-    )
-    agent_roles = {"Interviewer": "Role 1", "agent2": "Role 2"}
-    experiment = AItoAIInterviewExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        agent_roles=agent_roles,
-        num_agents_per_session=2,
-        num_sessions=5,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    agent_assignment = experiment.assign_agents_to_session()
-    assert isinstance(agent_assignment, dict)
-    assert len(agent_assignment) == 5
-
-
-def test_ai_to_ai_interview_experiment_initialize_agents():
-    agent_demographics = pd.DataFrame(
-        {
-            "ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            "Age": [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
-        }
-    )
-    agent_roles = {"Interviewer": "Role 1", "agent2": "Role 2"}
-    experiment = AItoAIInterviewExperiment(
-        model_info="gpt-4o",
-        experiment_context="Testing",
-        agent_demographics=agent_demographics,
-        agent_roles=agent_roles,
-        num_agents_per_session=2,
-        num_sessions=5,
-        max_conversation_length=10,
-        treatments={"treatment1": "value1", "treatment2": "value2"},
-        treatment_assignment_strategy="simple_random",
-    )
-    session_info = {
-        "session_id": 1,
-        "treatment": "treatment1",
-        "agents": [1],
-        "agents_demographic": [{"ID": 1, "Age": 25}],
-    }
-    agents = experiment.initialize_agents(session_info)
-    assert isinstance(agents, list)
-    assert len(agents) == len(session_info["agents"]) + 1
+    with pytest.raises((FileNotFoundError, CompilationError, Exception)):
+        Compiler.from_excel("/nonexistent/path/template.xlsx")

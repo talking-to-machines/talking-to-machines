@@ -1,3 +1,23 @@
+"""Prompt construction helpers for synthetic subjects.
+
+.. deprecated::
+    This module is deprecated.  Use
+    ``talkingtomachines.agents.prompt_builder`` instead.
+
+Provides functions to build profile prompts (Q&A and/or backstory) and
+system messages used to initialise a synthetic subject's conversation
+context.
+"""
+
+import warnings
+
+warnings.warn(
+    "talkingtomachines.generative.prompt is deprecated. "
+    "Use talkingtomachines.agents.prompt_builder instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 import openai
 import pandas as pd
 from talkingtomachines.generative.llm import query_llm

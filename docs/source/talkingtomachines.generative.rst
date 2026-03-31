@@ -20,18 +20,10 @@ talkingtomachines.generative.prompt module
    :undoc-members:
    :show-inheritance:
 
-talkingtomachines.generative.synthetic\_agent module
-----------------------------------------------------
+talkingtomachines.generative.synthetic\_subject module
+------------------------------------------------------
 
-.. automodule:: talkingtomachines.generative.synthetic_agent
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-talkingtomachines.generative.video module
------------------------------------------
-
-.. automodule:: talkingtomachines.generative.video
+.. automodule:: talkingtomachines.generative.synthetic_subject
    :members:
    :undoc-members:
    :show-inheritance:

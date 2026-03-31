@@ -167,3 +167,5 @@ build/
 *.egg-info/
 __MACOSX/
 .DS_Store
+.claude
+*.docx

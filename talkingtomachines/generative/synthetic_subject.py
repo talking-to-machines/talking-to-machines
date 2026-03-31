@@ -1,5 +1,29 @@
+"""Synthetic subject implementations for AI-to-AI experiments.
+
+.. deprecated::
+    This module is deprecated.  Use
+    ``talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject``
+    instead.
+
+Defines ``SyntheticSubject`` (base) and ``ConversationalSyntheticSubject``
+(conversation-capable) classes that represent LLM-backed participants in
+an experiment session.
+
+Module-level constants:
+    ProfileInfo: Type alias for a dictionary of profile key-value pairs.
+    NUM_RETRY (int): Number of retries when response validation fails.
+    OPENAI_MODELS (list[str]): Model identifiers handled by the OpenAI backend.
+"""
+
 from __future__ import annotations
 import re, warnings, openai, json, copy
+
+warnings.warn(
+    "talkingtomachines.generative.synthetic_subject is deprecated. "
+    "Use talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 from typing import Any, Callable, TYPE_CHECKING
 from talkingtomachines.generative.prompt import (
     generate_subject_system_message,
@@ -553,8 +577,6 @@ class ConversationalSyntheticSubject(SyntheticSubject):
             response_options (Any, optional): Options to validate the response against. Defaults to an empty string.
             generate_speculation_score (bool, optional): If True, includes instructions to generate a speculation score in the response. Defaults to False.
             format_response (bool, optional): If True, formats the response according to specific instructions. Defaults to False.
-            is_full_message_history (bool, optional): If True, treats the input from message_history as the full message history; otherwise, appends the input from message_history to
-            its own message_history. Defaults to False.
 
         Returns:
             str: The generated response from the subject. Returns an empty string if an exception occurs during response generation.
