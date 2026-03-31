@@ -29,7 +29,7 @@ The `talkingtomachines` platform facilitates the design, conduct, and analysis o
 
 ## ⚙️ Requirements
 
-* Python 3.10+
+* Python 3.10
 
 * macOS or Windows 10/11
 
@@ -56,7 +56,7 @@ conda --version
 
 ### 2. Create and activate a new `conda` environment
 
-Create a fresh `conda` environment (with Python 3.10 or newer):
+Create a fresh `conda` environment (with Python 3.10):
 ```bash
 conda create -n your-env-name python=3.10
 ```
