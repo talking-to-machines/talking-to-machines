@@ -48,7 +48,7 @@ def parse_profiles(
             column.
 
     Returns:
-        A dictionary with the following keys:
+        dict: A dictionary with the following keys.
 
         - ``short_names`` – List of short-name strings from row 0.
         - ``full_names`` – List of full question-wording strings from
