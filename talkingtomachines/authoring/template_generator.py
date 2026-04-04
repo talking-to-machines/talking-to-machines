@@ -1,7 +1,7 @@
 """Template generator for blank experiment workbooks.
 
 Creates a blank ``prompt_template.xlsx`` workbook with seven worksheets
-(Settings, C, Fields, Facilitator, Prompts, Profiles, Manual\_) containing
+(Settings, C, Fields, Facilitator, Prompts, Profiles, ``Manual_``) containing
 bold headers and example rows for use with ``talkingtomachines init``.
 
 Supports two output formats:
@@ -41,7 +41,6 @@ _SHEETS: dict[str, dict] = {
             ["PROFILE_FIELDS", "ALL"],
             ["BUILD_PROFILE_QA", True],
             ["BUILD_PROFILE_BACKSTORIES", False],
-            ["ASSIGN_MANUALLY", "Treatment, Group"],
             ["NUM_AGENTS_PER_SESSION", 4],
             ["CONTEXT_OVERFLOW_POLICY", "terminate"],
             ["MODULE_SEQUENCE", "task1"],
@@ -50,7 +49,6 @@ _SHEETS: dict[str, dict] = {
     "C": {
         "columns": ["module", "name", "value", "type"],
         "rows": [
-            ["global", "TREATMENT_LABELS", "control,treatment_A", "string"],
             ["task1", "MAX_NUM_ROUNDS", 3, "integer"],
             ["task1", "PLAYERS_PER_GROUP", 2, "integer"],
             ["task1", "MIN_ENDOWMENT", 0, "integer"],
@@ -134,38 +132,36 @@ _SHEETS: dict[str, dict] = {
         ],
     },
     "Facilitator": {
-        "columns": ["name", "definition", "args"],
+        "columns": ["name", "definition", "kwargs"],
         "rows": [
-            ["creating_session", "Initialize the session state.", "{}"],
-            ["assign_treatment", "Randomly assign treatment conditions.", "{}"],
-            ["assign_groups", "Form groups for this round.", "{}"],
+            ["assign_groups", "", None],
             [
                 "calculate_total_contribution",
                 """Calculate the total number of tokens contributed to the public account in this round using the following formula:
 Player 1's contribution to public account in this round + Player 2's contribution to public account in this round
 Respond with only the resulting nunber without providing any explanations.""",
-                "{}",
+                None,
             ],
             [
                 "calculate_public_account_earnings",
                 """Calculate Player ID {{ player.agent_id }}'s earnings from the public account this round using the following formula:
 ({{ group.total_contribution }} × 2) ÷ {{ group.num_players }}
 Respond with only the resulting number without providing any explanations.""",
-                "{}",
+                None,
             ],
             [
                 "calculate_private_account_remaining",
                 """Calculate Player ID {{ player.agent_id }}'s remaining private tokens this round using the following formula:
 {{ C.task1.MAX_ENDOWMENT }} − {{ player.decision }}
 Respond with only the resulting number without any explanations.""",
-                "{}",
+                None,
             ],
             [
                 "calculate_total_earnings",
                 """Calculate Player ID {{ player.agent_id }}'s total earnings this round using the following formula:
 {{ player.public_account_earnings }} + {{ player.private_account_remaining }}
 Respond with only the resulting number without any explanations.""",
-                "{}",
+                None,
             ],
         ],
     },
@@ -178,7 +174,7 @@ Respond with only the resulting number without any explanations.""",
             "is_adapted",
             "human_text",
             "llm_text",
-            "rag_vector_store_id",
+            "kwargs",
             "field_class",
             "field_name",
         ],
@@ -286,18 +282,20 @@ Respond with only the resulting number without any explanations.""",
     "Manual_": {
         "columns": ["ID", "module", "round_number", "class", "name", "value"],
         "rows": [
-            [1, "task1", 1, "Agent", "treatment", "control"],
-            [1, "task1", 2, "Agent", "treatment", "control"],
-            [1, "task1", 3, "Agent", "treatment", "control"],
-            [2, "task1", 1, "Agent", "treatment", "treatment_A"],
-            [2, "task1", 2, "Agent", "treatment", "treatment_A"],
-            [2, "task1", 3, "Agent", "treatment", "treatment_A"],
-            [3, "task1", 1, "Agent", "treatment", "control"],
-            [3, "task1", 2, "Agent", "treatment", "control"],
-            [3, "task1", 3, "Agent", "treatment", "control"],
-            [4, "task1", 1, "Agent", "treatment", "treatment_A"],
-            [4, "task1", 2, "Agent", "treatment", "treatment_A"],
-            [4, "task1", 3, "Agent", "treatment", "treatment_A"],
+            # Treatment assignments (just another variable)
+            [1, "task1", 1, "Player", "treatment", "control"],
+            [1, "task1", 2, "Player", "treatment", "control"],
+            [1, "task1", 3, "Player", "treatment", "control"],
+            [2, "task1", 1, "Player", "treatment", "treatment_A"],
+            [2, "task1", 2, "Player", "treatment", "treatment_A"],
+            [2, "task1", 3, "Player", "treatment", "treatment_A"],
+            [3, "task1", 1, "Player", "treatment", "control"],
+            [3, "task1", 2, "Player", "treatment", "control"],
+            [3, "task1", 3, "Player", "treatment", "control"],
+            [4, "task1", 1, "Player", "treatment", "treatment_A"],
+            [4, "task1", 2, "Player", "treatment", "treatment_A"],
+            [4, "task1", 3, "Player", "treatment", "treatment_A"],
+            # Manual group assignments
             [1, "task1", None, "Group", "id_in_subsession", "group1"],
             [2, "task1", None, "Group", "id_in_subsession", "group2"],
             [3, "task1", None, "Group", "id_in_subsession", "group1"],
@@ -315,7 +313,7 @@ def generate_template(
     """Create template files in a project subdirectory.
 
     Generates a blank experiment template with seven worksheets
-    (Settings, C, Fields, Facilitator, Prompts, Profiles, Manual\_)
+    (Settings, C, Fields, Facilitator, Prompts, Profiles, ``Manual_``)
     containing example rows and bold headers.
 
     Args:
@@ -332,7 +330,7 @@ def generate_template(
     created: list[str] = []
 
     if fmt == "csv":
-        created.extend(_write_csvs(out))
+        created.extend(_write_csvs(out, project_name=project_name))
     else:
         created.append(_write_xlsx(out, project_name))
 
@@ -344,18 +342,25 @@ def generate_template(
 # ---------------------------------------------------------------------------
 
 
-def _make_df(sheet_name: str) -> pd.DataFrame:
+def _make_df(sheet_name: str, project_name: str = "my_experiment") -> pd.DataFrame:
     """Build a DataFrame for a single sheet definition.
 
     Args:
         sheet_name: Key into ``_SHEETS`` identifying the sheet to build.
+        project_name: Project name used to set the default ``EXPERIMENT_ID``
+            in the Settings sheet.
 
     Returns:
         A DataFrame with the columns and example rows defined in ``_SHEETS``.
     """
     spec = _SHEETS[sheet_name]
     cols = spec["columns"]
-    rows = spec["rows"]
+    rows = [list(row) for row in spec["rows"]]
+    if sheet_name == "Settings":
+        for row in rows:
+            if row[0] == "EXPERIMENT_ID":
+                row[1] = project_name
+                break
     if rows:
         return pd.DataFrame(rows, columns=cols)
     return pd.DataFrame(columns=cols)
@@ -374,7 +379,7 @@ def _write_xlsx(out: Path, project_name: str) -> str:
     file_path = str(out / f"{project_name}_template.xlsx")
     with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
         for sheet_name in _SHEETS:
-            df = _make_df(sheet_name)
+            df = _make_df(sheet_name, project_name=project_name)
             df.to_excel(writer, sheet_name=sheet_name, index=False)
 
             # Bold the header row
@@ -390,18 +395,19 @@ def _write_xlsx(out: Path, project_name: str) -> str:
     return file_path
 
 
-def _write_csvs(out: Path) -> list[str]:
+def _write_csvs(out: Path, project_name: str = "my_experiment") -> list[str]:
     """Write each sheet as an individual CSV file.
 
     Args:
         out: Project directory to write the CSV files into.
+        project_name: Project name used to set the default ``EXPERIMENT_ID``.
 
     Returns:
         A list of file paths for the created CSV files.
     """
     created = []
     for sheet_name in _SHEETS:
-        df = _make_df(sheet_name)
+        df = _make_df(sheet_name, project_name=project_name)
         safe_name = sheet_name.replace(" ", "_").replace("/", "_")
         file_path = str(out / f"{safe_name}.csv")
         df.to_csv(file_path, index=False)

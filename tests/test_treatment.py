@@ -1,8 +1,9 @@
 """
-Tests for treatment assignment (new API).
+Tests for randomisation utilities (group formation, shuffling, seeding).
 
-Replaces old tests of ``talkingtomachines.management.treatment``
-with tests of ``talkingtomachines.core.randomisation.RandomisationEngine``.
+Tests of ``talkingtomachines.core.randomisation.RandomisationEngine``.
+Treatment assignment strategies have been removed — treatment is now
+a regular field set via the Manual_ sheet.
 """
 
 from __future__ import annotations
@@ -19,114 +20,6 @@ from talkingtomachines.core.randomisation import RandomisationEngine
 
 def _engine(seed=42) -> RandomisationEngine:
     return RandomisationEngine(global_seed=seed)
-
-
-# ---------------------------------------------------------------------------
-# Treatment assignment
-# ---------------------------------------------------------------------------
-
-
-def test_simple_random_assignment_assigns_all_agents():
-    engine = _engine()
-    agent_ids = [f"agent_{i}" for i in range(10)]
-    treatments = ["T1", "T2", "T3"]
-
-    assignments = engine.assign_treatments(
-        agent_ids=agent_ids,
-        treatment_labels=treatments,
-        strategy="simple_random",
-        path="test",
-    )
-
-    assert len(assignments) == len(agent_ids)
-    for agent_id, treatment in assignments.items():
-        assert treatment in treatments
-
-
-def test_simple_random_assignment_empty_treatments():
-    """Empty treatment list → no assignments (empty dict)."""
-    engine = _engine()
-    assignments = engine.assign_treatments(
-        agent_ids=[],
-        treatment_labels=["T1"],
-        strategy="simple_random",
-        path="test",
-    )
-    # No agents → empty assignment dict
-    assert assignments == {}
-
-
-def test_complete_random_assignment_covers_all_treatments():
-    """With enough agents, all treatment labels should appear."""
-    engine = _engine()
-    agent_ids = [f"a{i}" for i in range(30)]
-    treatments = ["T1", "T2", "T3"]
-
-    assignments = engine.assign_treatments(
-        agent_ids=agent_ids,
-        treatment_labels=treatments,
-        strategy="complete_random",
-        path="test",
-    )
-
-    assert len(assignments) == 30
-    assigned_treatments = set(assignments.values())
-    assert assigned_treatments == set(treatments)
-
-
-def test_complete_random_assignment_empty_agents():
-    """Empty agent list → empty assignment dict."""
-    engine = _engine()
-    assignments = engine.assign_treatments(
-        agent_ids=[],
-        treatment_labels=["T1", "T2"],
-        strategy="complete_random",
-        path="test",
-    )
-    assert assignments == {}
-
-
-def test_assignment_is_reproducible_with_same_seed():
-    """Same seed must produce same assignment."""
-    agent_ids = [f"a{i}" for i in range(20)]
-    treatments = ["A", "B"]
-
-    result1 = _engine(seed=123).assign_treatments(
-        agent_ids=agent_ids,
-        treatment_labels=treatments,
-        strategy="simple_random",
-        path="test",
-    )
-    result2 = _engine(seed=123).assign_treatments(
-        agent_ids=agent_ids,
-        treatment_labels=treatments,
-        strategy="simple_random",
-        path="test",
-    )
-
-    assert result1 == result2
-
-
-def test_assignment_differs_with_different_seed():
-    """Different seeds should (almost certainly) produce different assignments."""
-    agent_ids = [f"a{i}" for i in range(20)]
-    treatments = ["A", "B"]
-
-    result1 = _engine(seed=1).assign_treatments(
-        agent_ids=agent_ids,
-        treatment_labels=treatments,
-        strategy="simple_random",
-        path="test",
-    )
-    result2 = _engine(seed=999).assign_treatments(
-        agent_ids=agent_ids,
-        treatment_labels=treatments,
-        strategy="simple_random",
-        path="test",
-    )
-
-    # Extremely unlikely they'd be identical with 20 agents
-    assert result1 != result2
 
 
 # ---------------------------------------------------------------------------
@@ -192,3 +85,39 @@ def test_group_formation_all_in_one():
         path="test.round_1",
     )
     assert len(groups) == 1
+
+
+def test_group_formation_reproducible_with_same_seed():
+    """Same seed must produce same groups."""
+    agent_ids = [f"a{i}" for i in range(8)]
+    result1 = _engine(seed=123).assign_groups(
+        agent_ids=agent_ids,
+        players_per_group=4,
+        strategy="random",
+        path="test.round_1",
+    )
+    result2 = _engine(seed=123).assign_groups(
+        agent_ids=agent_ids,
+        players_per_group=4,
+        strategy="random",
+        path="test.round_1",
+    )
+    assert result1 == result2
+
+
+def test_group_formation_differs_with_different_seed():
+    """Different seeds should (almost certainly) produce different groups."""
+    agent_ids = [f"a{i}" for i in range(20)]
+    result1 = _engine(seed=1).assign_groups(
+        agent_ids=agent_ids,
+        players_per_group=4,
+        strategy="random",
+        path="test.round_1",
+    )
+    result2 = _engine(seed=999).assign_groups(
+        agent_ids=agent_ids,
+        players_per_group=4,
+        strategy="random",
+        path="test.round_1",
+    )
+    assert result1 != result2

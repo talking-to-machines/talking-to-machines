@@ -22,14 +22,13 @@ The `talkingtomachines` platform facilitates the design, conduct, and analysis o
 
 | Version | Architecture | Status |
 |---------|-------------|--------|
-| **v0.3.0** | oTree-inspired hierarchy (Session → Module → Subsession → Group → Agent/Player). Compiler-based pipeline with validation, checkpointing, resume, and multi-format export. | Development (current branch) |
-| **v0.2.7** | Flat session-based architecture with role/treatment worksheets. Single-pass execution via argparse CLI. | Stable (latest published on TestPyPI) |
+| **v0.3.0** | oTree-inspired hierarchy (Session → Module → Subsession → Group → Agent/Player). Compiler-based pipeline with validation, checkpointing, and multi-format export. | Development (current branch) |
 
 ---
 
 ## ⚙️ Requirements
 
-* Python 3.10
+* Python >= 3.10
 
 * macOS or Windows 10/11
 
@@ -56,9 +55,9 @@ conda --version
 
 ### 2. Create and activate a new `conda` environment
 
-Create a fresh `conda` environment (with Python 3.10):
+Create a fresh `conda` environment (with Python 3.12):
 ```bash
-conda create -n your-env-name python=3.10
+conda create -n your-env-name python=3.12
 ```
 
 Activate your newly created `conda` environment:
@@ -78,11 +77,6 @@ pip --version
 ```
 
 ### 3. Install the `talkingtomachines` package
-
-**v0.2.7 (latest stable release):**
-```bash
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple talkingtomachines==0.2.7
-```
 
 **v0.3.0:**
 ```bash
@@ -192,36 +186,6 @@ talkingtomachines run path/to/template.xlsx --output my_results
 | `--budget` | Budget cap in USD (default: 0 = no cap) |
 | `--output, -o` | Output base directory (default: same directory as the template) |
 
-#### `resume` — Resume an interrupted experiment run
-
-```bash
-talkingtomachines resume my_experiment/results/run_abc123
-talkingtomachines resume my_experiment/results/run_abc123 --budget 5.0
-```
-
-Loads the most recent checkpoint from the run directory and resumes execution from where it was interrupted, restoring session state, completed modules, and experiment state variables.
-
-| Flag | Description |
-|------|-------------|
-| `--budget` | Budget cap in USD (default: 0 = no cap) |
-
-#### `export` — Re-export artifacts from a completed run
-
-```bash
-talkingtomachines export run_abc123
-talkingtomachines export run_abc123 --format jsonl
-talkingtomachines export run_abc123 --format all --output ./exports
-talkingtomachines export run_abc123 --base my_experiments
-```
-
-Re-exports artifacts from an existing run folder. If checkpoints exist, performs full artifact re-export including codebook and all data tables. If no checkpoints exist, only exports the codebook.
-
-| Flag | Description |
-|------|-------------|
-| `--format, -fmt` | Export format: `csv` (default), `jsonl`, or `all` |
-| `--output, -o` | Output directory (default: run folder) |
-| `--base` | Base experiment results directory (default: `experiment_results`) |
-
 #### Output Files
 
 After a run completes, the following files are produced in the run directory (`<template_dir>/results/<run_id>/`):
@@ -235,7 +199,7 @@ After a run completes, the following files are produced in the run directory (`<
 | `agent_table.csv` | One row per agent per session. Includes profile fields, agent-scoped field values for each module, system message, and full message history (JSON). |
 | `group_table.csv` | One row per group per subsession. Includes group metadata, round number, and group-scoped field values. |
 | `player.csv` | One row per player per subsession. Includes player/agent/group identifiers, round number, and player-scoped field values. |
-| `assignments.csv` | One row per agent per module per round. Documents group membership and treatment labels. |
+| `assignments.csv` | One row per manual assignment or group assignment. Documents all entries from the `Manual_` worksheet and group membership for each agent, module, and round. |
 | `metrics.csv` | Aggregate experiment metrics: agent count, module count, total rounds, groups, players, messages, API cost, and timing. |
 | `traces.jsonl` | Complete event log written live during execution. Each line is a JSON record covering LLM calls, retries, facilitator calls, validation outcomes, checkpoint events, randomisation, and assignments. |
 | `events.csv` | Filtered view of `traces.jsonl` containing non-routine events (retries, errors, validation, checkpoints, assignments). Only generated if `traces.jsonl` exists. |
@@ -244,25 +208,9 @@ After a run completes, the following files are produced in the run directory (`<
 
 ---
 
-### v0.2.7
-
-v0.2.7 uses a single-command CLI via argparse. There are no subcommands — the template path is passed directly as an argument.
-
-```bash
-# Run an experiment
-talkingtomachines path/to/template.xlsx
-
-# Check version
-talkingtomachines --version
-```
-
-The platform reads the Excel workbook, validates all worksheets, and immediately executes the experiment. There is no separate `validate`, `resume`, or `export` command in v0.2.7.
-
----
-
 ## Supported Models
 
-Both v0.2.7 and v0.3.0 support the same set of providers. The provider is auto-detected from the model name.
+The provider is auto-detected from the model name.
 
 | Provider | Model prefix | Example models | Environment variable |
 |----------|-------------|----------------|----------------------|
@@ -292,25 +240,10 @@ v0.3.0 uses 7 worksheets that map to the oTree-inspired hierarchy.
 | **Settings** | Global experiment settings: model name, temperature, random seed, module sequence, context window overflow policy. |
 | **C** | Constants defined per module (e.g., `ENDOWMENT`, `MAX_NUM_ROUNDS`, `PLAYERS_PER_GROUP`). Columns: `module`, `name`, `value`, `type`. Accessed via `{{ C.module_name.constant_name }}` in prompts. |
 | **Fields** | Data variables that agents write to during the experiment. Columns: `module`, `class`, `name`, `type`, `response_options`, `response_options_intro`, `randomise_options_order`, `validate`, `generate_speculation_score`, `format_response`. |
-| **Facilitator** | Built-in and custom facilitator functions. Columns: `name`, `definition`, `args`. Built-in functions: `creating_session`, `assign_treatment`, `assign_groups`. Custom functions use natural-language LLM instructions. |
+| **Facilitator** | Built-in and custom facilitator functions. Columns: `name`, `definition`, `kwargs`. Built-in functions: `assign_groups`. Custom functions use natural-language LLM instructions. |
 | **Prompts** | The prompt sequence for each module. Columns: `module`, `prompt_sequence`, `type`, `is_displayed`, `is_adapted`, `human_text`, `llm_text`, `rag_vector_store_id`, `field_class`, `field_name`. |
 | **Profiles** | Agent profile attributes. Row 0 = short names (Jinja2 identifiers), Row 1 = full question wording, Rows 2+ = profile data. First column must be `ID` with unique values. |
 | **Manual_** | Optional manual overrides for treatment assignments, group memberships, and field values. Columns: `ID`, `module`, `round_number`, `class`, `name`, `value`. |
-
----
-
-### v0.2.7 Worksheets
-
-v0.2.7 uses 6 worksheets with a flat session-based architecture.
-
-| Worksheet | Purpose |
-|-----------|---------|
-| **settings** | Global experiment settings: model info, temperature, number of subjects per group, number of groups, treatment/group/role assignment strategies, random seed. |
-| **treatment** | Treatment arms and their descriptions. Columns: `treatment_label`, `value`. Values can be plain strings or Python dictionaries with named attributes. |
-| **role** | User-defined and special roles (including `facilitator`). Columns: `role_label`, `value`. The `facilitator` role is mandatory and orchestrates experiment flow. |
-| **prompt** | Experiment flow and prompts. Columns: `round_id`, `type`, `round_order`, `is_adapted`, `human_text`, `llm_text`, `response_name`, `response_type`, `response_options`, `randomize_response_order`, `validate_response`, `generate_speculation_score`, `format_response`. |
-| **profile** | Agent profile attributes. Row 1 = short names, Row 2 = full questions, Rows 3+ = profile data. Must include an `ID` column. |
-| **constant** | String/numerical constants for Jinja2 injection. Columns: `label`, `value`, `type`. |
 
 ---
 
@@ -322,11 +255,6 @@ macOS: [Video Walkthrough](https://www.loom.com/share/a2c15f1258d5436eaeca197998
 
 Windows: [Video Walkthrough](https://www.loom.com/share/79969b38be6d4c2387d19ecc3e54ae4d?sid=d372a5e7-6dd5-4923-b838-69eba7dce20a)
 
-
-### v0.2.7
-macOS: [Video Walkthrough](https://www.loom.com/share/a2c15f1258d5436eaeca197998286cd9?sid=7958bdbe-2f34-4d5f-8d47-49fd49cb315c)
-
-Windows: [Video Walkthrough](https://www.loom.com/share/79969b38be6d4c2387d19ecc3e54ae4d?sid=d372a5e7-6dd5-4923-b838-69eba7dce20a)
 
 ---
 

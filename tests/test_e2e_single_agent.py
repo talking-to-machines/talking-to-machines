@@ -124,11 +124,9 @@ def _make_cep(tmp_path):
             "facilitator_functions": [],
             "constants": {"survey": {"MAX_NUM_ROUNDS": 1, "PLAYERS_PER_GROUP": 1}},
             "assignment_plan": {
-                "treatment_strategy": "simple_random",
-                "group_strategy": "random",
                 "random_seed": 42,
-                "treatment_assignments": {agent_id: "T1"},
                 "group_assignments": {"survey": {1: {"G1": [agent_id]}}},
+                "manual_variables": [],
             },
         }
     )

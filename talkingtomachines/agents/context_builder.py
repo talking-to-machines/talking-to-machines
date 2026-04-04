@@ -133,7 +133,7 @@ class ContextBuilder:
             shared_history=agent.message_history,
             requesting_agent_id=agent.agent_id,
             requesting_group_id=group.group_id,
-            requesting_treatment_label=agent.treatment_label,
+            requesting_treatment_label="",
         )
         for msg in visible_history:
             messages.append(
@@ -165,10 +165,15 @@ class ContextBuilder:
 
         rendered_prompt = self._render(prompt.llm_text, jinja_ctx)
 
-        # Step 3.5: RAG augmentation — per-prompt vector store ID
+        # Step 3.5: RAG augmentation — per-prompt vector store ID (via kwargs)
         effective_rag = None
-        if hasattr(prompt, "rag_vector_store_id") and prompt.rag_vector_store_id:
-            effective_rag = self._get_per_prompt_rag_tool(prompt.rag_vector_store_id)
+        rag_store_id = (
+            prompt.kwargs.get("rag_vector_store_id")
+            if hasattr(prompt, "kwargs")
+            else None
+        )
+        if rag_store_id:
+            effective_rag = self._get_per_prompt_rag_tool(rag_store_id)
         if effective_rag is not None:
             try:
                 rag_result = effective_rag.retrieve(rendered_prompt)

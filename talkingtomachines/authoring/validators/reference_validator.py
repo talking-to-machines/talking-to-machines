@@ -9,7 +9,11 @@ supports the following reference patterns:
     - ``{{ <module>.<class>.<name> }}`` — Field references, resolved
       against the Fields sheet index.
     - ``{{ player.<field> }}`` / ``{{ agent.<field> }}`` — Profile
-      attribute references, resolved against Profiles short names.
+      attribute references, resolved against Profiles short names,
+      Fields definitions, and ``Manual_`` variable names.
+    - ``{{ group.<field> }}`` / ``{{ session.<field> }}`` — Scoped
+      runtime fields, resolved against Fields definitions, ``Manual_``
+      variable names, and built-in attributes.
     - ``{{ round_number }}``, ``{{ group_id }}``, etc. — Built-in
       runtime variables that are always valid.
 
@@ -77,6 +81,7 @@ class ReferenceValidator:
         module_names: list[str],
         profile_short_names: list[str],
         facilitator_names: list[str],
+        manual_names_by_class: dict[str, set[str]] | None = None,
     ):
         """Initialise the validator with parsed workbook data.
 
@@ -93,6 +98,8 @@ class ReferenceValidator:
                 Profiles sheet.
             facilitator_names: Facilitator identifiers defined in the
                 workbook.
+            manual_names_by_class: Variable names from the ``Manual_``
+                sheet(s) grouped by class (e.g. ``{"Player": {"treatment"}}``).
         """
         self._sheets = sheets
         self._constants = constants
@@ -100,6 +107,7 @@ class ReferenceValidator:
         self._module_names = set(module_names)
         self._profile_cols = set(profile_short_names)
         self._facilitator_names = set(facilitator_names)
+        self._manual_names_by_class = manual_names_by_class or {}
         self._errors: list[ValidationError] = []
 
         # Collect all field names from the Fields worksheet keyed by scope
@@ -187,9 +195,8 @@ class ReferenceValidator:
         if parts[0] in ("player", "agent"):
             if len(parts) >= 2:
                 field_name = parts[1]
-                # Accept profile columns, built-in attributes, and any
-                # field name declared in the Fields worksheet regardless
-                # of its class (Player, Agent, Group, Session).
+                # Accept profile columns, built-in attributes, field names
+                # from the Fields worksheet, and Manual_ variable names.
                 _BUILTIN_ATTRS = {
                     "treatment",
                     "role",
@@ -202,15 +209,21 @@ class ReferenceValidator:
                     if self._field_names_by_class
                     else set()
                 )
+                all_manual_names = (
+                    set().union(*self._manual_names_by_class.values())
+                    if self._manual_names_by_class
+                    else set()
+                )
                 if (
                     field_name not in self._profile_cols
                     and field_name not in _BUILTIN_ATTRS
                     and field_name not in all_field_names
+                    and field_name not in all_manual_names
                 ):
                     logger.warning(
                         "Reference '{{ %s }}' not found in Profiles short_names, "
-                        "Fields worksheet, or built-in attributes — "
-                        "possible typo (known columns: %s).",
+                        "Fields worksheet, Manual_ worksheet, or built-in "
+                        "attributes — possible typo (known columns: %s).",
                         ref,
                         sorted(self._profile_cols),
                     )
@@ -232,13 +245,17 @@ class ReferenceValidator:
                     if self._field_names_by_class
                     else set()
                 )
+                manual_class = "Group" if parts[0] == "group" else "Session"
+                manual_names = self._manual_names_by_class.get(manual_class, set())
                 if (
                     field_name not in builtin_attrs
                     and field_name not in all_field_names
+                    and field_name not in manual_names
                 ):
                     logger.warning(
-                        "Reference '{{ %s }}' not found in Fields worksheet "
-                        "or built-in attributes — possible typo.",
+                        "Reference '{{ %s }}' not found in Fields worksheet, "
+                        "Manual_ worksheet, or built-in attributes — "
+                        "possible typo.",
                         ref,
                     )
             return

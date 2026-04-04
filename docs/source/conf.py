@@ -96,6 +96,7 @@ nitpick_ignore = [
     ("py:class", "Role"),
     ("py:class", "T"),
     ("py:class", "callable"),
+    ("py:class", "dict[str"),
 ]
 
 nitpick_ignore_regex = [

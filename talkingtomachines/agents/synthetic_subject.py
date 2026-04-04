@@ -235,7 +235,11 @@ class ConversationalSyntheticSubject:
                 )
             if field_def.field_class == "Agent":
                 self._state.set_agent(
-                    self.agent.agent_id, module, field_def.name, parsed
+                    self.agent.agent_id,
+                    module,
+                    field_def.name,
+                    parsed,
+                    round_number=round_number,
                 )
             elif field_def.field_class == "Group":
                 if prompt.type == "PRIVATE_QUESTION":

@@ -58,7 +58,6 @@ def _make_subject(router=None, content="mock answer") -> ConversationalSynthetic
         agent_id="a1",
         agent_instance_id="inst_a1",
         profile_info={"ID": 1, "age": 30},
-        treatment_label="T1",
     )
     player = Player(
         player_id="p1",

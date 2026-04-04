@@ -65,8 +65,6 @@ def _make_pgg_cep(tmp_path, max_rounds=3, num_agents=4):
 
     agent_ids = [make_agent_id("pgg_exp", i + 1) for i in range(num_agents)]
     profile_rows = [{"ID": i + 1, "age": 25 + i * 5} for i in range(num_agents)]
-    treatment_assignments = {aid: "T1" for aid in agent_ids}
-
     # All agents in one group for all rounds
     group_assignments = {
         "pgg": {r: {"G1": agent_ids} for r in range(1, max_rounds + 1)}
@@ -144,11 +142,9 @@ def _make_pgg_cep(tmp_path, max_rounds=3, num_agents=4):
                 "pgg": {"MAX_NUM_ROUNDS": max_rounds, "PLAYERS_PER_GROUP": num_agents}
             },
             "assignment_plan": {
-                "treatment_strategy": "simple_random",
-                "group_strategy": "random",
                 "random_seed": 0,
-                "treatment_assignments": treatment_assignments,
                 "group_assignments": group_assignments,
+                "manual_variables": [],
             },
         }
     )

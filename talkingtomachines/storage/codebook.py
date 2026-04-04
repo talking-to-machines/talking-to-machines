@@ -81,7 +81,7 @@ def generate_codebook(cep: CompiledExperiment) -> dict[str, Any]:
                 "llm_text": p.get("llm_text", ""),
                 "human_text": p.get("human_text", ""),
                 "is_adapted": p.get("is_adapted", False),
-                "rag_vector_store_id": p.get("rag_vector_store_id", ""),
+                "kwargs": p.get("kwargs", p.get("args", {})),
             }
             for p in prompt_list
         ]

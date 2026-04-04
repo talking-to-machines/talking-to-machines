@@ -23,12 +23,11 @@ from talkingtomachines.core.models import Agent, Player, Group, Session
 # ---------------------------------------------------------------------------
 
 
-def _make_agent(agent_id="a1", treatment="T1") -> Agent:
+def _make_agent(agent_id="a1") -> Agent:
     return Agent(
         agent_id=agent_id,
         agent_instance_id=f"inst_{agent_id}",
         profile_info={"age": 30, "party": "D"},
-        treatment_label=treatment,
     )
 
 
@@ -93,21 +92,48 @@ def test_session_get_module_returns_dict_copy():
 
 def test_agent_set_and_get():
     state = ExperimentState()
-    state.set_agent("a1", "pgg", "contribution", 5)
-    assert state.get_agent("a1", "pgg", "contribution") == 5
+    state.set_agent("a1", "pgg", "contribution", 5, round_number=1)
+    assert state.get_agent("a1", "pgg", "contribution", round_number=1) == 5
 
 
 def test_agent_isolation():
     state = ExperimentState()
-    state.set_agent("a1", "pgg", "decision", 10)
-    state.set_agent("a2", "pgg", "decision", 20)
-    assert state.get_agent("a1", "pgg", "decision") == 10
-    assert state.get_agent("a2", "pgg", "decision") == 20
+    state.set_agent("a1", "pgg", "decision", 10, round_number=1)
+    state.set_agent("a2", "pgg", "decision", 20, round_number=1)
+    assert state.get_agent("a1", "pgg", "decision", round_number=1) == 10
+    assert state.get_agent("a2", "pgg", "decision", round_number=1) == 20
 
 
 def test_agent_default():
     state = ExperimentState()
-    assert state.get_agent("missing", "pgg", "decision", default=0) == 0
+    assert state.get_agent("missing", "pgg", "decision", round_number=1, default=0) == 0
+
+
+def test_agent_round_isolation():
+    """Values at different rounds don't overwrite each other."""
+    state = ExperimentState()
+    state.set_agent("a1", "pgg", "contribution", 50, round_number=1)
+    state.set_agent("a1", "pgg", "contribution", 75, round_number=2)
+    assert state.get_agent("a1", "pgg", "contribution", round_number=1) == 50
+    assert state.get_agent("a1", "pgg", "contribution", round_number=2) == 75
+
+
+def test_agent_get_round():
+    state = ExperimentState()
+    state.set_agent("a1", "pgg", "contribution", 50, round_number=1)
+    state.set_agent("a1", "pgg", "decision", "yes", round_number=1)
+    assert state.get_agent_round("a1", "pgg", 1) == {
+        "contribution": 50,
+        "decision": "yes",
+    }
+
+
+def test_agent_get_module_returns_all_rounds():
+    state = ExperimentState()
+    state.set_agent("a1", "pgg", "x", 1, round_number=1)
+    state.set_agent("a1", "pgg", "x", 2, round_number=2)
+    result = state.get_agent_module("a1", "pgg")
+    assert result == {1: {"x": 1}, 2: {"x": 2}}
 
 
 # ---------------------------------------------------------------------------
@@ -178,10 +204,13 @@ def test_concurrent_writes_are_safe():
 
 def test_build_jinja_context_basic():
     state = ExperimentState()
-    agent = _make_agent("a1", treatment="T1")
+    agent = _make_agent("a1")
     player = _make_player("p1", "inst_a1", "g1")
     group = _make_group("g1")
     session = _make_session("s1", "run1")
+
+    # Set an agent-scoped value for round 2
+    state.set_agent("a1", "pgg", "treatment", "T1", round_number=2)
 
     ctx = state.build_jinja_context(
         agent=agent,
@@ -196,7 +225,32 @@ def test_build_jinja_context_basic():
     assert ctx["group_id"] == "g1"
     assert ctx["session_id"] == "s1"
     assert ctx["run_id"] == "run1"
-    assert ctx["treatment"] == "T1"
+    # Agent values accessible via agent.module[round].field
+    assert ctx["agent"].pgg[2].treatment == "T1"
+
+
+def test_build_jinja_context_agent_cross_round():
+    """Agent-scoped values from different rounds are accessible."""
+    state = ExperimentState()
+    agent = _make_agent("a1")
+    player = _make_player("p1", "inst_a1", "g1")
+    group = _make_group("g1")
+    session = _make_session("s1", "run1")
+
+    state.set_agent("a1", "pgg", "contribution", 50, round_number=1)
+    state.set_agent("a1", "pgg", "contribution", 75, round_number=2)
+
+    ctx = state.build_jinja_context(
+        agent=agent,
+        player=player,
+        group=group,
+        session=session,
+        module="pgg",
+        round_number=2,
+    )
+
+    assert ctx["agent"].pgg[1].contribution == 50
+    assert ctx["agent"].pgg[2].contribution == 75
 
 
 def test_build_jinja_context_player_profile_fields():
@@ -275,6 +329,121 @@ def test_build_jinja_context_no_constants_key():
         round_number=1,
     )
     assert "C" not in ctx
+
+
+def test_build_jinja_context_profile_on_agent():
+    """Profile fields are accessible as flat agent attributes."""
+    state = ExperimentState()
+    agent = _make_agent("a1")
+    player = _make_player("p1")
+    group = _make_group("g1")
+    session = _make_session("s1", "run1")
+
+    ctx = state.build_jinja_context(
+        agent=agent,
+        player=player,
+        group=group,
+        session=session,
+        module="pgg",
+        round_number=1,
+    )
+    # Profile fields on agent namespace (flat)
+    assert ctx["agent"].age == 30
+    assert ctx["agent"].party == "D"
+    # Still available on player namespace too
+    assert ctx["player"].age == 30
+    assert ctx["player"].party == "D"
+
+
+def test_build_jinja_context_agent_round_flat():
+    """Agent-scoped values for the current round are accessible as flat attributes."""
+    state = ExperimentState()
+    agent = _make_agent("a1")
+    player = _make_player("p1")
+    group = _make_group("g1")
+    session = _make_session("s1", "run1")
+
+    state.set_agent("a1", "pgg", "treatment", "T1", round_number=1)
+
+    ctx = state.build_jinja_context(
+        agent=agent,
+        player=player,
+        group=group,
+        session=session,
+        module="pgg",
+        round_number=1,
+    )
+    # Flat access for current round
+    assert ctx["agent"].treatment == "T1"
+    # Round-indexed access still works
+    assert ctx["agent"].pgg[1].treatment == "T1"
+
+
+def test_build_jinja_context_player_manual_in_player_ns():
+    """Player-scoped Manual_ values (set via set_player) appear in the player namespace."""
+    state = ExperimentState()
+    agent = _make_agent("a1")
+    player = _make_player("p1")
+    group = _make_group("g1")
+    session = _make_session("s1", "run1")
+
+    # Simulate _apply_scoped_manual_variables setting player scope
+    state.set_player("p1", "pgg", "player_identity", "cooperator")
+    state.set_player("p1", "pgg", "treatment", "control")
+
+    ctx = state.build_jinja_context(
+        agent=agent,
+        player=player,
+        group=group,
+        session=session,
+        module="pgg",
+        round_number=1,
+    )
+    assert ctx["player"].player_identity == "cooperator"
+    assert ctx["player"].treatment == "control"
+
+
+def test_build_jinja_context_group_manual_in_group_ns():
+    """Group-scoped Manual_ values (set via set_group) appear in the group namespace."""
+    state = ExperimentState()
+    agent = _make_agent("a1")
+    player = _make_player("p1")
+    group = _make_group("g1")
+    session = _make_session("s1", "run1")
+
+    # Simulate _apply_scoped_manual_variables setting group scope
+    state.set_group("g1", "pgg", "group_treatment", "high")
+
+    ctx = state.build_jinja_context(
+        agent=agent,
+        player=player,
+        group=group,
+        session=session,
+        module="pgg",
+        round_number=1,
+    )
+    assert ctx["group"].group_treatment == "high"
+
+
+def test_build_jinja_context_session_manual_in_session_ns():
+    """Session-scoped Manual_ values appear in the session namespace."""
+    state = ExperimentState()
+    agent = _make_agent("a1")
+    player = _make_player("p1")
+    group = _make_group("g1")
+    session = _make_session("s1", "run1")
+
+    state.set_session("pgg", "condition", "baseline")
+
+    ctx = state.build_jinja_context(
+        agent=agent,
+        player=player,
+        group=group,
+        session=session,
+        module="pgg",
+        round_number=1,
+    )
+    assert ctx["session"].condition == "baseline"
 
 
 # ---------------------------------------------------------------------------

@@ -1,10 +1,10 @@
 """Facilitator engine for executing experiment control functions.
 
 Provides ``FacilitatorEngine``, which executes facilitator functions at
-runtime. Built-in functions (e.g. ``assign_treatment``, ``assign_groups``)
-delegate to the ``RandomisationEngine``, while custom (natural-language)
-functions are sent to an LLM via the ``LLMRouter`` and their JSON
-responses are parsed as state updates.
+runtime. The built-in ``assign_groups`` function delegates to the
+``RandomisationEngine``, while custom (natural-language) functions are
+sent to an LLM via the ``LLMRouter`` and their responses are parsed as
+state updates.
 """
 
 from __future__ import annotations
@@ -23,15 +23,22 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_BUILTIN_NAMES = {"assign_treatment", "assign_groups", "creating_session"}
+_BUILTIN_NAMES = {"assign_groups"}
+
+_VALID_RUNTIME_GROUP_STRATEGIES = {
+    "random",
+    "keep",
+    "swap",
+    "stratified",
+}
 
 
 class FacilitatorEngine:
     """Executes facilitator functions at runtime.
 
-    Dispatches built-in facilitator functions (``creating_session``,
-    ``assign_treatment``, ``assign_groups``) to their respective engine
-    methods and routes all other functions through an LLM call.
+    Dispatches the built-in ``assign_groups`` function to the
+    randomisation engine and routes all other functions through an
+    LLM call.
 
     Attributes:
         _state: The experiment state store for reading/writing fields.
@@ -54,8 +61,7 @@ class FacilitatorEngine:
 
         Args:
             state: The experiment state store.
-            randomisation: Randomisation engine for treatment/group
-                assignment.
+            randomisation: Randomisation engine for group assignment.
             router: LLM router instance for custom facilitator calls.
             model_name: Name of the LLM model to use.
             temperature: Sampling temperature for LLM generation.
@@ -72,102 +78,60 @@ class FacilitatorEngine:
         self,
         fn: FacilitatorFunction,
         context: dict[str, Any],
-    ) -> tuple[str, str]:
+        prompt_args: dict[str, Any] | None = None,
+    ) -> tuple[dict | str, str]:
         """Execute a facilitator function and return its response and rendered prompt.
 
         For built-in functions, delegates to the appropriate internal
-        method and returns an empty string (side-effects only). For
-        custom functions, makes an LLM call and returns the raw text
-        response.
+        method and returns a result dict. For custom functions, makes
+        an LLM call and returns the raw text response.
+
+        Facilitator-level kwargs (from the Facilitator worksheet) are
+        merged with prompt-level kwargs (from the Prompts worksheet).
+        Prompt-level kwargs take precedence on conflicts.
 
         Args:
             fn: The ``FacilitatorFunction`` definition to execute.
-            context: Current experiment context dict (agent IDs,
-                treatment labels, etc.).
+            context: Current experiment context dict (agent IDs, etc.).
+            prompt_args: Optional keyword arguments from the Prompts
+                worksheet ``kwargs`` column.
 
         Returns:
-            A tuple of ``(result, rendered_prompt)``. For custom LLM
-            facilitators, *result* is the LLM response and
-            *rendered_prompt* is the Jinja-rendered definition. For
-            built-in facilitators, both are empty strings.
+            A tuple of ``(result, rendered_prompt)``. For built-in
+            facilitators, *result* is a dict of state updates and
+            *rendered_prompt* is an empty string. For custom LLM
+            facilitators, *result* is the LLM response string and
+            *rendered_prompt* is the Jinja-rendered definition.
         """
-        if fn.name == "creating_session":
-            self._creating_session(fn, context)
-            return "", ""
-        if fn.name == "assign_treatment":
-            self._assign_treatment(fn, context)
-            return "", ""
+        # Merge facilitator-level kwargs with prompt-level kwargs
+        merged_args = dict(fn.kwargs) if fn.kwargs else {}
+        if prompt_args:
+            merged_args.update(prompt_args)
+
         if fn.name == "assign_groups":
-            self._assign_groups(fn, context)
-            return "", ""
+            result = self._assign_groups(fn, context, merged_args)
+            return result, ""
         return self._execute_llm_facilitator(fn, context)
 
     # ------------------------------------------------------------------
     # Built-in facilitators
     # ------------------------------------------------------------------
 
-    def _creating_session(self, fn: FacilitatorFunction, context: dict) -> dict:
-        """Initialise session state from the facilitator definition.
+    def _assign_groups(
+        self, fn: FacilitatorFunction, context: dict, prompt_args: dict
+    ) -> dict:
+        """Assign agents to groups via the randomisation engine.
+
+        Reads ``strategy`` from *prompt_args* and ``agent_ids`` /
+        ``players_per_group`` from the context.
 
         Args:
             fn: The facilitator function definition.
-            context: Current experiment context dict.
-
-        Returns:
-            An empty dict (session creation has no state updates).
-        """
-        logger.info("Facilitator: creating_session")
-        return {}
-
-    def _assign_treatment(self, fn: FacilitatorFunction, context: dict) -> dict:
-        """Assign treatments to agents via the randomisation engine.
-
-        Reads ``agent_ids`` and ``treatment_labels`` from the context
-        and ``strategy`` / ``path`` from the function args.
-
-        Args:
-            fn: The facilitator function definition (carries ``args``
-                with optional ``strategy`` and ``path`` keys).
-            context: Must contain ``agent_ids`` (list of str) and
-                ``treatment_labels`` (list of str).
-
-        Returns:
-            A dict with key ``treatment_assignments`` mapping agent IDs
-            to treatment labels, or an empty dict if required context
-            entries are missing.
-        """
-        logger.info("Facilitator: assign_treatment")
-        # Context should contain agent_ids and treatment_labels
-        agent_ids = context.get("agent_ids", [])
-        treatment_labels = context.get("treatment_labels", [])
-        strategy = fn.args.get("strategy", "simple_random")
-        path = fn.args.get("path", "treatments")
-
-        if not agent_ids or not treatment_labels:
-            logger.warning(
-                "assign_treatment: missing agent_ids or treatment_labels in context."
-            )
-            return {}
-
-        assignments = self._rng.assign_treatments(
-            agent_ids=agent_ids,
-            treatment_labels=treatment_labels,
-            strategy=strategy,
-            path=path,
-        )
-        return {"treatment_assignments": assignments}
-
-    def _assign_groups(self, fn: FacilitatorFunction, context: dict) -> dict:
-        """Assign agents to groups via the randomisation engine.
-
-        Reads ``agent_ids`` and ``players_per_group`` from the context
-        and ``strategy`` / ``path`` from the function args.
-
-        Args:
-            fn: The facilitator function definition (carries ``args``
-                with optional ``strategy`` and ``path`` keys).
-            context: Must contain ``agent_ids`` (list of str). May
-                contain ``players_per_group`` (int, defaults to 2).
+            context: Must contain ``all_session_agent_ids`` or
+                ``agent_ids`` (list of str). May contain
+                ``players_per_group`` (int, defaults to 2).
+            prompt_args: Keyword arguments from the Prompts worksheet.
+                Supports ``strategy`` and ``stratify_by``.
 
         Returns:
             A dict with key ``group_assignments`` mapping group IDs to
@@ -175,19 +139,36 @@ class FacilitatorEngine:
             missing or empty.
         """
         logger.info("Facilitator: assign_groups")
-        agent_ids = context.get("agent_ids", [])
+        agent_ids = context.get("all_session_agent_ids", context.get("agent_ids", []))
         players_per_group = context.get("players_per_group", 2)
-        strategy = fn.args.get("strategy", "random")
-        path = fn.args.get("path", "groups")
+        strategy = prompt_args.get("strategy", "random")
+
+        if strategy not in _VALID_RUNTIME_GROUP_STRATEGIES:
+            logger.warning(
+                "assign_groups: strategy '%s' is not valid at runtime.", strategy
+            )
+            return {}
 
         if not agent_ids:
             return {}
+
+        # Build stratify_by from profile info if needed
+        stratify_by = None
+        if strategy == "stratified":
+            stratify_attr = prompt_args.get("stratify_by")
+            if stratify_attr:
+                agents_profile_info = context.get("agents_profile_info", {})
+                stratify_by = [
+                    agents_profile_info.get(aid, {}).get(stratify_attr, "")
+                    for aid in agent_ids
+                ]
 
         groups = self._rng.assign_groups(
             agent_ids=agent_ids,
             players_per_group=players_per_group,
             strategy=strategy,
-            path=path,
+            path="groups",
+            stratify_by=stratify_by,
         )
         return {"group_assignments": groups}
 

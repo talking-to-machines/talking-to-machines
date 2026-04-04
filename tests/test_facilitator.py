@@ -2,11 +2,10 @@
 Tests for FacilitatorEngine (core/facilitator.py) and ConjointDesigner (core/conjoint.py).
 
 Covers:
-  - FacilitatorEngine.execute(): all four dispatch paths
-      creating_session → empty string (side-effects only)
-      assign_treatment → delegates to RandomisationEngine, returns empty string
-      assign_groups → delegates to RandomisationEngine, returns empty string
+  - FacilitatorEngine.execute(): dispatch paths
+      assign_groups → delegates to RandomisationEngine, returns group dict
       custom name → LLM call, returns raw response string
+  - Kwargs merging (facilitator-level + prompt-level)
   - ConjointDesigner:
       generate_profile() → returns one dict per attribute
       generate_table() → markdown table with correct structure
@@ -34,7 +33,6 @@ from talkingtomachines.core.conjoint import ConjointDesigner
 def _engine(llm_response: str = "{}") -> tuple[FacilitatorEngine, MagicMock, MagicMock]:
     """Build a FacilitatorEngine with mocked RandomisationEngine and LLMRouter."""
     mock_rng = MagicMock()
-    mock_rng.assign_treatments.return_value = {"agent_a": "T1", "agent_b": "T2"}
     mock_rng.assign_groups.return_value = {"G1": ["agent_a", "agent_b"]}
 
     mock_response = MagicMock()
@@ -52,75 +50,8 @@ def _engine(llm_response: str = "{}") -> tuple[FacilitatorEngine, MagicMock, Mag
     return engine, mock_rng, mock_router
 
 
-def _fn(
-    name: str, definition: str = "", args: dict | None = None
-) -> FacilitatorFunction:
-    return FacilitatorFunction(name=name, definition=definition, args=args or {})
-
-
-# ---------------------------------------------------------------------------
-# creating_session
-# ---------------------------------------------------------------------------
-
-
-def test_creating_session_returns_empty_string():
-    engine, _, _ = _engine()
-    result, rendered = engine.execute(_fn("creating_session"), context={})
-    assert result == ""
-    assert rendered == ""
-
-
-def test_creating_session_does_not_call_rng(mocker=None):
-    engine, mock_rng, mock_router = _engine()
-    engine.execute(_fn("creating_session"), context={})
-    mock_rng.assign_treatments.assert_not_called()
-    mock_rng.assign_groups.assert_not_called()
-    mock_router.generate.assert_not_called()
-
-
-# ---------------------------------------------------------------------------
-# assign_treatment
-# ---------------------------------------------------------------------------
-
-
-def test_assign_treatment_returns_empty_string():
-    engine, mock_rng, _ = _engine()
-    context = {"agent_ids": ["agent_a", "agent_b"], "treatment_labels": ["T1", "T2"]}
-    result, rendered = engine.execute(_fn("assign_treatment"), context=context)
-    assert result == ""
-    assert rendered == ""
-
-
-def test_assign_treatment_delegates_to_rng():
-    engine, mock_rng, _ = _engine()
-    context = {"agent_ids": ["a1", "a2"], "treatment_labels": ["A", "B"]}
-    fn = _fn(
-        "assign_treatment",
-        args={"strategy": "complete_random", "path": "exp.treatments"},
-    )
-    engine.execute(fn, context=context)
-    mock_rng.assign_treatments.assert_called_once_with(
-        agent_ids=["a1", "a2"],
-        treatment_labels=["A", "B"],
-        strategy="complete_random",
-        path="exp.treatments",
-    )
-
-
-def test_assign_treatment_missing_agent_ids_returns_empty():
-    engine, mock_rng, _ = _engine()
-    result, _ = engine.execute(
-        _fn("assign_treatment"), context={"treatment_labels": ["T1"]}
-    )
-    assert result == ""
-    mock_rng.assign_treatments.assert_not_called()
-
-
-def test_assign_treatment_missing_treatment_labels_returns_empty():
-    engine, mock_rng, _ = _engine()
-    result, _ = engine.execute(_fn("assign_treatment"), context={"agent_ids": ["a1"]})
-    assert result == ""
-    mock_rng.assign_treatments.assert_not_called()
+def _fn(name: str, definition: str = "", kwargs: dict = None) -> FacilitatorFunction:
+    return FacilitatorFunction(name=name, definition=definition, kwargs=kwargs or {})
 
 
 # ---------------------------------------------------------------------------
@@ -128,34 +59,93 @@ def test_assign_treatment_missing_treatment_labels_returns_empty():
 # ---------------------------------------------------------------------------
 
 
-def test_assign_groups_returns_empty_string():
+def test_assign_groups_returns_group_dict():
     engine, mock_rng, _ = _engine()
-    context = {"agent_ids": ["a1", "a2", "a3", "a4"], "players_per_group": 2}
+    context = {
+        "all_session_agent_ids": ["a1", "a2", "a3", "a4"],
+        "agent_ids": ["a1", "a2", "a3", "a4"],
+        "players_per_group": 2,
+    }
     result, rendered = engine.execute(_fn("assign_groups"), context=context)
-    assert result == ""
+    assert "group_assignments" in result
+    assert result["group_assignments"] == {"G1": ["agent_a", "agent_b"]}
     assert rendered == ""
 
 
 def test_assign_groups_delegates_to_rng():
     engine, mock_rng, _ = _engine()
-    context = {"agent_ids": ["a1", "a2"], "players_per_group": 2}
-    fn = _fn("assign_groups", args={"strategy": "random", "path": "task.round_1"})
-    engine.execute(fn, context=context)
+    context = {
+        "all_session_agent_ids": ["a1", "a2"],
+        "agent_ids": ["a1", "a2"],
+        "players_per_group": 2,
+    }
+    prompt_args = {"strategy": "random"}
+    engine.execute(_fn("assign_groups"), context=context, prompt_args=prompt_args)
     mock_rng.assign_groups.assert_called_once_with(
         agent_ids=["a1", "a2"],
         players_per_group=2,
         strategy="random",
-        path="task.round_1",
+        path="groups",
+        stratify_by=None,
     )
 
 
 def test_assign_groups_empty_agent_ids_returns_empty():
     engine, mock_rng, _ = _engine()
     result, _ = engine.execute(
-        _fn("assign_groups"), context={"agent_ids": [], "players_per_group": 2}
+        _fn("assign_groups"),
+        context={"all_session_agent_ids": [], "agent_ids": [], "players_per_group": 2},
     )
-    assert result == ""
+    assert result == {}
     mock_rng.assign_groups.assert_not_called()
+
+
+def test_assign_groups_invalid_runtime_strategy_returns_empty():
+    """manual is not allowed at runtime."""
+    engine, mock_rng, _ = _engine()
+    context = {
+        "all_session_agent_ids": ["a1", "a2"],
+        "agent_ids": ["a1", "a2"],
+        "players_per_group": 2,
+    }
+    result, _ = engine.execute(
+        _fn("assign_groups"),
+        context=context,
+        prompt_args={"strategy": "manual"},
+    )
+    assert result == {}
+    mock_rng.assign_groups.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Kwargs merging
+# ---------------------------------------------------------------------------
+
+
+def test_kwargs_merging_facilitator_and_prompt():
+    """Facilitator-level kwargs are merged with prompt-level kwargs; prompt overrides."""
+    engine, mock_rng, _ = _engine()
+    fn = _fn("assign_groups", kwargs={"strategy": "random", "extra_key": "from_fac"})
+    context = {
+        "all_session_agent_ids": ["a1", "a2"],
+        "agent_ids": ["a1", "a2"],
+        "players_per_group": 2,
+    }
+    prompt_args = {"strategy": "swap"}  # should override facilitator's "random"
+    engine.execute(fn, context=context, prompt_args=prompt_args)
+    # The merged strategy should be "swap" (prompt overrides facilitator)
+    call_args = mock_rng.assign_groups.call_args
+    assert call_args[1]["strategy"] == "swap"
+
+
+def test_custom_facilitator_receives_merged_kwargs():
+    """Custom facilitator should receive merged kwargs in the LLM prompt."""
+    engine, _, mock_router = _engine(llm_response='{"payoff": 10}')
+    fn = _fn(
+        "set_payoff", definition="Set payoff to {{ amount }}.", kwargs={"amount": 100}
+    )
+    result, rendered = engine.execute(fn, context={})
+    mock_router.generate.assert_called_once()
 
 
 # ---------------------------------------------------------------------------

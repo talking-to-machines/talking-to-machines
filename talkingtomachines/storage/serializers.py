@@ -165,7 +165,7 @@ def serialize_agent(agent: Any) -> dict:
 
     Args:
         agent: An ``Agent`` instance with ``agent_id``,
-            ``agent_instance_id``, ``profile_info``, ``treatment_label``,
+            ``agent_instance_id``, ``profile_info``,
             and optional ``is_human`` and ``state`` attributes.
 
     Returns:
@@ -176,7 +176,6 @@ def serialize_agent(agent: Any) -> dict:
         "agent_id": agent.agent_id,
         "agent_instance_id": agent.agent_instance_id,
         "profile_info": to_json_safe(agent.profile_info),
-        "treatment_label": agent.treatment_label,
         "is_human": getattr(agent, "is_human", False),
         "state": to_json_safe(getattr(agent, "state", {})),
     }
@@ -241,7 +240,6 @@ def deserialize_session(data: dict) -> Any:
             agent_id=a["agent_id"],
             agent_instance_id=a["agent_instance_id"],
             profile_info=a.get("profile_info", {}),
-            treatment_label=a.get("treatment_label", ""),
             is_human=a.get("is_human", False),
             state=a.get("state", {}),
         )

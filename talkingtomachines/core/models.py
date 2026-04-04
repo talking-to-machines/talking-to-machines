@@ -33,10 +33,6 @@ class SettingsConfig:
         profile_fields: Comma-separated profile fields or ``"ALL"``.
         build_profile_qa: Whether to generate profile Q&A pairs.
         build_profile_backstories: Whether to generate agent backstories.
-        assign_manually: Comma-separated list indicating which
-            assignments are manual: ``"Treatment"``, ``"Group"``, or
-            ``"Treatment, Group"``. Empty means all assignments are
-            random at session level.
         num_agents_per_session: Number of agents in each session.
         module_sequence: Ordered list of module names to execute.
         context_overflow_policy: Strategy when the context window is
@@ -51,7 +47,6 @@ class SettingsConfig:
     profile_fields: str = "ALL"
     build_profile_qa: bool = False
     build_profile_backstories: bool = False
-    assign_manually: str = ""
     num_agents_per_session: int = 1
     module_sequence: list[str] = field(default_factory=list)
     context_overflow_policy: str = "terminate"
@@ -71,7 +66,6 @@ class SettingsConfig:
             "profile_fields": self.profile_fields,
             "build_profile_qa": self.build_profile_qa,
             "build_profile_backstories": self.build_profile_backstories,
-            "assign_manually": self.assign_manually,
             "num_agents_per_session": self.num_agents_per_session,
             "module_sequence": self.module_sequence,
             "context_overflow_policy": self.context_overflow_policy,
@@ -152,8 +146,10 @@ class PromptDefinition:
         field_class: Hierarchy level for field-linked prompts, or
             ``None``.
         field_name: Name of the linked field, or ``None``.
-        rag_vector_store_id: Optional vector store ID for
-            retrieval-augmented generation.
+        kwargs: Optional keyword arguments parsed from the worksheet.
+            Used for facilitator function arguments and RAG
+            configuration (e.g.
+            ``{"rag_vector_store_id": "vs_abc123"}``).
     """
 
     module: str
@@ -165,7 +161,7 @@ class PromptDefinition:
     llm_text: str = ""
     field_class: Optional[str] = None
     field_name: Optional[str] = None
-    rag_vector_store_id: Optional[str] = None
+    kwargs: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """Serialise the prompt definition to a plain dictionary.
@@ -183,7 +179,7 @@ class PromptDefinition:
             "llm_text": self.llm_text,
             "field_class": self.field_class,
             "field_name": self.field_name,
-            "rag_vector_store_id": self.rag_vector_store_id,
+            "kwargs": self.kwargs,
         }
 
 
@@ -192,22 +188,23 @@ class FacilitatorFunction:
     """A facilitator function from the Facilitator worksheet.
 
     Attributes:
-        name: Function identifier (e.g. ``"assign_treatment"``).
+        name: Function identifier (e.g. ``"assign_groups"``).
         definition: Natural-language or built-in definition text.
-        args: Optional keyword arguments parsed from the worksheet.
+        kwargs: Optional keyword arguments from the Facilitator
+            worksheet. Merged with prompt-level kwargs at runtime.
     """
 
     name: str
     definition: str
-    args: dict = field(default_factory=dict)
+    kwargs: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """Serialise the facilitator function to a plain dictionary.
 
         Returns:
-            A dictionary with ``name``, ``definition``, and ``args``.
+            A dictionary with ``name``, ``definition``, and ``kwargs``.
         """
-        return {"name": self.name, "definition": self.definition, "args": self.args}
+        return {"name": self.name, "definition": self.definition, "kwargs": self.kwargs}
 
 
 @dataclass
@@ -360,17 +357,14 @@ class Constant:
 class Agent:
     """Persistent identity across all subsessions within a session.
 
-    The ``agent_id`` is profile-linked and stable across runs
-    (``{experiment_id}_a{profile_ID}``), while
-    ``agent_instance_id`` is run-specific
+    The ``agent_id`` is the raw profile ID from the Profiles
+    worksheet, while ``agent_instance_id`` is run-specific
     (``{run_id}_{agent_id}``).
 
     Attributes:
         agent_id: Profile-linked identifier, stable across runs.
         agent_instance_id: Run-specific instance identifier.
         profile_info: Dictionary of profile characteristics for
-            this agent.
-        treatment_label: Treatment condition label assigned to
             this agent.
         is_human: Whether this agent represents a human participant.
         message_history: Session-wide conversation history containing
@@ -383,7 +377,6 @@ class Agent:
     agent_id: str
     agent_instance_id: str
     profile_info: dict = field(default_factory=dict)
-    treatment_label: str = ""
     is_human: bool = False
     message_history: list[dict] = field(default_factory=list)
     state: dict = field(default_factory=dict)
@@ -398,7 +391,6 @@ class Agent:
             "agent_id": self.agent_id,
             "agent_instance_id": self.agent_instance_id,
             "profile_info": self.profile_info,
-            "treatment_label": self.treatment_label,
             "is_human": self.is_human,
             "message_history": self.message_history,
             "state": self.state,
@@ -418,7 +410,6 @@ class Agent:
             agent_id=data["agent_id"],
             agent_instance_id=data["agent_instance_id"],
             profile_info=data.get("profile_info", {}),
-            treatment_label=data.get("treatment_label", ""),
             is_human=data.get("is_human", False),
             message_history=data.get("message_history", []),
             state=data.get("state", {}),

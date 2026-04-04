@@ -27,7 +27,6 @@ _FIELD_TYPES: dict[str, type] = {
     "PROFILE_FIELDS": str,
     "BUILD_PROFILE_QA": bool,
     "BUILD_PROFILE_BACKSTORIES": bool,
-    "ASSIGN_MANUALLY": str,
     "NUM_AGENTS_PER_SESSION": int,
     "MODULE_SEQUENCE": str,  # parsed further below
     "CONTEXT_OVERFLOW_POLICY": str,  # terminate | summarize | truncate
@@ -155,20 +154,6 @@ def parse_settings(df: pd.DataFrame) -> SettingsConfig:
             f"got '{overflow_policy}'."
         )
 
-    # Validate ASSIGN_MANUALLY tokens
-    assign_manually_raw = str(settings_raw.get("ASSIGN_MANUALLY") or "").strip()
-    _VALID_MANUAL_TOKENS = {"treatment", "group"}
-    if assign_manually_raw:
-        tokens = {
-            t.strip().lower() for t in assign_manually_raw.split(",") if t.strip()
-        }
-        invalid = tokens - _VALID_MANUAL_TOKENS
-        if invalid:
-            raise ValueError(
-                f"Settings: ASSIGN_MANUALLY contains unrecognised token(s): {sorted(invalid)}. "
-                f"Expected 'Treatment', 'Group', or 'Treatment, Group'."
-            )
-
     return SettingsConfig(
         experiment_id=settings_raw["EXPERIMENT_ID"],
         model_name=settings_raw["MODEL_NAME"],
@@ -179,7 +164,6 @@ def parse_settings(df: pd.DataFrame) -> SettingsConfig:
         build_profile_qa=settings_raw.get("BUILD_PROFILE_QA", False) or False,
         build_profile_backstories=settings_raw.get("BUILD_PROFILE_BACKSTORIES", False)
         or False,
-        assign_manually=assign_manually_raw,
         num_agents_per_session=settings_raw["NUM_AGENTS_PER_SESSION"],
         module_sequence=module_sequence,
         context_overflow_policy=overflow_policy,
