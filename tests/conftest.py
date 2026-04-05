@@ -64,7 +64,6 @@ def sample_agent():
         agent_id="agent_001",
         agent_instance_id="inst_agent_001",
         profile_info={"ID": 1, "age": 30, "party": "D"},
-        treatment_label="T1",
     )
 
 

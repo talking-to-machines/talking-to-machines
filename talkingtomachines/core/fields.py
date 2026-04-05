@@ -28,16 +28,17 @@ class ExperimentState:
 
     Internal storage layout::
 
-        _session[module][name]                       → value
-        _agent[agent_id][module][name]               → value
-        _group[group_id][module][name]               → value
-        _player[player_id][module][name]             → value
+        _session[module][name]                                → value
+        _agent[agent_id][module][round_number][name]          → value
+        _group[group_id][module][name]                        → value
+        _player[player_id][module][name]                      → value
     """
 
     def __init__(self) -> None:
         """Initialise empty state stores and per-scope threading locks."""
         self._session: dict[str, dict[str, Any]] = {}
-        self._agent: dict[str, dict[str, dict[str, Any]]] = {}
+        # Agent scope: agent_id → module → round_number → field_name → value
+        self._agent: dict[str, dict[str, dict[int, dict[str, Any]]]] = {}
         self._group: dict[str, dict[str, dict[str, Any]]] = {}
         self._player: dict[str, dict[str, dict[str, Any]]] = {}
 
@@ -93,47 +94,84 @@ class ExperimentState:
     # Agent scope
     # ------------------------------------------------------------------
 
-    def set_agent(self, agent_id: str, module: str, name: str, value: Any) -> None:
-        """Store a value at agent scope.
+    def set_agent(
+        self, agent_id: str, module: str, name: str, value: Any, round_number: int = 1
+    ) -> None:
+        """Store a value at agent scope, indexed by module and round.
 
         Args:
             agent_id: Unique agent identifier.
             module: Module identifier.
-            name: Field name within the module.
+            name: Field name within the module/round.
             value: The value to store.
+            round_number: Round number (1-based). Defaults to 1.
         """
         with self._agent_lock:
-            self._agent.setdefault(agent_id, {}).setdefault(module, {})[name] = value
+            (
+                self._agent.setdefault(agent_id, {})
+                .setdefault(module, {})
+                .setdefault(round_number, {})
+            )[name] = value
 
     def get_agent(
-        self, agent_id: str, module: str, name: str, default: Any = None
+        self,
+        agent_id: str,
+        module: str,
+        name: str,
+        round_number: int = 1,
+        default: Any = None,
     ) -> Any:
-        """Retrieve an agent-scoped value.
+        """Retrieve an agent-scoped value for a specific module and round.
 
         Args:
             agent_id: Unique agent identifier.
             module: Module identifier.
-            name: Field name within the module.
+            name: Field name within the module/round.
+            round_number: Round number (1-based). Defaults to 1.
             default: Value returned when the field is not set.
 
         Returns:
             The stored value, or *default* if not found.
         """
         with self._agent_lock:
-            return self._agent.get(agent_id, {}).get(module, {}).get(name, default)
+            return (
+                self._agent.get(agent_id, {})
+                .get(module, {})
+                .get(round_number, {})
+                .get(name, default)
+            )
 
-    def get_agent_module(self, agent_id: str, module: str) -> dict[str, Any]:
-        """Return a snapshot of all agent-scoped fields for a module.
+    def get_agent_round(
+        self, agent_id: str, module: str, round_number: int
+    ) -> dict[str, Any]:
+        """Return a snapshot of all agent-scoped fields for a specific round.
+
+        Args:
+            agent_id: Unique agent identifier.
+            module: Module identifier.
+            round_number: Round number (1-based).
+
+        Returns:
+            A shallow copy of the field-name-to-value mapping for that round.
+        """
+        with self._agent_lock:
+            return dict(
+                self._agent.get(agent_id, {}).get(module, {}).get(round_number, {})
+            )
+
+    def get_agent_module(self, agent_id: str, module: str) -> dict[int, dict[str, Any]]:
+        """Return a snapshot of all agent-scoped fields for a module across rounds.
 
         Args:
             agent_id: Unique agent identifier.
             module: Module identifier.
 
         Returns:
-            A shallow copy of the field-name-to-value mapping.
+            A dict mapping round_number to field-name-to-value dicts.
         """
         with self._agent_lock:
-            return dict(self._agent.get(agent_id, {}).get(module, {}))
+            module_data = self._agent.get(agent_id, {}).get(module, {})
+            return {rnd: dict(fields) for rnd, fields in module_data.items()}
 
     # ------------------------------------------------------------------
     # Group scope
@@ -287,11 +325,23 @@ class ExperimentState:
             A dictionary with keys ``"session"``, ``"agent"``, ``"group"``,
             and ``"player"``, each containing the nested field-value
             mappings for that scope.
+
+        Note:
+            Agent scope round numbers (int keys) are converted to strings
+            for JSON compatibility during serialization.
         """
         with self._session_lock, self._agent_lock, self._group_lock, self._player_lock:
+            # Convert agent int round keys to strings for JSON compat
+            agent_serialized: dict = {}
+            for aid, modules in self._agent.items():
+                agent_serialized[aid] = {}
+                for mod, rounds in modules.items():
+                    agent_serialized[aid][mod] = {
+                        str(rnd): dict(fields) for rnd, fields in rounds.items()
+                    }
             return {
                 "session": self._session,
-                "agent": self._agent,
+                "agent": agent_serialized,
                 "group": self._group,
                 "player": self._player,
             }
@@ -308,7 +358,18 @@ class ExperimentState:
         """
         state = cls()
         state._session = data.get("session", {})
-        state._agent = data.get("agent", {})
+        # Convert agent string round keys back to ints
+        raw_agent = data.get("agent", {})
+        for aid, modules in raw_agent.items():
+            state._agent[aid] = {}
+            for mod, rounds in modules.items():
+                state._agent[aid][mod] = {}
+                for rnd_str, fields in rounds.items():
+                    try:
+                        rnd = int(rnd_str)
+                    except (ValueError, TypeError):
+                        rnd = rnd_str
+                    state._agent[aid][mod][rnd] = fields
         state._group = data.get("group", {})
         state._player = data.get("player", {})
         return state
@@ -346,8 +407,8 @@ class ExperimentState:
         Returns:
             A dict suitable for Jinja2 template rendering, containing
             namespaced keys ``player``, ``agent``, ``group``,
-            ``session``, ``C``, ``treatment``, ``round_number``,
-            ``group_id``, ``session_id``, and ``run_id``.
+            ``session``, ``C``, ``round_number``, ``group_id``,
+            ``session_id``, and ``run_id``.
         """
         # Profile fields accessible as ``player.<field>``
         player_profile: dict[str, Any] = dict(agent.profile_info)
@@ -360,14 +421,26 @@ class ExperimentState:
         player_profile.setdefault("player_id", player.player_id)
         player_profile.setdefault("agent_id", agent.agent_id)
         player_profile.setdefault("agent_instance_id", player.agent_instance_id)
-        player_profile.setdefault("treatment", agent.treatment_label)
 
-        # Agent-level fields
-        agent_fields = self.get_agent_module(agent.agent_id, module)
-        # Built-in agent model attributes
-        agent_fields.setdefault("agent_id", agent.agent_id)
-        agent_fields.setdefault("agent_instance_id", agent.agent_instance_id)
-        agent_fields.setdefault("treatment", agent.treatment_label)
+        # Agent-level fields: module → round → field namespace
+        agent_all = self._agent.get(agent.agent_id, {})
+        agent_ns: dict[str, Any] = {}
+        for mod, rounds_data in agent_all.items():
+            agent_ns[mod] = _RoundedModuleNamespace(rounds_data)
+
+        # Current round's agent-scoped values as flat attributes
+        # (Manual_ Agent entries accessible as agent.<field>)
+        agent_round_data = self.get_agent_round(agent.agent_id, module, round_number)
+        for k, v in agent_round_data.items():
+            agent_ns.setdefault(k, v)
+
+        # Profile fields as flat agent attributes: agent.age, agent.gender, etc.
+        for k, v in agent.profile_info.items():
+            agent_ns.setdefault(k, v)
+
+        # Built-in flat attributes (always override)
+        agent_ns["agent_id"] = agent.agent_id
+        agent_ns["agent_instance_id"] = agent.agent_instance_id
 
         # Group-level fields
         group_fields = self.get_group_module(group.group_id, module)
@@ -389,8 +462,8 @@ class ExperimentState:
             "run_id": session.run_id,
             # Namespaced access: player.<field>
             "player": _Namespace(player_profile),
-            # Agent-level
-            "agent": _Namespace(agent_fields),
+            # Agent-level: agent.module[round].field or agent.agent_id
+            "agent": _Namespace(agent_ns),
             # Group-level
             "group": _Namespace(group_fields),
             # Session-level
@@ -400,9 +473,6 @@ class ExperimentState:
         # Module-level constant access: C.<module>.<name>
         if constants:
             ctx["C"] = _DeepNamespace(constants)
-
-        # Treatment / role shortcut
-        ctx["treatment"] = agent.treatment_label
 
         return ctx
 
@@ -445,6 +515,27 @@ class _Namespace:
     def __repr__(self) -> str:
         """Return a developer-friendly string representation."""
         return f"Namespace({self._data})"
+
+
+class _RoundedModuleNamespace:
+    """Bracket-access namespace for round-indexed agent data.
+
+    Wraps ``{round_number: {field_name: value}}`` so that
+    ``agent.module[1].field`` resolves correctly in Jinja2 templates.
+
+    Args:
+        data: A dict mapping round numbers (int) to field-value dicts.
+    """
+
+    def __init__(self, data: dict):
+        self._data = data
+
+    def __getitem__(self, key: Any) -> "_Namespace":
+        round_data = self._data.get(int(key), {})
+        return _Namespace(round_data)
+
+    def __repr__(self) -> str:
+        return f"RoundedModuleNamespace({list(self._data.keys())})"
 
 
 class _DeepNamespace:

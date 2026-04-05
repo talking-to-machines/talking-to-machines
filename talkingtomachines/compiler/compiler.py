@@ -209,6 +209,12 @@ class Compiler:
             }
         manual_registry = parse_manual_sheets(manual_sheets, profile_ids=profile_ids)
 
+        # Extract Manual_ variable names organised by class for validation
+        manual_names_by_class: dict[str, set[str]] = {}
+        for _pid, _mod, _rnd, cls, name in manual_registry:
+            if cls:
+                manual_names_by_class.setdefault(cls, set()).add(name)
+
         # ------------------------------------------------------------------
         # Step 2: Run validators (collect all errors)
         # ------------------------------------------------------------------
@@ -225,6 +231,7 @@ class Compiler:
             module_names=settings.module_sequence,
             profile_short_names=profile_short_names,
             facilitator_names=facilitator_names,
+            manual_names_by_class=manual_names_by_class,
         ).validate()
         all_errors.extend(ref_errors)
 
@@ -247,9 +254,9 @@ class Compiler:
 
         _has_video = has_video(all_prompt_text)
         _has_audio = has_audio(all_prompt_text)
-        # RAG is enabled if any prompt has a rag_vector_store_id
+        # RAG is enabled if any prompt has rag_vector_store_id in kwargs
         _has_rag = any(
-            hasattr(p, "rag_vector_store_id") and p.rag_vector_store_id
+            hasattr(p, "kwargs") and p.kwargs.get("rag_vector_store_id")
             for module_prompts in prompts.values()
             for p in module_prompts
         )
@@ -334,6 +341,7 @@ class Compiler:
             rng=rng,
             prompts=prompts,
             facilitators=facilitators,
+            profiles=profiles,
         )
 
         # ------------------------------------------------------------------
@@ -384,235 +392,82 @@ class Compiler:
         rng: random.Random,
         prompts: dict | None = None,
         facilitators: list | None = None,
+        profiles: dict | None = None,
     ) -> AssignmentPlan:
-        """Build a treatment and group assignment plan.
+        """Build assignment plan from ``Manual_`` sheet entries.
 
-        Uses ``ASSIGN_MANUALLY`` to determine which assignments come
-        from Manual_ sheets (``"Treatment"``, ``"Group"``, or both).
-        Assignments not listed are random at session level.
+        Parses ``Manual_`` entries into group assignments and general
+        manual variables. Treatment is no longer a special concept —
+        it is just another variable set via the ``Manual_`` sheet.
 
         Args:
             settings: Parsed experiment settings object.
             agent_ids: List of deterministic agent IDs derived from profiles.
             constants: Parsed constants dictionary keyed by module name.
             rng: Seeded random number generator for reproducibility.
-            prompts: Parsed prompts dictionary keyed by module name, used
-                to validate that ``TREATMENT_LABELS`` is defined when
-                prompts reference ``{{ treatment }}``.
-            facilitators: Parsed facilitator function list, used to
-                validate treatment references in facilitator definitions.
+            prompts: Unused, kept for signature compatibility.
+            facilitators: Unused, kept for signature compatibility.
+            profiles: Unused, kept for signature compatibility.
 
         Returns:
-            An ``AssignmentPlan`` containing treatment and group assignments.
-
-        Raises:
-            CompilationError: If prompts reference ``{{ treatment }}`` but
-                no treatment labels are defined and treatment assignment
-                is not manual.
+            An ``AssignmentPlan`` containing group assignments and
+            manual variable definitions.
         """
-        from talkingtomachines.core.randomisation import RandomisationEngine
-
-        engine = RandomisationEngine(global_seed=settings.random_seed)
-
-        # Parse ASSIGN_MANUALLY into a set of normalised tokens
-        manual_modes: set[str] = set()
-        if settings.assign_manually:
-            manual_modes = {
-                t.strip().lower()
-                for t in settings.assign_manually.split(",")
-                if t.strip()
-            }
-
-        # Parse Manual_ sheets once (used by both treatment and group)
+        # Parse Manual_ sheets once
         manual_sheets = {
             k: v for k, v in self._sheets.items() if k.startswith("Manual_")
         }
         manual_registry = parse_manual_sheets(manual_sheets)
 
         # ------------------------------------------------------------------
-        # Treatment assignment
-        # ------------------------------------------------------------------
-        treatment_assignments: dict = {}
-        treatment_strategy = "complete_random"
-        treatment_labels = self._parse_treatment_labels()
-
-        if "treatment" in manual_modes:
-            # Manual treatment: {module: {round: {agent_id: treatment_label}}}
-            # Reads entries where name == "treatment" from Manual_ registry.
-            # Missing module → apply to all modules; missing round → all rounds.
-            treatment_strategy = "manual"
-            for (pid, module, round_num, cls, name), value in manual_registry.items():
-                if name == "treatment":
-                    agent_id = make_agent_id(settings.experiment_id, pid)
-                    label = str(value)
-
-                    # Determine target modules
-                    if module:
-                        target_modules = [module]
-                    else:
-                        target_modules = list(settings.module_sequence)
-
-                    for t in target_modules:
-                        module_consts = constants.get(t, {})
-                        max_rounds = int(module_consts.get("MAX_NUM_ROUNDS", 1))
-
-                        # Determine target rounds
-                        if pd.notna(round_num) and round_num != "":
-                            target_rounds = [int(round_num)]
-                        else:
-                            target_rounds = list(range(1, max_rounds + 1))
-
-                        for r in target_rounds:
-                            module_dict = treatment_assignments.setdefault(t, {})
-                            round_dict = module_dict.setdefault(r, {})
-                            round_dict[agent_id] = label
-        elif treatment_labels and agent_ids:
-            # Random assignment at session level: {agent_id: treatment_label}
-            treatment_assignments = engine.assign_treatments(
-                agent_ids=agent_ids,
-                treatment_labels=treatment_labels,
-                strategy=treatment_strategy,
-                path="treatments",
-            )
-
-        # Validate: if prompts or facilitator definitions reference
-        # {{ treatment }} but no labels are defined and assignment is not
-        # manual, raise an error early.
-        if not treatment_assignments:
-            all_template_text = ""
-            if prompts:
-                all_template_text += " ".join(
-                    p.llm_text
-                    for module_prompts in prompts.values()
-                    for p in module_prompts
-                    if hasattr(p, "llm_text") and p.llm_text
-                )
-            if facilitators:
-                all_template_text += " " + " ".join(
-                    f.definition
-                    for f in facilitators
-                    if hasattr(f, "definition") and f.definition
-                )
-            if "treatment" in all_template_text:
-                raise CompilationError(
-                    [
-                        "Templates reference '{{ treatment }}' but no treatment labels are defined. "
-                        "Either add TREATMENT_LABELS to the C (Constants) worksheet, "
-                        "or set ASSIGN_MANUALLY to 'Treatment' and define treatments "
-                        "in a Manual_ worksheet."
-                    ]
-                )
-
-        # ------------------------------------------------------------------
-        # Group assignment plan: {module: {round: {group_id: [agent_ids]}}}
+        # Separate group assignments from other manual variables
         # ------------------------------------------------------------------
         group_assignments: dict[str, dict] = {}
-        group_strategy = "random"
+        manual_variables: list[dict] = []
 
-        if "group" in manual_modes:
-            # Manual groups: read from Manual_ registry.
-            # Entries have class="Group", name="id_in_subsession", value=group label.
-            # Missing module → apply to all modules; missing round → all rounds.
-            group_strategy = "manual"
-            manual_group_plan: dict[str, dict] = {}
-            for (pid, module, round_num, cls, name), value in manual_registry.items():
-                if cls == "Group" and name == "id_in_subsession":
-                    agent_id = make_agent_id(settings.experiment_id, pid)
-                    group_label = str(value)
+        for (pid, module, round_num, cls, name), value in manual_registry.items():
+            if cls == "Group" and name == "id_in_subsession":
+                # Group assignment entry
+                agent_id = make_agent_id(settings.experiment_id, pid)
+                group_label = str(value)
 
-                    # Determine target modules
-                    if module:
-                        target_modules = [module]
+                # Determine target modules
+                target_modules = [module] if module else list(settings.module_sequence)
+
+                for t in target_modules:
+                    module_consts = constants.get(t, {})
+                    max_rounds = int(module_consts.get("MAX_NUM_ROUNDS", 1))
+
+                    # Determine target rounds
+                    if pd.notna(round_num) and round_num != "":
+                        target_rounds = [int(round_num)]
                     else:
-                        target_modules = list(settings.module_sequence)
+                        target_rounds = list(range(1, max_rounds + 1))
 
-                    for t in target_modules:
-                        module_consts = constants.get(t, {})
-                        max_rounds = int(module_consts.get("MAX_NUM_ROUNDS", 1))
-
-                        # Determine target rounds
-                        if pd.notna(round_num) and round_num != "":
-                            target_rounds = [int(round_num)]
-                        else:
-                            target_rounds = list(range(1, max_rounds + 1))
-
-                        for r in target_rounds:
-                            t_dict = manual_group_plan.setdefault(t, {})
-                            r_dict = t_dict.setdefault(r, {})
-                            r_dict.setdefault(group_label, []).append(agent_id)
-
-            for mod in settings.module_sequence:
-                module_consts = constants.get(mod, {})
-                max_rounds = int(module_consts.get("MAX_NUM_ROUNDS", 1))
-                group_assignments[mod] = {}
-                for round_num in range(1, max_rounds + 1):
-                    manual = manual_group_plan.get(mod, {}).get(round_num)
-                    if manual:
-                        groups = engine.assign_groups(
-                            agent_ids=agent_ids,
-                            players_per_group=len(agent_ids) or 1,
-                            strategy="manual",
-                            path=f"{mod}.round_{round_num}",
-                            manual_groups=manual,
-                        )
-                    else:
-                        groups = engine.assign_groups(
-                            agent_ids=agent_ids,
-                            players_per_group=len(agent_ids) or 1,
-                            strategy="random",
-                            path=f"{mod}.round_{round_num}",
-                        )
-                    group_assignments[mod][round_num] = groups
-        else:
-            # Random groups at session level — assign once, reuse for all modules/rounds
-            players_per_group = len(agent_ids) or 1
-            # Use the first module's PLAYERS_PER_GROUP if available
-            if settings.module_sequence:
-                first_module_consts = constants.get(settings.module_sequence[0], {})
-                players_per_group = int(
-                    first_module_consts.get("PLAYERS_PER_GROUP", players_per_group)
+                    for r in target_rounds:
+                        t_dict = group_assignments.setdefault(t, {})
+                        r_dict = t_dict.setdefault(r, {})
+                        r_dict.setdefault(group_label, []).append(agent_id)
+            else:
+                # All other entries (including treatment) go into
+                # manual_variables for runtime application
+                manual_variables.append(
+                    {
+                        "profile_id": pid,
+                        "module": module if module else "",
+                        "round_number": (
+                            int(round_num)
+                            if pd.notna(round_num) and round_num != ""
+                            else ""
+                        ),
+                        "class": cls,
+                        "name": name,
+                        "value": value,
+                    }
                 )
 
-            session_groups = engine.assign_groups(
-                agent_ids=agent_ids,
-                players_per_group=players_per_group,
-                strategy="random",
-                path="session_groups",
-            )
-            for mod in settings.module_sequence:
-                module_consts = constants.get(mod, {})
-                max_rounds = int(module_consts.get("MAX_NUM_ROUNDS", 1))
-                group_assignments[mod] = {}
-                for round_num in range(1, max_rounds + 1):
-                    group_assignments[mod][round_num] = session_groups
-
         return AssignmentPlan(
-            treatment_strategy=treatment_strategy,
-            group_strategy=group_strategy,
             random_seed=settings.random_seed,
-            treatment_assignments=treatment_assignments,
             group_assignments=group_assignments,
+            manual_variables=manual_variables,
         )
-
-    def _parse_treatment_labels(self) -> list[str]:
-        """Extract treatment labels from the C (Constants) worksheet.
-
-        Looks for a constant named ``TREATMENT_LABELS`` (under ``global``
-        or any module) containing a comma-separated string of labels.
-
-        Returns:
-            A list of treatment label strings, or an empty list if
-            ``TREATMENT_LABELS`` is not defined.
-        """
-        constants_df = self._sheets.get("C")
-        if constants_df is None or constants_df.empty:
-            return []
-
-        constants = parse_constants(constants_df)
-        # Check global constants first, then per-module
-        for module_consts in constants.values():
-            raw = module_consts.get("TREATMENT_LABELS")
-            if raw:
-                labels = [s.strip() for s in str(raw).split(",") if s.strip()]
-                return labels
-        return []

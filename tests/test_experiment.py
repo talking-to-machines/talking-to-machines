@@ -49,11 +49,9 @@ def _minimal_cep_data(**overrides) -> dict:
         "facilitator_functions": [],
         "constants": {},
         "assignment_plan": {
-            "treatment_strategy": "simple_random",
-            "group_strategy": "random",
             "random_seed": 42,
-            "treatment_assignments": {},
             "group_assignments": {},
+            "manual_variables": [],
         },
     }
     data.update(overrides)

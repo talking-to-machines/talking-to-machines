@@ -7,6 +7,7 @@ Converts each row of the Prompts worksheet into a
 
 from __future__ import annotations
 
+import ast
 import logging
 from typing import Any, Optional
 
@@ -68,6 +69,38 @@ def _parse_optional_str(value: Any) -> Optional[str]:
         return None
     s = str(value).strip()
     return s if s and s.lower() not in ("nan", "none", "") else None
+
+
+def _parse_kwargs(raw: Any) -> dict:
+    """Parse the ``kwargs`` cell into a Python dictionary.
+
+    Attempts ``ast.literal_eval`` to interpret the cell as a dict
+    literal. Returns an empty dict for ``None``, ``NaN``, empty
+    strings, or values that cannot be parsed.
+
+    Args:
+        raw: The raw cell value (may be ``None``, ``NaN``, a string
+            containing a dict literal, or an already-parsed ``dict``).
+
+    Returns:
+        A dictionary of parsed keyword arguments, or an empty dict if
+        the value is missing or unparseable.
+    """
+    if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+        return {}
+    if isinstance(raw, dict):
+        return raw
+    s = str(raw).strip()
+    if not s or s.lower() in ("nan", "none"):
+        return {}
+    try:
+        result = ast.literal_eval(s)
+        return result if isinstance(result, dict) else {}
+    except (ValueError, SyntaxError):
+        logger.warning(
+            "Prompts: could not parse kwargs '%s' as dict; using empty dict.", s
+        )
+        return {}
 
 
 def parse_prompts(df: pd.DataFrame) -> dict[str, list[PromptDefinition]]:
@@ -159,7 +192,9 @@ def parse_prompts(df: pd.DataFrame) -> dict[str, list[PromptDefinition]]:
                 llm_text=llm_text,
                 field_class=field_class,
                 field_name=field_name,
-                rag_vector_store_id=_parse_optional_str(row.get("rag_vector_store_id")),
+                kwargs=_parse_kwargs(
+                    row.get("kwargs") if "kwargs" in df.columns else row.get("args")
+                ),
             )
         )
 

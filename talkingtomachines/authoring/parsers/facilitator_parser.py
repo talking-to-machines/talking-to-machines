@@ -1,18 +1,16 @@
 """Facilitator worksheet parser.
 
-Converts rows of ``{name, definition, args}`` into
+Converts rows of ``{name, definition, kwargs}`` into
 ``FacilitatorFunction`` dataclasses.
 
-Built-in functions: ``assign_treatment``, ``assign_groups``,
-``creating_session``. All other names are treated as custom LLM
-natural-language instruction functions.
+Built-in functions: ``assign_groups``. All other names are treated as
+custom LLM natural-language instruction functions.
 """
 
 from __future__ import annotations
 
 import ast
 import logging
-from typing import Any
 
 import pandas as pd
 
@@ -20,38 +18,30 @@ from talkingtomachines.core.models import FacilitatorFunction
 
 logger = logging.getLogger(__name__)
 
-_BUILTIN_NAMES = {"assign_treatment", "assign_groups", "creating_session"}
+_BUILTIN_NAMES = {"assign_groups"}
 _REQUIRED_COLS = {"name", "definition"}
 
 
-def _parse_args(raw: Any) -> dict:
-    """Parse the ``args`` cell into a Python dictionary.
+def _parse_kwargs(raw) -> dict:
+    """Parse a kwargs cell into a Python dictionary.
 
-    Attempts ``ast.literal_eval`` to interpret the cell as a dict
-    literal. Returns an empty dict for ``None``, ``NaN``, empty
-    strings, or values that cannot be parsed.
-
-    Args:
-        raw: The raw cell value (may be ``None``, ``NaN``, a string
-            containing a dict literal, or an already-parsed ``dict``).
-
-    Returns:
-        A dictionary of parsed arguments, or an empty dict if the
-        value is missing or unparseable.
+    Uses ``ast.literal_eval`` to interpret the cell as a dict literal.
+    Returns an empty dict for ``None``, ``NaN``, empty strings, or
+    values that cannot be parsed.
     """
     if raw is None or (isinstance(raw, float) and pd.isna(raw)):
         return {}
     if isinstance(raw, dict):
         return raw
     s = str(raw).strip()
-    if not s:
+    if not s or s.lower() in ("nan", "none"):
         return {}
     try:
         result = ast.literal_eval(s)
         return result if isinstance(result, dict) else {}
     except (ValueError, SyntaxError):
         logger.warning(
-            "Facilitator: could not parse args '%s' as dict; using empty dict.", s
+            "Facilitator: could not parse kwargs '%s' as dict; using empty dict.", s
         )
         return {}
 
@@ -65,7 +55,8 @@ def parse_facilitators(df: pd.DataFrame) -> list[FacilitatorFunction]:
 
     Args:
         df: DataFrame for the Facilitator worksheet with at least the
-            columns ``name`` and ``definition``.
+            columns ``name`` and ``definition``. An optional ``kwargs``
+            column provides per-function keyword arguments.
 
     Returns:
         An ordered list of ``FacilitatorFunction`` instances.
@@ -84,6 +75,8 @@ def parse_facilitators(df: pd.DataFrame) -> list[FacilitatorFunction]:
     df = df.copy()
     df.columns = [c.strip().lower() for c in df.columns]
 
+    has_kwargs = "kwargs" in df.columns
+
     functions: list[FacilitatorFunction] = []
 
     for row_num, row in df.iterrows():
@@ -101,11 +94,13 @@ def parse_facilitators(df: pd.DataFrame) -> list[FacilitatorFunction]:
                 "Facilitator: '%s' is a custom LLM instruction function.", name
             )
 
+        kwargs = _parse_kwargs(row.get("kwargs")) if has_kwargs else {}
+
         functions.append(
             FacilitatorFunction(
                 name=name,
                 definition=definition,
-                args=_parse_args(row.get("args")),
+                kwargs=kwargs,
             )
         )
 

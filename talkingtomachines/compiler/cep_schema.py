@@ -18,62 +18,43 @@ from typing import Any
 
 @dataclass
 class AssignmentPlan:
-    """Pre-computed treatment and group assignments for an experiment run.
+    """Pre-computed group assignments and manual variable definitions.
 
-    Stores the strategies used for treatment and group allocation,
-    along with the concrete assignment mappings produced by the
-    compiler.
+    Group assignments come from the ``Manual_`` sheet (entries with
+    ``class="Group"`` and ``name="id_in_subsession"``). All other
+    ``Manual_`` entries (including treatment) are stored in
+    ``manual_variables`` and applied at runtime.
 
     Attributes:
-        treatment_strategy: Strategy used for treatment allocation
-            (``"manual"`` or ``"complete_random"``).
-        group_strategy: Strategy used for group formation
-            (``"manual"`` or ``"random"``).
         random_seed: Seed used for deterministic randomisation.
-        treatment_assignments: When ``treatment_strategy`` is
-            ``"manual"``, a nested mapping
-            ``{module: {round: {agent_id: treatment_label}}}``.
-            When random, a flat mapping
-            ``{agent_id: treatment_label}`` applied across all
-            modules and rounds.
-        group_assignments: Nested mapping of group formations per module
-            and round (``{module: {round: {group_id: [agent_id]}}}``).
+        group_assignments: Nested mapping of manual group formations
+            per module and round
+            (``{module: {round: {group_label: [agent_id]}}}``).
+            Empty if no manual groups are defined.
+        manual_variables: List of manual variable entries from the
+            ``Manual_`` sheet. Each entry is a dict with keys
+            ``profile_id``, ``module``, ``round_number``, ``class``,
+            ``name``, and ``value``.
     """
 
-    treatment_strategy: str
-    group_strategy: str
     random_seed: int
-    treatment_assignments: dict = field(default_factory=dict)
     group_assignments: dict[str, dict] = field(default_factory=dict)
+    manual_variables: list[dict] = field(default_factory=list)
 
-    def get_treatment(
-        self, agent_id: str, module: str = "", round_number: int = 0
-    ) -> str:
-        """Resolve the treatment label for an agent.
-
-        For random assignments (flat ``{agent_id: label}``), the label
-        is the same regardless of module and round.  For manual
-        assignments (nested ``{module: {round: {agent_id: label}}}``),
-        the label is looked up by module and round number.
+    def get_manual_groups(self, module: str, round_number: int) -> dict[str, list[str]]:
+        """Return manual group assignments for a specific module and round.
 
         Args:
-            agent_id: The agent identifier.
-            module: Module name (used only for manual assignments).
-            round_number: Round number (used only for manual assignments).
+            module: Module name.
+            round_number: Round number (1-based).
 
         Returns:
-            The treatment label, or an empty string if not found.
+            A dict ``{group_label: [agent_id, ...]}`` if manual groups
+            are defined for this module/round, otherwise an empty dict.
         """
-        ta = self.treatment_assignments
-        if self.treatment_strategy == "manual":
-            module_dict = ta.get(module, {})
-            # Round keys may be int (in-memory) or str (after JSON round-trip)
-            round_dict = module_dict.get(round_number) or module_dict.get(
-                str(round_number), {}
-            )
-            return round_dict.get(agent_id, "")
-        # Flat / random: agent_id → label
-        return ta.get(agent_id, "")
+        module_dict = self.group_assignments.get(module, {})
+        # Round keys may be int (in-memory) or str (after JSON round-trip)
+        return module_dict.get(round_number) or module_dict.get(str(round_number), {})
 
     def to_dict(self) -> dict:
         """Serialise the assignment plan to a plain dictionary.
@@ -82,11 +63,9 @@ class AssignmentPlan:
             A dictionary containing all assignment plan fields.
         """
         return {
-            "treatment_strategy": self.treatment_strategy,
-            "group_strategy": self.group_strategy,
             "random_seed": self.random_seed,
-            "treatment_assignments": self.treatment_assignments,
             "group_assignments": self.group_assignments,
+            "manual_variables": self.manual_variables,
         }
 
     @classmethod
@@ -101,11 +80,9 @@ class AssignmentPlan:
             A new ``AssignmentPlan`` instance.
         """
         return cls(
-            treatment_strategy=data.get("treatment_strategy", "simple_random"),
-            group_strategy=data.get("group_strategy", "random"),
             random_seed=data.get("random_seed", 0),
-            treatment_assignments=data.get("treatment_assignments", {}),
             group_assignments=data.get("group_assignments", {}),
+            manual_variables=data.get("manual_variables", []),
         )
 
 

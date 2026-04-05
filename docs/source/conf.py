@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 project = "talking-to-machines"
 copyright = "2025, Raymond Low, Tommaso Batistoni, Ray Duch"
 author = "Raymond Low, Tommaso Batistoni, Ray Duch"
-release = "0.3.0"
+release = "0.3.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -96,6 +96,7 @@ nitpick_ignore = [
     ("py:class", "Role"),
     ("py:class", "T"),
     ("py:class", "callable"),
+    ("py:class", "dict[str"),
 ]
 
 nitpick_ignore_regex = [

@@ -338,7 +338,11 @@ def test_compiled_experiment_hash_stability():
         "module_sequence": [],
         "facilitator_functions": [],
         "constants": {},
-        "assignment_plan": {"treatment_assignments": {}, "group_assignments": {}},
+        "assignment_plan": {
+            "random_seed": 0,
+            "group_assignments": {},
+            "manual_variables": [],
+        },
     }
 
     cep1 = CompiledExperiment(**data)

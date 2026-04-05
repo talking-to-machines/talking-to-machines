@@ -8,7 +8,7 @@ Tables:
   agent_table.csv     — one row per agent per session
   group_table.csv     — one row per group per subsession
   player.csv          — one row per player per subsession
-  assignments.csv     — one row per agent per module per round
+  assignments.csv     — one row per manual assignment or group assignment
 """
 
 from __future__ import annotations
@@ -184,16 +184,16 @@ def _export_agent_table(
             "session_id": session.session_id,
             "agent_id": agent.agent_id,
             "agent_instance_id": agent.agent_instance_id,
-            "treatment_label": agent.treatment_label,
         }
         # Profile fields
         row.update(agent.profile_info)
 
-        # Agent-scoped field values for each module
+        # Agent-scoped field values for each module (round-indexed)
         for module in cep.module_sequence:
-            agent_fields = state.get_agent_module(agent.agent_id, module)
-            for k, v in agent_fields.items():
-                row[f"{module}.{k}"] = v
+            rounds_data = state.get_agent_module(agent.agent_id, module)
+            for rnd, fields in sorted(rounds_data.items()):
+                for k, v in fields.items():
+                    row[f"{module}.{rnd}.{k}"] = v
 
         # System message and message history for debugging
         row["system_message"] = agent.state.get("system_message", "")
@@ -301,10 +301,13 @@ def _export_assignments(
     cep: CompiledExperiment,
     out: Path,
 ) -> str:
-    """Export treatment and group assignments to ``assignments.csv``.
+    """Export all manual assignments and group assignments to ``assignments.csv``.
 
-    Produces one row per agent per module per round, documenting group
-    membership and treatment labels.
+    Produces one row per ``Manual_`` entry plus one row per group assignment,
+    mirroring the ``Manual_`` sheet format for easy auditing.
+
+    Columns: session_id, profile_id, agent_id, agent_instance_id,
+    module, round_number, class, name, value.
 
     Args:
         session: The session object.
@@ -317,31 +320,50 @@ def _export_assignments(
     path = str(out / "assignments.csv")
     plan = cep.assignment_plan
     rows: list[dict] = []
-    for agent in session.agents:
-        for module in cep.module_sequence:
-            module_groups = plan.group_assignments.get(module, {})
-            for round_num, groups in module_groups.items():
-                group_id = ""
-                for gid, member_ids in groups.items():
-                    if agent.agent_id in member_ids:
-                        group_id = gid
-                        break
-                treatment_label = plan.get_treatment(
-                    agent.agent_id, module, int(round_num)
-                )
-                if not treatment_label:
-                    treatment_label = agent.treatment_label
-                rows.append(
-                    {
-                        "session_id": session.session_id,
-                        "agent_id": agent.agent_id,
-                        "agent_instance_id": agent.agent_instance_id,
-                        "module": module,
-                        "round_number": round_num,
-                        "treatment_label": treatment_label,
-                        "group_id": group_id,
-                    }
-                )
+
+    # Build agent lookup: agent_id → agent
+    agent_map = {a.agent_id: a for a in session.agents}
+
+    # Export all manual variables
+    for entry in plan.manual_variables:
+        pid = entry.get("profile_id", "")
+        agent = agent_map.get(str(pid))
+        rows.append(
+            {
+                "session_id": session.session_id,
+                "profile_id": pid,
+                "agent_id": agent.agent_id if agent else str(pid),
+                "agent_instance_id": agent.agent_instance_id if agent else "",
+                "module": entry.get("module", ""),
+                "round_number": entry.get("round_number", ""),
+                "class": entry.get("class", ""),
+                "name": entry.get("name", ""),
+                "value": entry.get("value", ""),
+            }
+        )
+
+    # Export group assignments
+    for module, module_groups in plan.group_assignments.items():
+        for round_num, groups in module_groups.items():
+            for gid, member_ids in groups.items():
+                for agent_id in member_ids:
+                    agent = agent_map.get(agent_id)
+                    rows.append(
+                        {
+                            "session_id": session.session_id,
+                            "profile_id": agent_id,
+                            "agent_id": agent_id,
+                            "agent_instance_id": (
+                                agent.agent_instance_id if agent else ""
+                            ),
+                            "module": module,
+                            "round_number": round_num,
+                            "class": "Group",
+                            "name": "group_id",
+                            "value": gid,
+                        }
+                    )
+
     _write_csv(path, rows)
     return path
 

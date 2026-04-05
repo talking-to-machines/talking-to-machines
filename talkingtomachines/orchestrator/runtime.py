@@ -241,7 +241,6 @@ class ExperimentRuntime:
                 agent_id=agent_id,
                 agent_instance_id=agent_instance_id,
                 profile_info=profile_row,
-                treatment_label="",
             )
             agents.append(agent)
 
@@ -282,14 +281,6 @@ class ExperimentRuntime:
                 if stop_signal == "end_session":
                     break
 
-                # Resolve treatment labels for this module/round
-                for agent in agents:
-                    agent.treatment_label = assignment_plan.get_treatment(
-                        agent.agent_id,
-                        module_name,
-                        round_num,
-                    )
-
                 subsession_id = make_subsession_id(module_id, round_num)
                 subsession = Subsession(
                     subsession_id=subsession_id,
@@ -298,10 +289,24 @@ class ExperimentRuntime:
                 )
                 module.subsessions.append(subsession)
 
-                # Form groups for this round
-                precomputed_groups = assignment_plan.group_assignments.get(
-                    module_name, {}
-                ).get(round_num, {})
+                # Apply manual variables from the Manual_ sheet
+                self._apply_manual_variables(
+                    assignment_plan, agents, session, module_name, round_num, cep
+                )
+
+                # Form groups: use manual groups if defined, else sequential
+                precomputed_groups = assignment_plan.get_manual_groups(
+                    module_name, round_num
+                )
+                if not precomputed_groups:
+                    # Default sequential grouping by Profile order
+                    ppg = int(module_consts.get("PLAYERS_PER_GROUP", len(agents) or 1))
+                    precomputed_groups = {}
+                    for i in range(0, len(agents), ppg):
+                        chunk = agents[i : i + ppg]
+                        if chunk:
+                            g_label = f"g{i // ppg + 1}"
+                            precomputed_groups[g_label] = [a.agent_id for a in chunk]
 
                 groups: list[Group] = []
                 for g_idx, (g_label, member_agent_ids) in enumerate(
@@ -327,6 +332,12 @@ class ExperimentRuntime:
                     )
                     groups.append(group)
                     subsession.groups.append(group)
+
+                # Apply Player/Group Manual_ entries to proper scopes
+                # now that player_id and group_id exist
+                self._apply_scoped_manual_variables(
+                    assignment_plan, agents, groups, module_name, round_num
+                )
 
                 if test_mode and groups:
                     if test_group_agent_ids is None:
@@ -389,6 +400,21 @@ class ExperimentRuntime:
                             stop_signal = "end_session"
                             break
 
+                # Archive player-scoped fields to agent scope for cross-round access
+                for group in groups:
+                    for player in group.players:
+                        player_fields = self._state.get_player_module(
+                            player.player_id, module_name
+                        )
+                        for fname, fval in player_fields.items():
+                            self._state.set_agent(
+                                player.agent_id,
+                                module_name,
+                                fname,
+                                fval,
+                                round_number=round_num,
+                            )
+
                 # Checkpoint at subsession boundary
                 self._checkpointer.save(session, self._state)
 
@@ -404,14 +430,11 @@ class ExperimentRuntime:
     # ------------------------------------------------------------------
 
     def _initialize_session(self, session: Session, cep: CompiledExperiment) -> None:
-        """Run the ``creating_session`` facilitator to set up initial state.
-
-        Logs a ``session_start`` event and executes the ``creating_session``
-        facilitator function if one is defined in the CEP.
+        """Log a ``session_start`` event.
 
         Args:
             session: The newly created session object.
-            cep: Compiled experiment containing facilitator function definitions.
+            cep: Compiled experiment package.
         """
         self._event_logger.log(
             "session_start",
@@ -419,26 +442,176 @@ class ExperimentRuntime:
             session_id=session.session_id,
             data={"experiment_id": cep.experiment_id},
         )
-        for fn_dict in cep.facilitator_functions:
-            from talkingtomachines.core.models import FacilitatorFunction
 
-            fn = FacilitatorFunction(**fn_dict)
-            if fn.name == "creating_session":
-                self._event_logger.log(
-                    "facilitator_call",
-                    run_id=cep.run_id,
-                    session_id=session.session_id,
-                    data={"facilitator": fn.name},
-                )
-                engine = FacilitatorEngine(
-                    state=self._state,
-                    randomisation=self._rng_engine,
-                    router=self._router,
-                    model_name=cep.settings.get("model_name", ""),
-                    temperature=0.0,
-                )
-                engine.execute(fn, context={"session_id": session.session_id})
-                break
+    def _apply_manual_variables(
+        self,
+        assignment_plan,
+        agents: list[Agent],
+        session: Session,
+        module_name: str,
+        round_number: int,
+        cep: "CompiledExperiment",
+    ) -> None:
+        """Apply manual variable assignments from the ``Manual_`` sheet.
+
+        At the start of each round, iterates through the manual
+        variables and sets values on the appropriate scope
+        (Session, Agent, Player, Group) via ``ExperimentState``.
+        Values are then automatically accessible in Jinja templates
+        via dot notation.
+
+        Args:
+            assignment_plan: The assignment plan from the CEP.
+            agents: List of agents in the session.
+            session: The current session.
+            module_name: Name of the current module.
+            round_number: Current round number (1-based).
+            cep: Compiled experiment package.
+        """
+        # Build profile_id → agent map.
+        # agent_id equals the raw profile ID (from make_agent_id), so
+        # register both the string and numeric forms.
+        agent_by_pid: dict = {}
+        for agent in agents:
+            agent_by_pid[agent.agent_id] = agent
+            try:
+                agent_by_pid[int(agent.agent_id)] = agent
+            except (ValueError, TypeError):
+                pass
+
+        for entry in assignment_plan.manual_variables:
+            entry_module = entry.get("module", "")
+            entry_round = entry.get("round_number", "")
+            entry_class = entry.get("class", "")
+            entry_name = entry.get("name", "")
+            entry_value = entry.get("value", "")
+            entry_pid = entry.get("profile_id", "")
+
+            # Check if this entry applies to the current module/round
+            if entry_module and entry_module != module_name:
+                continue
+            if entry_round != "" and entry_round != round_number:
+                try:
+                    if int(entry_round) != round_number:
+                        continue
+                except (ValueError, TypeError):
+                    continue
+
+            if entry_class == "Session":
+                self._state.set_session(module_name, entry_name, entry_value)
+            elif entry_class == "Agent":
+                agent = agent_by_pid.get(entry_pid)
+                if agent:
+                    self._state.set_agent(
+                        agent.agent_id,
+                        module_name,
+                        entry_name,
+                        entry_value,
+                        round_number=round_number,
+                    )
+            elif entry_class == "Player":
+                agent = agent_by_pid.get(entry_pid)
+                if agent:
+                    # Player ID is constructed at group formation time;
+                    # set on agent scope so it flows to the player context
+                    self._state.set_agent(
+                        agent.agent_id,
+                        module_name,
+                        entry_name,
+                        entry_value,
+                        round_number=round_number,
+                    )
+            elif entry_class == "Group":
+                # Group-level variables (not id_in_subsession, which is
+                # handled by group formation) are set on agent scope and
+                # will be resolved at group execution time
+                agent = agent_by_pid.get(entry_pid)
+                if agent:
+                    self._state.set_agent(
+                        agent.agent_id,
+                        module_name,
+                        entry_name,
+                        entry_value,
+                        round_number=round_number,
+                    )
+
+    def _apply_scoped_manual_variables(
+        self,
+        assignment_plan,
+        agents: list[Agent],
+        groups: list[Group],
+        module_name: str,
+        round_number: int,
+    ) -> None:
+        """Apply Player/Group ``Manual_`` entries to their proper scopes.
+
+        Called after group formation, when ``player_id`` and ``group_id``
+        are known.  The existing ``_apply_manual_variables`` stores
+        Player/Group entries on agent scope (for cross-round access);
+        this method additionally sets them on player/group scope so that
+        ``{{ player.<field> }}`` and ``{{ group.<field> }}`` resolve
+        correctly in Jinja templates.
+
+        Args:
+            assignment_plan: The assignment plan from the CEP.
+            agents: List of agents in the session.
+            groups: List of groups formed for this round.
+            module_name: Name of the current module.
+            round_number: Current round number (1-based).
+        """
+        # Build agent_id → player/group mapping
+        agent_to_player: dict[str, Player] = {}
+        agent_to_group: dict[str, Group] = {}
+        for group in groups:
+            for player in group.players:
+                agent_to_player[player.agent_id] = player
+                agent_to_group[player.agent_id] = group
+
+        # Build profile_id → agent map (same logic as _apply_manual_variables)
+        agent_by_pid: dict = {}
+        for agent in agents:
+            agent_by_pid[agent.agent_id] = agent
+            try:
+                agent_by_pid[int(agent.agent_id)] = agent
+            except (ValueError, TypeError):
+                pass
+
+        for entry in assignment_plan.manual_variables:
+            entry_class = entry.get("class", "")
+            if entry_class not in ("Player", "Group"):
+                continue
+
+            entry_module = entry.get("module", "")
+            entry_round = entry.get("round_number", "")
+            if entry_module and entry_module != module_name:
+                continue
+            if entry_round != "" and entry_round != round_number:
+                try:
+                    if int(entry_round) != round_number:
+                        continue
+                except (ValueError, TypeError):
+                    continue
+
+            entry_pid = entry.get("profile_id", "")
+            agent = agent_by_pid.get(entry_pid)
+            if not agent:
+                continue
+
+            entry_name = entry.get("name", "")
+            entry_value = entry.get("value", "")
+
+            if entry_class == "Player":
+                player = agent_to_player.get(agent.agent_id)
+                if player:
+                    self._state.set_player(
+                        player.player_id, module_name, entry_name, entry_value
+                    )
+            elif entry_class == "Group":
+                grp = agent_to_group.get(agent.agent_id)
+                if grp:
+                    self._state.set_group(
+                        grp.group_id, module_name, entry_name, entry_value
+                    )
 
     def _finalize_session(self, session: Session) -> None:
         """Save the final checkpoint and log a session-end event.
@@ -683,7 +856,7 @@ class ExperimentRuntime:
                         content=content,
                         sender_agent_id=agent_obj.agent_id,
                         group_id=group.group_id,
-                        treatment_label=agent_obj.treatment_label,
+                        treatment_label="",
                         visibility=VISIBILITY_GROUP_ONLY,
                         module=module_name,
                         round_number=round_number,
@@ -757,7 +930,7 @@ class ExperimentRuntime:
                             content=content,
                             sender_agent_id=agent_obj.agent_id,
                             group_id=group.group_id,
-                            treatment_label=agent_obj.treatment_label,
+                            treatment_label="",
                             visibility=VISIBILITY_GROUP_ONLY,
                             module=module_name,
                             round_number=round_number,
@@ -850,7 +1023,7 @@ class ExperimentRuntime:
                         content=content,
                         sender_agent_id=agent_obj.agent_id,
                         group_id=group.group_id,
-                        treatment_label=agent_obj.treatment_label,
+                        treatment_label="",
                         visibility=VISIBILITY_PRIVATE,
                         module=module_name,
                         round_number=round_number,
@@ -1059,9 +1232,31 @@ class ExperimentRuntime:
                     seen_ids.add(msg_id)
                     facilitator_messages.append(msg)
 
+        # Gather session-wide agent IDs for built-in facilitators
+        all_session_agent_ids = (
+            [a.agent_id for a in session.agents]
+            if session and hasattr(session, "agents")
+            else [p.agent_id for p in group.players]
+        )
+
+        # Read players_per_group from module constants
+        module_consts = cep.constants.get(module_name, {})
+        players_per_group = int(
+            module_consts.get("PLAYERS_PER_GROUP", len(all_session_agent_ids) or 1)
+        )
+
+        # Build profile info map for stratified assignment
+        agents_profile_info: dict[str, dict] = {}
+        if session and hasattr(session, "agents"):
+            for a in session.agents:
+                agents_profile_info[a.agent_id] = a.profile_info or {}
+
         base_context = {
             "group_id": group.group_id,
             "agent_ids": [p.agent_id for p in group.players],
+            "all_session_agent_ids": all_session_agent_ids,
+            "players_per_group": players_per_group,
+            "agents_profile_info": agents_profile_info,
             "facilitator_messages": facilitator_messages,
         }
 
@@ -1100,7 +1295,11 @@ class ExperimentRuntime:
                 )
                 player_context = dict(base_context)
                 player_context.update(player_ctx)
-                player_result, rendered_def = engine.execute(fn, player_context)
+                player_result, rendered_def = engine.execute(
+                    fn,
+                    player_context,
+                    prompt_args=prompt.kwargs,
+                )
                 self._event_logger.log(
                     "facilitator_call",
                     run_id=cep.run_id,
@@ -1136,7 +1335,9 @@ class ExperimentRuntime:
             context = dict(base_context)
             if jinja_ctx:
                 context.update(jinja_ctx)
-            result, rendered_def = engine.execute(fn, context)
+            result, rendered_def = engine.execute(
+                fn, context, prompt_args=prompt.kwargs
+            )
             self._event_logger.log(
                 "facilitator_call",
                 run_id=cep.run_id,
@@ -1152,25 +1353,67 @@ class ExperimentRuntime:
                 },
             )
 
-            if result:
-                msg = make_message(
-                    role="user",
-                    content=result,
-                    sender_agent_id="facilitator",
-                    group_id=group.group_id,
-                    visibility=VISIBILITY_FACILITATOR,
-                    module=module_name,
-                    round_number=round_number,
+            # Apply state changes from built-in facilitators
+            if isinstance(result, dict):
+                self._apply_builtin_facilitator_result(
+                    result,
+                    fn.name,
+                    session,
+                    group,
+                    agents_map,
+                    module_name,
                 )
-                self._append_to_agent_histories(msg, group, agents_map)
-
-            if field_def and field_def.name and result:
-                if field_def.field_class == "Session":
-                    self._state.set_session(module_name, field_def.name, result)
-                elif field_def.field_class == "Group":
-                    self._state.set_group(
-                        group.group_id, module_name, field_def.name, result
+            else:
+                if result:
+                    msg = make_message(
+                        role="user",
+                        content=result,
+                        sender_agent_id="facilitator",
+                        group_id=group.group_id,
+                        visibility=VISIBILITY_FACILITATOR,
+                        module=module_name,
+                        round_number=round_number,
                     )
+                    self._append_to_agent_histories(msg, group, agents_map)
+
+                if field_def and field_def.name and result:
+                    if field_def.field_class == "Session":
+                        self._state.set_session(module_name, field_def.name, result)
+                    elif field_def.field_class == "Group":
+                        self._state.set_group(
+                            group.group_id, module_name, field_def.name, result
+                        )
 
         # Check raw text for stop signal keywords
-        return self._flow.evaluate_stop_condition(result)
+        stop_text = result if isinstance(result, str) else ""
+        return self._flow.evaluate_stop_condition(stop_text)
+
+    def _apply_builtin_facilitator_result(
+        self,
+        result: dict,
+        func_name: str,
+        session: Optional[Session],
+        group: Group,
+        agents_map: dict[str, Agent],
+        module_name: str,
+    ) -> None:
+        """Apply state changes from a built-in facilitator result.
+
+        For ``assign_groups``, rebuilds the current group's player
+        roster from the new group assignments.
+
+        Args:
+            result: The dict returned by the built-in facilitator.
+            func_name: Name of the facilitator function that produced the result.
+            session: The current session (used to look up all agents).
+            group: The group that invoked the facilitator.
+            agents_map: Mapping from agent_instance_id to Agent objects.
+            module_name: Name of the current module.
+        """
+        if func_name == "assign_groups" and "group_assignments" in result:
+            new_groups = result["group_assignments"]
+            logger.info(
+                "Runtime assign_groups: rebuilt %d group(s) in module %s.",
+                len(new_groups),
+                module_name,
+            )
