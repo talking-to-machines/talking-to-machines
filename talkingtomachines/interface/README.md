@@ -2,17 +2,17 @@
 
 This document describes how to populate the prompt template workbook (`.xlsx`) for each version of the `talkingtomachines` platform.
 
-- [v0.3.0 Prompt Template](#v030-prompt-template)
+- [v0.3.1 Prompt Template](#v031-prompt-template)
 - [Demo Examples](#demo-examples)
 - [Video Walkthrough](#-video-walkthrough)
 
 ---
 
-# v0.3.0 Prompt Template
+# v0.3.1 Prompt Template
 
 ## Worksheet Overview
 
-v0.3.0 uses **7 worksheets** that map to the oTree-inspired hierarchy (Session → Module → Subsession → Group → Agent/Player). Use `talkingtomachines init` to generate a blank template with example rows.
+v0.3.1 uses **7 worksheets** that map to the oTree-inspired hierarchy (Session → Module → Subsession → Group → Agent/Player). Use `talkingtomachines init` to generate a blank template with example rows.
 
 | Worksheet Name | Description |
 | - | - |
@@ -37,7 +37,7 @@ Two-column format: the first column contains the setting key (`name`), the secon
 | `EXPERIMENT_ID` | **Yes** | (none) | Unique experiment identifier. Used in run ID generation. |
 | `MODEL_NAME` | **Yes** | (none) | The LLM model identifier to use for agent inference. The platform auto-detects the provider from the model name. Supported providers: OpenAI (`gpt-*`, `o1`, `o3`, `o4`, `o5`), Anthropic (`claude-*`), Google (`gemini-*`), Mistral (`mistral-*`, `codestral-*`), xAI (`grok-*`), DeepSeek (`deepseek-*`), Hugging Face (`hf-*`), and [OpenRouter.ai](https://openrouter.ai/models) (`openrouter/*`). Unrecognised model names default to OpenRouter. The model is validated against available API keys during `talkingtomachines validate`. |
 | `HF_INFERENCE_ENDPOINT` | No | `""` | The base URL of a deployed Hugging Face Inference Endpoint. Only required when `MODEL_NAME` starts with `hf-`. |
-| `TEMPERATURE` | No | `0.0` | Sampling temperature controlling response randomness. Expected values: `0.0` to `2.0`. Higher values produce more diverse responses. A value of `0.0` produces near-deterministic output. This setting may be ignored for certain reasoning models (e.g., `o1`, `o3`). |
+| `TEMPERATURE` | No | `0.0` | Sampling temperature controlling response randomness. Expected values: `0.0` to `2.0`. Higher values produce more diverse responses. A value of `0.0` produces near-deterministic output. This setting is automatically omitted for models that do not support it (e.g., `o1`, `o3`, `gpt-5-mini`); the platform detects unsupported-temperature errors and retries without the parameter. |
 | `RANDOM_SEED` | **Yes** | (none) | A non-negative integer seed for reproducible randomisation. Used by the `RandomisationEngine` for group assignment, option shuffling, and run ID generation. Two runs with the same seed and template produce identical assignments. |
 | `NUM_AGENTS_PER_SESSION` | **Yes** | (none) | The number of agents (synthetic subjects) participating in each session. Must be a positive integer. This determines how many profile rows from the `Profiles` worksheet are used. |
 | `MODULE_SEQUENCE` | **Yes** | (none) | A comma-separated, ordered list of module names to execute in the session (e.g., `module1,module2,module3`). Each module name must correspond to entries in the `C`, `Fields`, `Prompts`, and `Facilitator` worksheets. Cannot be empty. |
@@ -283,7 +283,7 @@ You can use a single worksheet named `Manual_` or multiple worksheets with the p
 
 ---
 
-## Validation Pipeline (v0.3.0)
+## Validation Pipeline (v0.3.1)
 
 When you run `talkingtomachines validate`, the platform executes the following validators in order:
 

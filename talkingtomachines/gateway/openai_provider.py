@@ -9,13 +9,34 @@ through the Chat Completions path.
 
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any, Optional
 
+logger = logging.getLogger(__name__)
+
 from .base import LLMProvider, LLMResponse
 
-# Models that do not accept a temperature parameter
-NO_TEMPERATURE_MODELS = {"o1", "o1-pro", "o3-pro", "o3", "o4-mini"}
+# Models that do not accept a temperature parameter.
+# This set is seeded with known models and grows dynamically at runtime
+# when the API rejects temperature for an unrecognised model.
+NO_TEMPERATURE_MODELS: set[str] = {"o1", "o1-pro", "o3-pro", "o3", "o4-mini"}
+
+
+def _is_temperature_error(exc: Exception) -> bool:
+    """Return ``True`` if *exc* indicates the temperature parameter is unsupported.
+
+    Checks whether the exception is an ``openai.BadRequestError`` whose
+    message mentions ``"temperature"``.
+    """
+    try:
+        from openai import BadRequestError
+    except ImportError:
+        return False
+    if not isinstance(exc, BadRequestError):
+        return False
+    return "temperature" in str(exc).lower()
+
 
 # Cost estimates per 1K tokens (input / output) USD — approximate, update as needed
 _COST_TABLE: dict[str, tuple[float, float]] = {
@@ -186,6 +207,11 @@ class OpenAIProvider(LLMProvider):
     ) -> Any:
         """Call the OpenAI Responses API (native OpenAI endpoint only).
 
+        If the API rejects the ``temperature`` parameter (e.g. for newer
+        reasoning models), the call is automatically retried without it
+        and the model is added to :data:`NO_TEMPERATURE_MODELS` so that
+        future calls skip the parameter upfront.
+
         Args:
             messages: Formatted message list.
             model: Model identifier.
@@ -210,7 +236,19 @@ class OpenAIProvider(LLMProvider):
             params["temperature"] = temperature
         params.update(kwargs)
 
-        return self._client.responses.create(**params)
+        try:
+            return self._client.responses.create(**params)
+        except Exception as exc:
+            if _is_temperature_error(exc) and "temperature" in params:
+                logger.warning(
+                    "Model '%s' rejected temperature parameter; "
+                    "retrying without it.",
+                    model,
+                )
+                NO_TEMPERATURE_MODELS.add(model)
+                params.pop("temperature")
+                return self._client.responses.create(**params)
+            raise
 
     def _extract_content(self, raw: Any) -> str:
         """Extract text from an OpenAI Responses API response.
@@ -240,6 +278,10 @@ class OpenAIProvider(LLMProvider):
     ) -> Any:
         """Call the Chat Completions API (all OpenAI-compatible endpoints).
 
+        If the API rejects the ``temperature`` parameter, the call is
+        automatically retried without it and the model is added to
+        :data:`NO_TEMPERATURE_MODELS`.
+
         Args:
             messages: Formatted message list.
             model: Model identifier.
@@ -253,7 +295,19 @@ class OpenAIProvider(LLMProvider):
         if model not in NO_TEMPERATURE_MODELS:
             params["temperature"] = temperature
         params.update(kwargs)
-        return self._client.chat.completions.create(**params)
+        try:
+            return self._client.chat.completions.create(**params)
+        except Exception as exc:
+            if _is_temperature_error(exc) and "temperature" in params:
+                logger.warning(
+                    "Model '%s' rejected temperature parameter; "
+                    "retrying without it.",
+                    model,
+                )
+                NO_TEMPERATURE_MODELS.add(model)
+                params.pop("temperature")
+                return self._client.chat.completions.create(**params)
+            raise
 
     def _extract_content_chat(self, raw: Any) -> str:
         """Extract text from a Chat Completions API response.
