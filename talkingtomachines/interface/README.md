@@ -299,11 +299,13 @@ When you run `talkingtomachines validate`, the platform executes the following v
 
 You may also explore these example experimental designs and their accompanying prompt templates prepared by the development team:
 
-* **Public Goods Experiment**: A public goods experiment demo example with a populated prompt template workbook and description of its experimental design: [Public Goods Experiment Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/public_good_experiment)
+* **Simple Public Goods Experiment**: [Simple Public Goods Experiment Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/simple_pgg)
 
-* **Randomized Controlled Trial (RCT)**: A RCT experiment demo example with a populated prompt template workbook: [RCT Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/rct_experiment)
+* **Complex Public Goods Experiment**: [Complex Public Goods Experiment Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/pgg)
 
-* **Prompt Template**: A unpopulated version of the prompt template has been provided to serve as a starting point for creating new synthetic experiments: [Prompt Template](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/prompt_template.xlsx)
+* **Manual Conjoint Experiment**: [Manual Conjoint Experiment Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/conjoint_manual)
+
+* **Randomized Conjoint Experiment**: [Randomized Conjoint Experiment Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/conjoint_auto)
 
 ---
 

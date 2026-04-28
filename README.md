@@ -261,9 +261,13 @@ Windows: [Video Walkthrough](https://www.loom.com/share/79969b38be6d4c2387d19ecc
 ## Demo Experiments
 You may also want to explore these example experimental designs and their accompanying prompt templates prepared by the development team:
 
-* **Public Goods Experiment**: [Public Goods Experiment Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/public_good_experiment)
+* **Simple Public Goods Experiment**: [Simple Public Goods Experiment Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/simple_pgg)
 
-* **Randomized Controlled Trial (RCT)**: [RCT Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/rct_experiment)
+* **Complex Public Goods Experiment**: [Complex Public Goods Experiment Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/pgg)
+
+* **Manual Conjoint Experiment**: [Manual Conjoint Experiment Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/conjoint_manual)
+
+* **Randomized Conjoint Experiment**: [Randomized Conjoint Experiment Demo](https://github.com/talking-to-machines/talking-to-machines/tree/main/demos/conjoint_auto)
 
 ---
 
