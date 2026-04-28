@@ -1,0 +1,48 @@
+module,prompt_sequence,type,is_displayed,is_adapted,human_text,llm_text,kwargs,field_class,field_name
+conjoint,1,CONTEXT,round_number == 1,TRUE,,{{ C.conjoint.PLAYER_TYPE }},,,
+conjoint,2,CONTEXT,round_number == 1,FALSE,"You will be shown {{ C.conjoint.MAX_NUM_ROUNDS }} pairs of hypothetical policy proposals. Each proposal is described by five attributes: tax rate, healthcare spending, education spending, immigration policy, and climate policy. For each pair, please indicate which proposal you would prefer to see implemented.","You will be shown {{ C.conjoint.MAX_NUM_ROUNDS }} pairs of hypothetical policy proposals. Each proposal is described by five attributes: tax rate, healthcare spending, education spending, immigration policy, and climate policy. For each pair, please indicate which proposal you would prefer to see implemented.",,,
+conjoint,3,FACILITATOR,,FALSE,,select_profile_a_tax_rate,,Player,profile_a_tax_rate
+conjoint,4,FACILITATOR,,FALSE,,select_profile_a_healthcare_spending,,Player,profile_a_healthcare_spending
+conjoint,5,FACILITATOR,,FALSE,,select_profile_a_education_spending,,Player,profile_a_education_spending
+conjoint,6,FACILITATOR,,FALSE,,select_profile_a_immigration_policy,,Player,profile_a_immigration_policy
+conjoint,7,FACILITATOR,,FALSE,,select_profile_a_climate_policy,,Player,profile_a_climate_policy
+conjoint,8,FACILITATOR,,FALSE,,select_profile_b_tax_rate,,Player,profile_b_tax_rate
+conjoint,9,FACILITATOR,,FALSE,,select_profile_b_healthcare_spending,,Player,profile_b_healthcare_spending
+conjoint,10,FACILITATOR,,FALSE,,select_profile_b_education_spending,,Player,profile_b_education_spending
+conjoint,11,FACILITATOR,,FALSE,,select_profile_b_immigration_policy,,Player,profile_b_immigration_policy
+conjoint,12,FACILITATOR,,FALSE,,select_profile_b_climate_policy,,Player,profile_b_climate_policy
+conjoint,13,PRIVATE_QUESTION,,FALSE,"Which one of the the two policy proposals do you prefer? Provide your response in the following format: [""Profile A"", ""Profile B""]
+
+PROFILE A:
+- Tax rate: {{ player.profile_a_tax_rate }}
+- Healthcare: {{ player.profile_a_healthcare_spending }}
+- Education: {{ player.profile_a_education_spending }}
+- Immigration: {{ player.profile_a_immigration_policy }}
+- Climate: {{ player.profile_a_climate_policy }}
+
+PROFILE B:
+- Tax rate: {{ player.profile_b_tax_rate }}
+- Healthcare: {{ player.profile_b_healthcare_spending }}
+- Education: {{ player.profile_b_education_spending }}
+- Immigration: {{ player.profile_b_immigration_policy }}
+- Climate: {{ player.profile_b_climate_policy }}
+","Which one of the the two policy proposals do you prefer? Provide your response in the following format: [""Profile A"", ""Profile B""]
+
+PROFILE A:
+- Tax rate: {{ player.profile_a_tax_rate }}
+- Healthcare: {{ player.profile_a_healthcare_spending }}
+- Education: {{ player.profile_a_education_spending }}
+- Immigration: {{ player.profile_a_immigration_policy }}
+- Climate: {{ player.profile_a_climate_policy }}
+
+PROFILE B:
+- Tax rate: {{ player.profile_b_tax_rate }}
+- Healthcare: {{ player.profile_b_healthcare_spending }}
+- Education: {{ player.profile_b_education_spending }}
+- Immigration: {{ player.profile_b_immigration_policy }}
+- Climate: {{ player.profile_b_climate_policy }}
+",,Player,chosen_profile
+conjoint,14,PRIVATE_QUESTION,,FALSE,How confident are you in this choice?,How confident are you in this choice?,,Player,choice_confidence
+conjoint,15,PRIVATE_QUESTION,,FALSE,Please briefly explain why you chose this profile.,Please briefly explain why you chose this profile.,,Player,choice_reasoning
+debrief,0,PRIVATE_QUESTION,,FALSE,Which policy attribute was most important to your decisions?,Which policy attribute was most important to your decisions?,,Player,most_important_attribute
+debrief,1,PRIVATE_QUESTION,,FALSE,Do you have any additional comments about this study?,Do you have any additional comments about this study?,,Player,comments

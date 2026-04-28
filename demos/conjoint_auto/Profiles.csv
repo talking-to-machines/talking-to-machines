@@ -1,0 +1,10 @@
+ID,gender,age,college,income_bracket,party_affiliation,urban_rural
+ID,What is your gender?,What is your age?,Do you have a college education?,What is your household income bracket?,What is your political party affiliation?,"Do you live in an urban, suburban, or rural area?"
+1,Female,34,Yes,$60k-$100k,Democrat,Urban
+2,Male,52,No,$30k-$60k,Republican,Rural
+3,Female,28,Yes,Over $100k,Independent,Urban
+4,Male,67,Yes,$60k-$100k,Republican,Suburban
+5,Female,41,No,Under $30k,Democrat,Suburban
+6,Male,23,Yes,$30k-$60k,Independent,Urban
+7,Female,59,No,$30k-$60k,Republican,Rural
+8,Male,45,Yes,Over $100k,Democrat,Suburban

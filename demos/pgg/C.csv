@@ -1,0 +1,9 @@
+module,name,value,type
+pgg,PLAYER_TYPE,Assume the role of a human participant in an experiment on decision making.,text
+pgg,MAX_NUM_ROUNDS,5,integer
+pgg,PLAYERS_PER_GROUP,4,integer
+pgg,PGG_ENDOWMENT_MIN,8,integer
+pgg,PGG_ENDOWMENT_MAX,20,integer
+pgg,PGG_MULTIPLIER,2,float
+questionnaire,PLAYERS_PER_GROUP,1,integer
+questionnaire,MAX_NUM_ROUNDS,1,integer

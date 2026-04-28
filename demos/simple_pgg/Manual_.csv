@@ -1,0 +1,17 @@
+ID,module,round_number,class,name,value
+1,task1,1.0,Player,treatment,control
+1,task1,2.0,Player,treatment,control
+1,task1,3.0,Player,treatment,control
+2,task1,1.0,Player,treatment,treatment_A
+2,task1,2.0,Player,treatment,treatment_A
+2,task1,3.0,Player,treatment,treatment_A
+3,task1,1.0,Player,treatment,control
+3,task1,2.0,Player,treatment,control
+3,task1,3.0,Player,treatment,control
+4,task1,1.0,Player,treatment,treatment_A
+4,task1,2.0,Player,treatment,treatment_A
+4,task1,3.0,Player,treatment,treatment_A
+1,task1,,Group,id_in_subsession,group1
+2,task1,,Group,id_in_subsession,group2
+3,task1,,Group,id_in_subsession,group1
+4,task1,,Group,id_in_subsession,group2

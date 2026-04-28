@@ -1,0 +1,2 @@
+session_id,run_id,experiment_id,num_agents,num_modules,num_rounds_total,num_groups_total,num_players_total,num_messages_total,total_cost_usd,run_time_sec,start_time,end_time
+simple_pgg_20260405T113644Z_xaji0y_s1,simple_pgg_20260405T113644Z_xaji0y,simple_pgg,4,1,3,6,12,124,0.012201599999999996,50.67,2026-04-05T11:36:44.060311+00:00,2026-04-05T11:37:34.727653+00:00

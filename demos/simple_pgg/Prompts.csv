@@ -1,0 +1,8 @@
+module,prompt_sequence,type,is_displayed,is_adapted,human_text,llm_text,kwargs,field_class,field_name
+task1,0,CONTEXT,round_number == 1,True,Introduction context.,You are participating in a decision-making experiment. Your endowment is {{ C.task1.MAX_ENDOWMENT }} tokens.,,,
+task1,1,PRIVATE_QUESTION,,True,How much will you contribute?,How many tokens would you contribute to the group fund? Tokens in the public account will be multiplied by a factor of 2 and distributed equally among all players. Tokens kept in your private account will not be shared and remain yours. Choose a value between {{ C.task1.MIN_ENDOWMENT }} and {{ C.task1.MAX_ENDOWMENT }}.,,Player,decision
+task1,2,FACILITATOR,,False,,calculate_total_contribution,,Group,total_contribution
+task1,3,FACILITATOR,,False,,calculate_public_account_earnings,,Player,public_account_earnings
+task1,4,FACILITATOR,,False,,calculate_private_account_remaining,,Player,private_account_remaining
+task1,5,FACILITATOR,,False,,calculate_total_earnings,,Player,total_earnings
+task1,6,CONTEXT,,False,,The total contribution for this round is {{ group.total_contribution }} tokens. Your total earnings for this round is {{ player.total_earnings }} tokens.,,,

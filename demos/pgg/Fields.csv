@@ -1,0 +1,12 @@
+module,class,name,type,response_options,response_options_intro,randomise_options_order,validate,generate_speculation_score,format_response
+pgg,Agent,pgg_quiz_1,category,"[10, 15, 20, 25]",,TRUE,TRUE,TRUE,TRUE
+pgg,Agent,pgg_quiz_2,category,"[""Equally among all members"", ""Based on individual contributions"", ""Randomly assigned"", ""Not distributed at all""]","Please, answer one of these options:",TRUE,TRUE,TRUE,TRUE
+pgg,Agent,pgg_quiz_3,category,"[""You receive nothing from the public account"", ""The total tokens in the public account decrease"", ""Other group members' earnings increase"", ""None of the above""]","Please, answer one of these options:",TRUE,TRUE,TRUE,TRUE
+pgg,Group,total_contribution,integer,,,FALSE,FALSE,FALSE,TRUE
+pgg,Player,belief,integer,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]",,FALSE,TRUE,TRUE,TRUE
+pgg,Player,endowment,integer,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]",,FALSE,TRUE,FALSE,TRUE
+pgg,Player,decision,integer,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]",,FALSE,TRUE,TRUE,TRUE
+pgg,Player,public_account_earnings,integer,,,FALSE,FALSE,FALSE,TRUE
+pgg,Player,private_account_remaining,integer,,,FALSE,FALSE,FALSE,TRUE
+pgg,Player,payoff,float,,,FALSE,FALSE,FALSE,TRUE
+questionnaire,Player,comments,text,,,FALSE,FALSE,TRUE,FALSE

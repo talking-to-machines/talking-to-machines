@@ -1,0 +1,14 @@
+name,definition,kwargs
+assign_groups,,
+calculate_total_contribution,"Calculate the total number of tokens contributed to the public account in this round using the following formula:
+Player 1's contribution to public account in this round + Player 2's contribution to public account in this round
+Respond with only the resulting nunber without providing any explanations.",
+calculate_public_account_earnings,"Calculate Player ID {{ player.agent_id }}'s earnings from the public account this round using the following formula:
+({{ group.total_contribution }} × 2) ÷ {{ group.num_players }}
+Respond with only the resulting number without providing any explanations.",
+calculate_private_account_remaining,"Calculate Player ID {{ player.agent_id }}'s remaining private tokens this round using the following formula:
+{{ C.task1.MAX_ENDOWMENT }} − {{ player.decision }}
+Respond with only the resulting number without any explanations.",
+calculate_total_earnings,"Calculate Player ID {{ player.agent_id }}'s total earnings this round using the following formula:
+{{ player.public_account_earnings }} + {{ player.private_account_remaining }}
+Respond with only the resulting number without any explanations.",

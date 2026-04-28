@@ -1,0 +1,56 @@
+module,prompt_sequence,type,is_displayed,is_adapted,human_text,llm_text,kwargs,field_class,field_name
+pgg,0,CONTEXT,round_number == 1,FALSE,,{{ C.pgg.PLAYER_TYPE }},,,
+pgg,1,CONTEXT,round_number == 1,FALSE,"General Overview
+Welcome to this experiment on decision making. You will be part of a group of {{ C.pgg.PLAYERS_PER_GROUP }} Agents, and you will interact with the same group throughout the experiment. The experiment consists of {{ C.pgg.MAX_NUM_ROUNDS }} rounds. Your decisions will affect both your earnings and the earnings of the others in your group. All decisions are anonymous, and you will not know the identity of any other Agent.
+
+1. Instructions
+Each Agent will start every round with a randomly assigned endowment between {{ C.pgg.PGG_ENDOWMENT_MIN }} and {{ C.pgg.PGG_ENDOWMENT_MAX }} tokens.
+Each Agent in the group must decide how many tokens to contribute to a public account and how many to keep in their private account.
+Tokens in the public account will be multiplied by a factor of {{ C.pgg.PGG_MULTIPLIER }} and distributed equally among all group members. Tokens kept in your private account will not be shared and remain yours. Contributions to the public account benefit everyone, including you. What you keep in your private account benefits only you. Your total earnings for each round equal to
+tokens kept + public tokens earned.
+
+Example:
+You start the round with 10 tokens.
+You contribute 4 tokens to the public account, which are doubled to 8 and shared equally among the Agents in the group. Each group member receives 2 tokens (8 / 4).
+You keep the remaining 6 tokens in your private account. Your total earnings in the round equal to 6 (tokens kept) + 2 (public tokens earned) = 8 tokens.
+
+At the end of each round, you will see:
+The total tokens contributed to the public account by all Agents in the group.
+Your earnings from the public account.
+The tokens that you kept in your private account.
+Your total earnings so far.","General Overview
+Welcome to this experiment on decision making. You will be part of a group of {{ C.pgg.PLAYERS_PER_GROUP }} Agents, and you will interact with the same group throughout the experiment. The experiment consists of {{ C.pgg.MAX_NUM_ROUNDS }} rounds. Your decisions will affect both your earnings and the earnings of the others in your group. All decisions are anonymous, and you will not know the identity of any other Agent.
+
+1. Instructions
+Each Agent will start every round with a randomly assigned endowment between {{ C.pgg.PGG_ENDOWMENT_MIN }} and {{ C.pgg.PGG_ENDOWMENT_MAX }} tokens.
+Each Agent in the group must decide how many tokens to contribute to a public account and how many to keep in their private account.
+Tokens in the public account will be multiplied by a factor of {{ C.pgg.PGG_MULTIPLIER }} and distributed equally among all group members. Tokens kept in your private account will not be shared and remain yours. Contributions to the public account benefit everyone, including you. What you keep in your private account benefits only you. Your total earnings for each round equal to
+tokens kept + public tokens earned.
+
+Example:
+You start the round with 10 tokens.
+You contribute 4 tokens to the public account, which are doubled to 8 and shared equally among the Agents in the group. Each group member receives 2 tokens (8 / 4).
+You keep the remaining 6 tokens in your private account. Your total earnings in the round equal to 6 (tokens kept) + 2 (public tokens earned) = 8 tokens.
+
+At the end of each round, you will see:
+The total tokens contributed to the public account by all Agents in the group.
+Your earnings from the public account.
+The tokens that you kept in your private account.
+Your total earnings so far.",,,
+pgg,2,PRIVATE_QUESTION,round_number == 1,FALSE,"Please answer the following questions to ensure you understand the rules. If you contribute 5 tokens to the public account, how many total tokens will be in the public account before it is shared?","Please answer the following questions to ensure you understand the rules. If you contribute 5 tokens to the public account, how many total tokens will be in the public account before it is shared?",,Agent,pgg_quiz_1
+pgg,3,PRIVATE_QUESTION,round_number == 1,FALSE,Please answer the following questions to ensure you understand the rules. How are tokens from the public account distributed to group members?,Please answer the following questions to ensure you understand the rules. How are tokens from the public account distributed to group members?,,Agent,pgg_quiz_2
+pgg,4,PRIVATE_QUESTION,round_number == 1,FALSE,"Please answer the following questions to ensure you understand the rules. If you keep all your tokens in your private account, what happens to the tokens in the public account?","Please answer the following questions to ensure you understand the rules. If you keep all your tokens in your private account, what happens to the tokens in the public account?",,Agent,pgg_quiz_3
+pgg,5,PRIVATE_QUESTION,round_number == 2,FALSE,What do you think was the average contribution in your group in the previous round?,What do you think was the average contribution in your group in the previous round? Enter a number between 0 and {{ agent.pgg[1].endowment }}.,,Player,belief
+pgg,6,PRIVATE_QUESTION,round_number == 3,FALSE,What do you think was the average contribution in your group in the previous round?,What do you think was the average contribution in your group in the previous round? Enter a number between 0 and {{ agent.pgg[2].endowment }}.,,Player,belief
+pgg,7,PRIVATE_QUESTION,round_number == 4,FALSE,What do you think was the average contribution in your group in the previous round?,What do you think was the average contribution in your group in the previous round? Enter a number between 0 and {{ agent.pgg[3].endowment }}.,,Player,belief
+pgg,8,PRIVATE_QUESTION,round_number == 5,FALSE,What do you think was the average contribution in your group in the previous round?,What do you think was the average contribution in your group in the previous round? Enter a number between 0 and {{ agent.pgg[4].endowment }}.,,Player,belief
+pgg,9,FACILITATOR,,FALSE,,assign_endowment,,Player,endowment
+pgg,10,PRIVATE_QUESTION,,FALSE,How many tokens do you want to contribute to the public account? (Enter a number between 0 and {{ pgg.player.endowment }}),How many tokens do you want to contribute to the public account? Enter a number between 0 and {{ player.endowment }}.,,Player,decision
+pgg,11,FACILITATOR,,FALSE,,calculate_total_contribution,,Group,total_contribution
+pgg,12,FACILITATOR,,FALSE,,calculate_public_account_earnings,,Player,public_account_earnings
+pgg,13,FACILITATOR,,FALSE,,calculate_private_account_remaining,,Player,private_account_remaining
+pgg,14,FACILITATOR,,FALSE,,calculate_total_earnings,,Player,payoff
+pgg,15,CONTEXT,,FALSE,"In this round, the total contribution to the public account in your group was {{ pgg.group.total_contribution }} tokens.
+Your total earnings in this round are {{ pgg.player.payoff }} tokens.","In this round, the total contribution to the public account in your group was {{ group.total_contribution }} tokens.
+Your total earnings in this round are {{ player.payoff }} tokens.",,,
+questionnaire,0,PRIVATE_QUESTION,,FALSE,Do you have any comment on this study?,Do you have any comment on this study?,,Player,comments
