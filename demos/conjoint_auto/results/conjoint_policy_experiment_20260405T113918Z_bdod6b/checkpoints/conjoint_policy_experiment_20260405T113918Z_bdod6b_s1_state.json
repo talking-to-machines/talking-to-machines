@@ -1,0 +1,1592 @@
+{
+  "session": {},
+  "agent": {
+    "1": {
+      "conjoint": {
+        "1": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Carbon tax ($50/ton)",
+          "profile_b_tax_rate": "10% flat tax",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Double public school funding",
+          "profile_b_immigration_policy": "Reduce by 50%",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.12,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.12,
+          "choice_reasoning": "I picked Profile A because it best matches my priorities as a 34-year-old, college-educated urban Democrat earning $60k–$100k: it expands healthcare and education funding, takes meaningful climate action, supports humane immigration policies, and balances those priorities with a reasonable tax rate. That combination aligns with my values and practical financial concerns."
+        },
+        "2": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Double public school funding",
+          "profile_a_immigration_policy": "Open borders",
+          "profile_a_climate_policy": "Carbon tax ($50/ton)",
+          "profile_b_tax_rate": "Current rates maintained",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.12,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.12,
+          "choice_reasoning": "I chose Profile A because as a 34-year-old urban Democrat with a college degree and household income of $60k–$100k, I prioritize expanded healthcare and education funding, meaningful climate action, humane immigration policy, and a reasonable tax rate that balances social investment with my personal financial concerns."
+        },
+        "3": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Increase by 20%",
+          "profile_a_education_spending": "Double public school funding",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "Current rates maintained",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Double public school funding",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.12,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.12,
+          "choice_reasoning": "I chose Profile A because, as a 34-year-old college-educated urban Democrat with a household income of $60k–$100k, I prioritize expanded healthcare and education funding, meaningful climate action, humane immigration policies, and a reasonable tax rate that balances social investment with my personal financial concerns."
+        },
+        "4": {
+          "profile_a_tax_rate": "10% flat tax",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Reduce by 50%",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Double public school funding",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "No new regulations",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.12,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.12,
+          "choice_reasoning": "I chose Profile B because, as a 34-year-old college-educated urban Democrat earning $60k–$100k, I prefer a proposal that expands healthcare and education, takes meaningful climate action, supports humane immigration policy, and uses a tax rate that balances funding those priorities with my household’s financial concerns."
+        },
+        "5": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Decrease by 15%",
+          "profile_a_education_spending": "Double public school funding",
+          "profile_a_immigration_policy": "Open borders",
+          "profile_a_climate_policy": "Carbon tax ($50/ton)",
+          "profile_b_tax_rate": "Current rates maintained",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Double public school funding",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "No new regulations",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.12,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.12,
+          "choice_reasoning": "As a 34-year-old, college-educated urban Democrat earning $60k–$100k, I chose this profile because it increases healthcare and education funding, pursues meaningful climate action, supports humane immigration policies, and uses a tax rate that balances social investment with my household’s financial concerns."
+        }
+      },
+      "debrief": {
+        "1": {
+          "most_important_attribute": "Healthcare spending",
+          "most_important_attribute_speculation_score": 0.12,
+          "comments": "Overall the survey was clear and the scenarios were interesting. I appreciated that it focused on trade-offs between taxes, healthcare, education, immigration, and climate. A few suggestions: define policy terms (e.g., “meaningful climate action”) more precisely, include projected costs/benefits or likely impacts so choices feel grounded, allow participants to indicate strength of preference (not just a binary choice), and emphasize how demographic data and responses will be protected. The length and format were fine."
+        }
+      }
+    },
+    "2": {
+      "conjoint": {
+        "1": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Double public school funding",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Carbon tax ($50/ton)",
+          "profile_b_tax_rate": "10% flat tax",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Open borders",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.25,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.25,
+          "choice_reasoning": "I chose Profile A because it matches my background and values—I'm a middle‑aged, working‑class, rural Republican with no college degree, so I prefer policies that favor lower taxes, limited government spending, stricter immigration control, and practical climate/energy approaches that protect jobs and communities."
+        },
+        "2": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Double public school funding",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "No new regulations",
+          "profile_b_tax_rate": "10% flat tax",
+          "profile_b_healthcare_spending": "Increase by 20%",
+          "profile_b_education_spending": "Maintain current levels",
+          "profile_b_immigration_policy": "Reduce by 50%",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.25,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.25,
+          "choice_reasoning": "As a 52‑year‑old rural Republican with no college degree and a $30k–$60k income, I chose this profile because it reflects my preference for lower taxes, limited government spending, stricter immigration control, affordable healthcare/education priorities, and pragmatic climate policies that protect local jobs and the economy."
+        },
+        "3": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "10% flat tax",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Double public school funding",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "No new regulations",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.25,
+          "choice_reasoning": "I picked this profile because as a 52-year-old rural Republican with no college and a $30k–$60k income, I prefer lower taxes, limited government spending, stricter immigration controls, and practical climate/energy policies that protect jobs and my community."
+        },
+        "4": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "No new regulations",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I picked this profile because it matches my background—52‑year‑old rural Republican with no college and a $30k–$60k income—and reflects my preference for lower taxes, limited government spending, stricter immigration control, and practical climate/energy policies that protect local jobs."
+        },
+        "5": {
+          "profile_a_tax_rate": "10% flat tax",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Maintain current levels",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "No new regulations",
+          "profile_b_tax_rate": "10% flat tax",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Reduce by 50%",
+          "profile_b_climate_policy": "No new regulations",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.25,
+          "choice_reasoning": "I chose this profile because it matches my background — a 52-year-old rural Republican with no college and a $30k–$60k income — and reflects my preferences for lower taxes, limited government spending, stricter immigration control, and practical climate and energy policies that protect local jobs and communities."
+        }
+      },
+      "debrief": {
+        "1": {
+          "most_important_attribute": "Tax rate",
+          "most_important_attribute_speculation_score": 0.15,
+          "comments": "Thanks for including me. The choices were clear but felt a bit simplified—I'd like more realistic trade-offs and info on how each proposal would affect jobs, taxes, and local services in rural areas, plus details on implementation and timing."
+        }
+      }
+    },
+    "3": {
+      "conjoint": {
+        "1": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "10% flat tax",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Double public school funding",
+          "profile_b_immigration_policy": "Open borders",
+          "profile_b_climate_policy": "Carbon tax ($50/ton)",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.25,
+          "choice_confidence": 5,
+          "choice_confidence_speculation_score": 0.25,
+          "choice_reasoning": "I picked Profile B because it best matches my centrist, pragmatic preferences: it balances reasonable taxes with meaningful investments in healthcare and education, supports sensible, humane immigration policies, and pursues practical climate action. That mix fits my urban, college-educated background and desire for evidence-based, fiscally responsible solutions."
+        },
+        "2": {
+          "profile_a_tax_rate": "10% flat tax",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Reduce by 50%",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Increase by 20%",
+          "profile_b_education_spending": "Maintain current levels",
+          "profile_b_immigration_policy": "Open borders",
+          "profile_b_climate_policy": "No new regulations",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.25,
+          "choice_confidence": 5,
+          "choice_confidence_speculation_score": 0.25,
+          "choice_reasoning": "I chose Profile B because it balances reasonable taxes with meaningful investments in healthcare and education, supports sensible/humane immigration policy, and pursues practical climate action—aligning with my urban, college-educated, centrist, fiscally responsible preferences."
+        },
+        "3": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "Current rates maintained",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Double public school funding",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "No new regulations",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I chose Profile A because it balances lower taxes with targeted investments in healthcare and education, sensible immigration reforms, and pragmatic climate action—matching my preference as an urban, college‑educated independent for fiscally responsible, practical policies."
+        },
+        "4": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Decrease by 15%",
+          "profile_a_education_spending": "Maintain current levels",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "No new regulations",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Reduce by 50%",
+          "profile_b_climate_policy": "Carbon tax ($50/ton)",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.25,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.25,
+          "choice_reasoning": "I chose Profile B because it strikes a pragmatic balance—moderate taxes with strong investments in healthcare and education, sensible/humane immigration policy, and practical climate action—which fits my urban, college-educated, independent perspective favoring fiscally responsible, evidence-based solutions."
+        },
+        "5": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Reduce by 50%",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Double public school funding",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "No new regulations",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I chose this profile because it provides a pragmatic balance—moderate taxes with solid investments in healthcare and education, humane immigration policy, and practical climate action—which aligns with my urban, college‑educated independent preference for fiscally responsible, evidence‑based solutions."
+        }
+      },
+      "debrief": {
+        "1": {
+          "most_important_attribute": "Healthcare spending",
+          "most_important_attribute_speculation_score": 0.25,
+          "comments": "Thanks — the survey was clear and the scenarios realistic. After a few pairs it felt a bit repetitive; consider adding varied/longer-term outcome descriptions, clearer definitions for attribute levels (e.g., what “moderate” tax means), and an option to indicate indifference. Also reassure participants about confidentiality and offer summary results or feedback. Overall, a well‑designed study."
+        }
+      }
+    },
+    "4": {
+      "conjoint": {
+        "1": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Increase by 20%",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Carbon tax ($50/ton)",
+          "profile_b_tax_rate": "10% flat tax",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Maintain current levels",
+          "profile_b_immigration_policy": "Open borders",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.25,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.25,
+          "choice_reasoning": "As a 67-year-old, college-educated Republican in a suburban area with moderate income, I picked Profile A because it balances lower taxes and fiscal responsibility with protections for healthcare and retirement security, favors sensible education funding, supports stricter immigration controls, and endorses pragmatic, market-based climate measures rather than heavy-handed regulation."
+        },
+        "2": {
+          "profile_a_tax_rate": "Current rates maintained",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Double public school funding",
+          "profile_a_immigration_policy": "Reduce by 50%",
+          "profile_a_climate_policy": "No new regulations",
+          "profile_b_tax_rate": "Current rates maintained",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Maintain current levels",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.25,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.25,
+          "choice_reasoning": "As a 67-year-old college-educated Republican on a moderate income, I prefer lower taxes and fiscal responsibility coupled with protecting healthcare/retirement, sensible education funding, stronger immigration controls, and pragmatic, market-based climate measures—qualities Profile A best balances."
+        },
+        "3": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "Current rates maintained",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Maintain current levels",
+          "profile_b_immigration_policy": "Reduce by 50%",
+          "profile_b_climate_policy": "No new regulations",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.1,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.1,
+          "choice_reasoning": "As a 67-year-old suburban Republican with a college education and moderate income, I chose Profile B because it strikes the best balance for me between fiscal restraint and protecting healthcare/retirement security, supports sensible education funding, favors stronger immigration controls, and emphasizes pragmatic, market-based climate solutions."
+        },
+        "4": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Increase by 20%",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "No new regulations",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Maintain current levels",
+          "profile_b_immigration_policy": "Reduce by 50%",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.25,
+          "choice_reasoning": "I chose Profile A because it best matches my priorities as a 67-year-old suburban Republican: lower taxes and fiscal responsibility, protections for healthcare and retirement, sensible education funding, stronger immigration controls, and pragmatic, market-based climate solutions."
+        },
+        "5": {
+          "profile_a_tax_rate": "10% flat tax",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Maintain current levels",
+          "profile_a_immigration_policy": "Open borders",
+          "profile_a_climate_policy": "No new regulations",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Reduce by 50%",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.25,
+          "choice_reasoning": "As a 67-year-old, college-educated Republican in a suburban area with moderate income, I chose Profile B because it aligns with my priorities: lower taxes and fiscal responsibility, protecting healthcare and retirement benefits, sensible (but not excessive) education spending, stronger immigration controls, and pragmatic, market-based approaches to climate policy."
+        }
+      },
+      "debrief": {
+        "1": {
+          "most_important_attribute": "Tax rate",
+          "most_important_attribute_speculation_score": 0.2,
+          "comments": "Overall the study was clear and easy to follow and the policy attributes felt realistic. It would be helpful to include more detail on trade-offs and long-term costs and to clarify how spending increases would be funded. Consider adding options about Social Security/Medicare specifics and distinctions between federal and local responsibilities. Thank you."
+        }
+      }
+    },
+    "5": {
+      "conjoint": {
+        "1": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Double public school funding",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "10% flat tax",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Reduce by 50%",
+          "profile_b_climate_policy": "No new regulations",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.12,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.12,
+          "choice_reasoning": "I chose Profile A because it best matches my priorities as a lower-income Democrat: it prioritizes affordable healthcare and education, supports strong climate action and humane immigration policy, and balances taxes so working families aren’t unduly burdened."
+        },
+        "2": {
+          "profile_a_tax_rate": "Current rates maintained",
+          "profile_a_healthcare_spending": "Decrease by 15%",
+          "profile_a_education_spending": "Double public school funding",
+          "profile_a_immigration_policy": "Open borders",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.25,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.12,
+          "choice_reasoning": "I picked Profile A because, as a low-income suburban Democrat, I want affordable healthcare and more education funding, strong climate action, humane immigration policy, and tax policies that don’t overly burden working families."
+        },
+        "3": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Decrease by 15%",
+          "profile_a_education_spending": "Maintain current levels",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "No new regulations",
+          "profile_b_tax_rate": "10% flat tax",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Double public school funding",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "Carbon tax ($50/ton)",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.18,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.18,
+          "choice_reasoning": "I chose Profile B because, as a 41-year-old low-income Democrat in the suburbs, it best balances affordable healthcare and increased education funding, supports strong climate action and humane immigration policies, and keeps taxes from unduly burdening working families."
+        },
+        "4": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Increase by 20%",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Carbon tax ($50/ton)",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Increase by 20%",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I chose Profile B because as a 41-year-old low-income Democrat in the suburbs, I prioritize affordable healthcare and increased education funding, strong climate action and humane immigration policies, and tax policies that don’t unduly burden working families."
+        },
+        "5": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Double public school funding",
+          "profile_a_immigration_policy": "Open borders",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.1,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.12,
+          "choice_reasoning": "I picked Profile A because, as a low-income suburban Democrat, I prioritize affordable healthcare and more education funding, strong climate action, and humane immigration policy while keeping taxes from unduly burdening working families."
+        }
+      },
+      "debrief": {
+        "1": {
+          "most_important_attribute": "Healthcare spending",
+          "most_important_attribute_speculation_score": 0.15,
+          "comments": "Thank you — the survey was clear and relevant. I liked that it covered healthcare, education, climate, immigration, and taxes. It would be helpful to include brief explanations of how spending would be funded and how proposals might affect households like mine. Please ensure responses remain confidential."
+        }
+      }
+    },
+    "6": {
+      "conjoint": {
+        "1": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Decrease by 15%",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "10% flat tax",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Double public school funding",
+          "profile_b_immigration_policy": "Reduce by 50%",
+          "profile_b_climate_policy": "Carbon tax ($50/ton)",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 5,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I chose Profile B because it best matches my background and values: as a 23-year-old, college-educated urban resident with a middle-income and independent politics, I prefer pragmatic, centrist policies—moderate taxes, targeted healthcare and education spending, sensible immigration reform, and practical climate action—so Profile B felt most realistic and aligned with my priorities."
+        },
+        "2": {
+          "profile_a_tax_rate": "Current rates maintained",
+          "profile_a_healthcare_spending": "Decrease by 15%",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "10% flat tax",
+          "profile_b_healthcare_spending": "Increase by 20%",
+          "profile_b_education_spending": "Double public school funding",
+          "profile_b_immigration_policy": "Open borders",
+          "profile_b_climate_policy": "No new regulations",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.3,
+          "choice_confidence": 5,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I chose Profile B because its moderate, pragmatic mix of policies—reasonable taxes, targeted healthcare and education spending, sensible immigration reform, and practical climate action—best matches my background and values as a 23-year-old college-educated, urban resident with a middle-income and independent political stance."
+        },
+        "3": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Maintain current levels",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "No new regulations",
+          "profile_b_tax_rate": "Current rates maintained",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Maintain current levels",
+          "profile_b_immigration_policy": "Open borders",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 5,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I chose Profile B because its moderate, pragmatic mix—reasonable taxes, targeted healthcare and education spending, sensible immigration policy, and practical climate action—aligns with my priorities as a 23-year-old, college-educated, urban independent with a middle income."
+        },
+        "4": {
+          "profile_a_tax_rate": "Current rates maintained",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Maintain current levels",
+          "profile_a_immigration_policy": "Reduce by 50%",
+          "profile_a_climate_policy": "No new regulations",
+          "profile_b_tax_rate": "10% flat tax",
+          "profile_b_healthcare_spending": "Increase by 20%",
+          "profile_b_education_spending": "Maintain current levels",
+          "profile_b_immigration_policy": "Open borders",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 5,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I chose Profile B because its moderate, pragmatic mix of reasonable taxes, targeted healthcare and education spending, sensible immigration policy, and practical climate action best fits my priorities as a 23-year-old, college-educated urban independent with a middle income."
+        },
+        "5": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Increase by 20%",
+          "profile_a_education_spending": "Maintain current levels",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "No new regulations",
+          "profile_b_tax_rate": "Current rates maintained",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Maintain current levels",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 5,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "As a 23-year-old college-educated urban resident with a middle income and independent politics, I prefer pragmatic, centrist policies—moderate taxes, targeted healthcare and education spending, sensible immigration reform, and practical climate action—that balance personal responsibility with social support and economic growth."
+        }
+      },
+      "debrief": {
+        "1": {
+          "most_important_attribute": "Tax rate",
+          "most_important_attribute_speculation_score": 0.2,
+          "comments": "Overall the study was clear and straightforward. I would appreciate more context on trade-offs and real-world cost implications for each policy, clearer definitions for attribute levels (e.g., what constitutes “moderate” spending), and the option to rank or rate proposals in addition to choosing one. Consider reducing repetitive questions to limit fatigue."
+        }
+      }
+    },
+    "7": {
+      "conjoint": {
+        "1": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Double public school funding",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "Carbon tax ($50/ton)",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 5,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I picked Profile A because as a 59-year-old rural Republican with modest income I prefer lower taxes and pragmatic spending that prioritizes local healthcare and job-focused education. I favor stricter immigration and common-sense climate policies that won’t harm jobs or rural livelihoods."
+        },
+        "2": {
+          "profile_a_tax_rate": "10% flat tax",
+          "profile_a_healthcare_spending": "Decrease by 15%",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Open borders",
+          "profile_a_climate_policy": "No new regulations",
+          "profile_b_tax_rate": "10% flat tax",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Maintain current levels",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "No new regulations",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 5,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "As a 59-year-old rural Republican with modest income and no college, I prefer policies that keep taxes moderate, focus spending on practical local healthcare and job-focused education, have stricter immigration to protect local jobs and safety, and pursue sensible climate measures that won’t harm rural livelihoods."
+        },
+        "3": {
+          "profile_a_tax_rate": "10% flat tax",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Double public school funding",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "Current rates maintained",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 5,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I chose this profile because as a 59-year-old rural Republican with modest income and no college I prefer lower taxes, practical local healthcare and job-focused education, stricter immigration to protect jobs and safety, and sensible climate policies that won’t hurt rural livelihoods."
+        },
+        "4": {
+          "profile_a_tax_rate": "10% flat tax",
+          "profile_a_healthcare_spending": "Increase by 20%",
+          "profile_a_education_spending": "Maintain current levels",
+          "profile_a_immigration_policy": "Open borders",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Maintain current levels",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "Carbon tax ($50/ton)",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.3,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.3,
+          "choice_reasoning": "I chose this profile because as a 59-year-old rural Republican with modest income and no college degree I prefer lower taxes, practical investments in local healthcare and job-focused education, stricter immigration to protect local jobs and safety, and common-sense climate policies that won’t hurt rural livelihoods."
+        },
+        "5": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Double public school funding",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Reduce by 50%",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "As a 59-year-old rural Republican with modest income and no college degree, I prefer lower taxes, practical investments in local healthcare and job-focused education, stricter immigration to protect local jobs and safety, and common-sense climate policies that won’t harm rural livelihoods."
+        }
+      },
+      "debrief": {
+        "1": {
+          "most_important_attribute": "Tax rate",
+          "most_important_attribute_speculation_score": 0.2,
+          "comments": "Thank you for the study. The scenarios were generally clear, but I would have liked more detail about how each policy would affect my local community, taxes, jobs, and access to healthcare. Some descriptions felt a bit abstract — concrete examples of real-world impacts (on farms, local hospitals, and schools) would help. Overall it was easy to use; please keep future surveys straightforward and mindful of rural concerns."
+        }
+      }
+    },
+    "8": {
+      "conjoint": {
+        "1": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Maintain current levels",
+          "profile_a_education_spending": "Double public school funding",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "10% flat tax",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Reduce by 50%",
+          "profile_b_climate_policy": "Carbon tax ($50/ton)",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I chose Profile A because, as a 45-year-old college-educated suburban Democrat with a comfortable household income, I prefer proposals that invest in healthcare and education, take strong action on climate, and offer humane but practical immigration policies while keeping taxes at a level that supports these priorities without undermining economic stability."
+        },
+        "2": {
+          "profile_a_tax_rate": "Progressive (15-35%)",
+          "profile_a_healthcare_spending": "Decrease by 15%",
+          "profile_a_education_spending": "Double public school funding",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "No new regulations",
+          "profile_b_tax_rate": "Current rates maintained",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Reduce by 50%",
+          "profile_b_climate_policy": "Carbon tax ($50/ton)",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I chose Profile A because it aligns with my background as a 45-year-old, college-educated suburban Democrat with a comfortable household income and reflects my priorities: stronger investment in healthcare and education, decisive climate action, humane but practical immigration policy, and moderate taxes to fund those priorities without harming economic stability."
+        },
+        "3": {
+          "profile_a_tax_rate": "Current rates maintained",
+          "profile_a_healthcare_spending": "Decrease by 15%",
+          "profile_a_education_spending": "Maintain current levels",
+          "profile_a_immigration_policy": "Open borders",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Increase by 20%",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "No new regulations",
+          "chosen_profile": "Profile B",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I chose Profile B because, as a 45-year-old college-educated suburban Democrat with a household income over $100k, I prefer policies that boost healthcare and education funding, take meaningful climate action, adopt humane but practical immigration measures, and set taxes at a level that responsibly funds these priorities without undue economic strain."
+        },
+        "4": {
+          "profile_a_tax_rate": "10% flat tax",
+          "profile_a_healthcare_spending": "Increase by 20%",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Open borders",
+          "profile_a_climate_policy": "Carbon tax ($50/ton)",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Decrease by 15%",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I chose Profile A because it best matches my priorities as a 45-year-old, college-educated suburban Democrat with a comfortable income: stronger healthcare and education funding, decisive climate action, humane immigration policies, and moderate taxes to responsibly fund those priorities."
+        },
+        "5": {
+          "profile_a_tax_rate": "Current rates maintained",
+          "profile_a_healthcare_spending": "Increase by 20%",
+          "profile_a_education_spending": "Shift to voucher system",
+          "profile_a_immigration_policy": "Points-based system",
+          "profile_a_climate_policy": "Green subsidies only",
+          "profile_b_tax_rate": "Progressive (15-35%)",
+          "profile_b_healthcare_spending": "Maintain current levels",
+          "profile_b_education_spending": "Shift to voucher system",
+          "profile_b_immigration_policy": "Points-based system",
+          "profile_b_climate_policy": "Green subsidies only",
+          "chosen_profile": "Profile A",
+          "chosen_profile_speculation_score": 0.2,
+          "choice_confidence": 6,
+          "choice_confidence_speculation_score": 0.2,
+          "choice_reasoning": "I selected this profile because as a 45-year-old, college-educated suburban Democrat with a comfortable income, its policy priorities—greater investment in healthcare and education, strong climate action, humane immigration measures, and moderate taxes to fund services—best match my values and economic capacity to support them."
+        }
+      },
+      "debrief": {
+        "1": {
+          "most_important_attribute": "Healthcare spending",
+          "most_important_attribute_speculation_score": 0.2,
+          "comments": "Thank you for the opportunity to participate. The scenarios were clear and easy to compare, and I appreciated the concise attribute descriptions. A few suggestions: include more detail on how taxes are structured (progressive vs. flat) and on the budget constraints behind spending levels so choices reflect realistic trade-offs; present some scenarios with differing demographic contexts (urban vs. rural) for comparison; and be explicit about how results will be used and confidentiality protections. Overall, a well-designed study and I’m glad to contribute."
+        }
+      }
+    }
+  },
+  "group": {},
+  "player": {
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_1_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r1": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Carbon tax ($50/ton)",
+        "profile_b_tax_rate": "10% flat tax",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Double public school funding",
+        "profile_b_immigration_policy": "Reduce by 50%",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.12,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.12,
+        "choice_reasoning": "I picked Profile A because it best matches my priorities as a 34-year-old, college-educated urban Democrat earning $60k–$100k: it expands healthcare and education funding, takes meaningful climate action, supports humane immigration policies, and balances those priorities with a reasonable tax rate. That combination aligns with my values and practical financial concerns."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_2_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r1": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Double public school funding",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Carbon tax ($50/ton)",
+        "profile_b_tax_rate": "10% flat tax",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Open borders",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.25,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.25,
+        "choice_reasoning": "I chose Profile A because it matches my background and values—I'm a middle‑aged, working‑class, rural Republican with no college degree, so I prefer policies that favor lower taxes, limited government spending, stricter immigration control, and practical climate/energy approaches that protect jobs and communities."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_3_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r1": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "10% flat tax",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Double public school funding",
+        "profile_b_immigration_policy": "Open borders",
+        "profile_b_climate_policy": "Carbon tax ($50/ton)",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.25,
+        "choice_confidence": 5,
+        "choice_confidence_speculation_score": 0.25,
+        "choice_reasoning": "I picked Profile B because it best matches my centrist, pragmatic preferences: it balances reasonable taxes with meaningful investments in healthcare and education, supports sensible, humane immigration policies, and pursues practical climate action. That mix fits my urban, college-educated background and desire for evidence-based, fiscally responsible solutions."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_4_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r1": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Increase by 20%",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Carbon tax ($50/ton)",
+        "profile_b_tax_rate": "10% flat tax",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Maintain current levels",
+        "profile_b_immigration_policy": "Open borders",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.25,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.25,
+        "choice_reasoning": "As a 67-year-old, college-educated Republican in a suburban area with moderate income, I picked Profile A because it balances lower taxes and fiscal responsibility with protections for healthcare and retirement security, favors sensible education funding, supports stricter immigration controls, and endorses pragmatic, market-based climate measures rather than heavy-handed regulation."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_5_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r1": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Double public school funding",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "10% flat tax",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Reduce by 50%",
+        "profile_b_climate_policy": "No new regulations",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.12,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.12,
+        "choice_reasoning": "I chose Profile A because it best matches my priorities as a lower-income Democrat: it prioritizes affordable healthcare and education, supports strong climate action and humane immigration policy, and balances taxes so working families aren’t unduly burdened."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_6_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r1": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Decrease by 15%",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "10% flat tax",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Double public school funding",
+        "profile_b_immigration_policy": "Reduce by 50%",
+        "profile_b_climate_policy": "Carbon tax ($50/ton)",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 5,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I chose Profile B because it best matches my background and values: as a 23-year-old, college-educated urban resident with a middle-income and independent politics, I prefer pragmatic, centrist policies—moderate taxes, targeted healthcare and education spending, sensible immigration reform, and practical climate action—so Profile B felt most realistic and aligned with my priorities."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_7_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r1": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Double public school funding",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "Carbon tax ($50/ton)",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 5,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I picked Profile A because as a 59-year-old rural Republican with modest income I prefer lower taxes and pragmatic spending that prioritizes local healthcare and job-focused education. I favor stricter immigration and common-sense climate policies that won’t harm jobs or rural livelihoods."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_8_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r1": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Double public school funding",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "10% flat tax",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Reduce by 50%",
+        "profile_b_climate_policy": "Carbon tax ($50/ton)",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I chose Profile A because, as a 45-year-old college-educated suburban Democrat with a comfortable household income, I prefer proposals that invest in healthcare and education, take strong action on climate, and offer humane but practical immigration policies while keeping taxes at a level that supports these priorities without undermining economic stability."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_1_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r2": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Double public school funding",
+        "profile_a_immigration_policy": "Open borders",
+        "profile_a_climate_policy": "Carbon tax ($50/ton)",
+        "profile_b_tax_rate": "Current rates maintained",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.12,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.12,
+        "choice_reasoning": "I chose Profile A because as a 34-year-old urban Democrat with a college degree and household income of $60k–$100k, I prioritize expanded healthcare and education funding, meaningful climate action, humane immigration policy, and a reasonable tax rate that balances social investment with my personal financial concerns."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_2_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r2": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Double public school funding",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "No new regulations",
+        "profile_b_tax_rate": "10% flat tax",
+        "profile_b_healthcare_spending": "Increase by 20%",
+        "profile_b_education_spending": "Maintain current levels",
+        "profile_b_immigration_policy": "Reduce by 50%",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.25,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.25,
+        "choice_reasoning": "As a 52‑year‑old rural Republican with no college degree and a $30k–$60k income, I chose this profile because it reflects my preference for lower taxes, limited government spending, stricter immigration control, affordable healthcare/education priorities, and pragmatic climate policies that protect local jobs and the economy."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_3_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r2": {
+      "conjoint": {
+        "profile_a_tax_rate": "10% flat tax",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Reduce by 50%",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Increase by 20%",
+        "profile_b_education_spending": "Maintain current levels",
+        "profile_b_immigration_policy": "Open borders",
+        "profile_b_climate_policy": "No new regulations",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.25,
+        "choice_confidence": 5,
+        "choice_confidence_speculation_score": 0.25,
+        "choice_reasoning": "I chose Profile B because it balances reasonable taxes with meaningful investments in healthcare and education, supports sensible/humane immigration policy, and pursues practical climate action—aligning with my urban, college-educated, centrist, fiscally responsible preferences."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_4_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r2": {
+      "conjoint": {
+        "profile_a_tax_rate": "Current rates maintained",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Double public school funding",
+        "profile_a_immigration_policy": "Reduce by 50%",
+        "profile_a_climate_policy": "No new regulations",
+        "profile_b_tax_rate": "Current rates maintained",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Maintain current levels",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.25,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.25,
+        "choice_reasoning": "As a 67-year-old college-educated Republican on a moderate income, I prefer lower taxes and fiscal responsibility coupled with protecting healthcare/retirement, sensible education funding, stronger immigration controls, and pragmatic, market-based climate measures—qualities Profile A best balances."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_5_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r2": {
+      "conjoint": {
+        "profile_a_tax_rate": "Current rates maintained",
+        "profile_a_healthcare_spending": "Decrease by 15%",
+        "profile_a_education_spending": "Double public school funding",
+        "profile_a_immigration_policy": "Open borders",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.25,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.12,
+        "choice_reasoning": "I picked Profile A because, as a low-income suburban Democrat, I want affordable healthcare and more education funding, strong climate action, humane immigration policy, and tax policies that don’t overly burden working families."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_6_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r2": {
+      "conjoint": {
+        "profile_a_tax_rate": "Current rates maintained",
+        "profile_a_healthcare_spending": "Decrease by 15%",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "10% flat tax",
+        "profile_b_healthcare_spending": "Increase by 20%",
+        "profile_b_education_spending": "Double public school funding",
+        "profile_b_immigration_policy": "Open borders",
+        "profile_b_climate_policy": "No new regulations",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.3,
+        "choice_confidence": 5,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I chose Profile B because its moderate, pragmatic mix of policies—reasonable taxes, targeted healthcare and education spending, sensible immigration reform, and practical climate action—best matches my background and values as a 23-year-old college-educated, urban resident with a middle-income and independent political stance."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_7_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r2": {
+      "conjoint": {
+        "profile_a_tax_rate": "10% flat tax",
+        "profile_a_healthcare_spending": "Decrease by 15%",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Open borders",
+        "profile_a_climate_policy": "No new regulations",
+        "profile_b_tax_rate": "10% flat tax",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Maintain current levels",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "No new regulations",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 5,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "As a 59-year-old rural Republican with modest income and no college, I prefer policies that keep taxes moderate, focus spending on practical local healthcare and job-focused education, have stricter immigration to protect local jobs and safety, and pursue sensible climate measures that won’t harm rural livelihoods."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_8_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r2": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Decrease by 15%",
+        "profile_a_education_spending": "Double public school funding",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "No new regulations",
+        "profile_b_tax_rate": "Current rates maintained",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Reduce by 50%",
+        "profile_b_climate_policy": "Carbon tax ($50/ton)",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I chose Profile A because it aligns with my background as a 45-year-old, college-educated suburban Democrat with a comfortable household income and reflects my priorities: stronger investment in healthcare and education, decisive climate action, humane but practical immigration policy, and moderate taxes to fund those priorities without harming economic stability."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_1_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r3": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Increase by 20%",
+        "profile_a_education_spending": "Double public school funding",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "Current rates maintained",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Double public school funding",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.12,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.12,
+        "choice_reasoning": "I chose Profile A because, as a 34-year-old college-educated urban Democrat with a household income of $60k–$100k, I prioritize expanded healthcare and education funding, meaningful climate action, humane immigration policies, and a reasonable tax rate that balances social investment with my personal financial concerns."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_2_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r3": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "10% flat tax",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Double public school funding",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "No new regulations",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.25,
+        "choice_reasoning": "I picked this profile because as a 52-year-old rural Republican with no college and a $30k–$60k income, I prefer lower taxes, limited government spending, stricter immigration controls, and practical climate/energy policies that protect jobs and my community."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_3_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r3": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "Current rates maintained",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Double public school funding",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "No new regulations",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I chose Profile A because it balances lower taxes with targeted investments in healthcare and education, sensible immigration reforms, and pragmatic climate action—matching my preference as an urban, college‑educated independent for fiscally responsible, practical policies."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_4_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r3": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "Current rates maintained",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Maintain current levels",
+        "profile_b_immigration_policy": "Reduce by 50%",
+        "profile_b_climate_policy": "No new regulations",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.1,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.1,
+        "choice_reasoning": "As a 67-year-old suburban Republican with a college education and moderate income, I chose Profile B because it strikes the best balance for me between fiscal restraint and protecting healthcare/retirement security, supports sensible education funding, favors stronger immigration controls, and emphasizes pragmatic, market-based climate solutions."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_5_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r3": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Decrease by 15%",
+        "profile_a_education_spending": "Maintain current levels",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "No new regulations",
+        "profile_b_tax_rate": "10% flat tax",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Double public school funding",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "Carbon tax ($50/ton)",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.18,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.18,
+        "choice_reasoning": "I chose Profile B because, as a 41-year-old low-income Democrat in the suburbs, it best balances affordable healthcare and increased education funding, supports strong climate action and humane immigration policies, and keeps taxes from unduly burdening working families."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_6_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r3": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Maintain current levels",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "No new regulations",
+        "profile_b_tax_rate": "Current rates maintained",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Maintain current levels",
+        "profile_b_immigration_policy": "Open borders",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 5,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I chose Profile B because its moderate, pragmatic mix—reasonable taxes, targeted healthcare and education spending, sensible immigration policy, and practical climate action—aligns with my priorities as a 23-year-old, college-educated, urban independent with a middle income."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_7_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r3": {
+      "conjoint": {
+        "profile_a_tax_rate": "10% flat tax",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Double public school funding",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "Current rates maintained",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 5,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I chose this profile because as a 59-year-old rural Republican with modest income and no college I prefer lower taxes, practical local healthcare and job-focused education, stricter immigration to protect jobs and safety, and sensible climate policies that won’t hurt rural livelihoods."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_8_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r3": {
+      "conjoint": {
+        "profile_a_tax_rate": "Current rates maintained",
+        "profile_a_healthcare_spending": "Decrease by 15%",
+        "profile_a_education_spending": "Maintain current levels",
+        "profile_a_immigration_policy": "Open borders",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Increase by 20%",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "No new regulations",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I chose Profile B because, as a 45-year-old college-educated suburban Democrat with a household income over $100k, I prefer policies that boost healthcare and education funding, take meaningful climate action, adopt humane but practical immigration measures, and set taxes at a level that responsibly funds these priorities without undue economic strain."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_1_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r4": {
+      "conjoint": {
+        "profile_a_tax_rate": "10% flat tax",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Reduce by 50%",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Double public school funding",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "No new regulations",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.12,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.12,
+        "choice_reasoning": "I chose Profile B because, as a 34-year-old college-educated urban Democrat earning $60k–$100k, I prefer a proposal that expands healthcare and education, takes meaningful climate action, supports humane immigration policy, and uses a tax rate that balances funding those priorities with my household’s financial concerns."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_2_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r4": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "No new regulations",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I picked this profile because it matches my background—52‑year‑old rural Republican with no college and a $30k–$60k income—and reflects my preference for lower taxes, limited government spending, stricter immigration control, and practical climate/energy policies that protect local jobs."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_3_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r4": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Decrease by 15%",
+        "profile_a_education_spending": "Maintain current levels",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "No new regulations",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Reduce by 50%",
+        "profile_b_climate_policy": "Carbon tax ($50/ton)",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.25,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.25,
+        "choice_reasoning": "I chose Profile B because it strikes a pragmatic balance—moderate taxes with strong investments in healthcare and education, sensible/humane immigration policy, and practical climate action—which fits my urban, college-educated, independent perspective favoring fiscally responsible, evidence-based solutions."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_4_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r4": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Increase by 20%",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "No new regulations",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Maintain current levels",
+        "profile_b_immigration_policy": "Reduce by 50%",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.25,
+        "choice_reasoning": "I chose Profile A because it best matches my priorities as a 67-year-old suburban Republican: lower taxes and fiscal responsibility, protections for healthcare and retirement, sensible education funding, stronger immigration controls, and pragmatic, market-based climate solutions."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_5_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r4": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Increase by 20%",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Carbon tax ($50/ton)",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Increase by 20%",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I chose Profile B because as a 41-year-old low-income Democrat in the suburbs, I prioritize affordable healthcare and increased education funding, strong climate action and humane immigration policies, and tax policies that don’t unduly burden working families."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_6_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r4": {
+      "conjoint": {
+        "profile_a_tax_rate": "Current rates maintained",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Maintain current levels",
+        "profile_a_immigration_policy": "Reduce by 50%",
+        "profile_a_climate_policy": "No new regulations",
+        "profile_b_tax_rate": "10% flat tax",
+        "profile_b_healthcare_spending": "Increase by 20%",
+        "profile_b_education_spending": "Maintain current levels",
+        "profile_b_immigration_policy": "Open borders",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 5,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I chose Profile B because its moderate, pragmatic mix of reasonable taxes, targeted healthcare and education spending, sensible immigration policy, and practical climate action best fits my priorities as a 23-year-old, college-educated urban independent with a middle income."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_7_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r4": {
+      "conjoint": {
+        "profile_a_tax_rate": "10% flat tax",
+        "profile_a_healthcare_spending": "Increase by 20%",
+        "profile_a_education_spending": "Maintain current levels",
+        "profile_a_immigration_policy": "Open borders",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Maintain current levels",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "Carbon tax ($50/ton)",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.3,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.3,
+        "choice_reasoning": "I chose this profile because as a 59-year-old rural Republican with modest income and no college degree I prefer lower taxes, practical investments in local healthcare and job-focused education, stricter immigration to protect local jobs and safety, and common-sense climate policies that won’t hurt rural livelihoods."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_8_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r4": {
+      "conjoint": {
+        "profile_a_tax_rate": "10% flat tax",
+        "profile_a_healthcare_spending": "Increase by 20%",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Open borders",
+        "profile_a_climate_policy": "Carbon tax ($50/ton)",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I chose Profile A because it best matches my priorities as a 45-year-old, college-educated suburban Democrat with a comfortable income: stronger healthcare and education funding, decisive climate action, humane immigration policies, and moderate taxes to responsibly fund those priorities."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_1_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r5": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Decrease by 15%",
+        "profile_a_education_spending": "Double public school funding",
+        "profile_a_immigration_policy": "Open borders",
+        "profile_a_climate_policy": "Carbon tax ($50/ton)",
+        "profile_b_tax_rate": "Current rates maintained",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Double public school funding",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "No new regulations",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.12,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.12,
+        "choice_reasoning": "As a 34-year-old, college-educated urban Democrat earning $60k–$100k, I chose this profile because it increases healthcare and education funding, pursues meaningful climate action, supports humane immigration policies, and uses a tax rate that balances social investment with my household’s financial concerns."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_2_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r5": {
+      "conjoint": {
+        "profile_a_tax_rate": "10% flat tax",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Maintain current levels",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "No new regulations",
+        "profile_b_tax_rate": "10% flat tax",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Reduce by 50%",
+        "profile_b_climate_policy": "No new regulations",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.25,
+        "choice_reasoning": "I chose this profile because it matches my background — a 52-year-old rural Republican with no college and a $30k–$60k income — and reflects my preferences for lower taxes, limited government spending, stricter immigration control, and practical climate and energy policies that protect local jobs and communities."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_3_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r5": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Reduce by 50%",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Double public school funding",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "No new regulations",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I chose this profile because it provides a pragmatic balance—moderate taxes with solid investments in healthcare and education, humane immigration policy, and practical climate action—which aligns with my urban, college‑educated independent preference for fiscally responsible, evidence‑based solutions."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_4_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r5": {
+      "conjoint": {
+        "profile_a_tax_rate": "10% flat tax",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Maintain current levels",
+        "profile_a_immigration_policy": "Open borders",
+        "profile_a_climate_policy": "No new regulations",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Reduce by 50%",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.25,
+        "choice_reasoning": "As a 67-year-old, college-educated Republican in a suburban area with moderate income, I chose Profile B because it aligns with my priorities: lower taxes and fiscal responsibility, protecting healthcare and retirement benefits, sensible (but not excessive) education spending, stronger immigration controls, and pragmatic, market-based approaches to climate policy."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_5_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r5": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Double public school funding",
+        "profile_a_immigration_policy": "Open borders",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Decrease by 15%",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.1,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.12,
+        "choice_reasoning": "I picked Profile A because, as a low-income suburban Democrat, I prioritize affordable healthcare and more education funding, strong climate action, and humane immigration policy while keeping taxes from unduly burdening working families."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_6_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r5": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Increase by 20%",
+        "profile_a_education_spending": "Maintain current levels",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "No new regulations",
+        "profile_b_tax_rate": "Current rates maintained",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Maintain current levels",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 5,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "As a 23-year-old college-educated urban resident with a middle income and independent politics, I prefer pragmatic, centrist policies—moderate taxes, targeted healthcare and education spending, sensible immigration reform, and practical climate action—that balance personal responsibility with social support and economic growth."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_7_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r5": {
+      "conjoint": {
+        "profile_a_tax_rate": "Progressive (15-35%)",
+        "profile_a_healthcare_spending": "Maintain current levels",
+        "profile_a_education_spending": "Double public school funding",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Reduce by 50%",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile B",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "As a 59-year-old rural Republican with modest income and no college degree, I prefer lower taxes, practical investments in local healthcare and job-focused education, stricter immigration to protect local jobs and safety, and common-sense climate policies that won’t harm rural livelihoods."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_8_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_conjoint_r5": {
+      "conjoint": {
+        "profile_a_tax_rate": "Current rates maintained",
+        "profile_a_healthcare_spending": "Increase by 20%",
+        "profile_a_education_spending": "Shift to voucher system",
+        "profile_a_immigration_policy": "Points-based system",
+        "profile_a_climate_policy": "Green subsidies only",
+        "profile_b_tax_rate": "Progressive (15-35%)",
+        "profile_b_healthcare_spending": "Maintain current levels",
+        "profile_b_education_spending": "Shift to voucher system",
+        "profile_b_immigration_policy": "Points-based system",
+        "profile_b_climate_policy": "Green subsidies only",
+        "chosen_profile": "Profile A",
+        "chosen_profile_speculation_score": 0.2,
+        "choice_confidence": 6,
+        "choice_confidence_speculation_score": 0.2,
+        "choice_reasoning": "I selected this profile because as a 45-year-old, college-educated suburban Democrat with a comfortable income, its policy priorities—greater investment in healthcare and education, strong climate action, humane immigration measures, and moderate taxes to fund services—best match my values and economic capacity to support them."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_1_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_debrief_r1": {
+      "debrief": {
+        "most_important_attribute": "Healthcare spending",
+        "most_important_attribute_speculation_score": 0.12,
+        "comments": "Overall the survey was clear and the scenarios were interesting. I appreciated that it focused on trade-offs between taxes, healthcare, education, immigration, and climate. A few suggestions: define policy terms (e.g., “meaningful climate action”) more precisely, include projected costs/benefits or likely impacts so choices feel grounded, allow participants to indicate strength of preference (not just a binary choice), and emphasize how demographic data and responses will be protected. The length and format were fine."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_2_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_debrief_r1": {
+      "debrief": {
+        "most_important_attribute": "Tax rate",
+        "most_important_attribute_speculation_score": 0.15,
+        "comments": "Thanks for including me. The choices were clear but felt a bit simplified—I'd like more realistic trade-offs and info on how each proposal would affect jobs, taxes, and local services in rural areas, plus details on implementation and timing."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_3_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_debrief_r1": {
+      "debrief": {
+        "most_important_attribute": "Healthcare spending",
+        "most_important_attribute_speculation_score": 0.25,
+        "comments": "Thanks — the survey was clear and the scenarios realistic. After a few pairs it felt a bit repetitive; consider adding varied/longer-term outcome descriptions, clearer definitions for attribute levels (e.g., what “moderate” tax means), and an option to indicate indifference. Also reassure participants about confidentiality and offer summary results or feedback. Overall, a well‑designed study."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_4_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_debrief_r1": {
+      "debrief": {
+        "most_important_attribute": "Tax rate",
+        "most_important_attribute_speculation_score": 0.2,
+        "comments": "Overall the study was clear and easy to follow and the policy attributes felt realistic. It would be helpful to include more detail on trade-offs and long-term costs and to clarify how spending increases would be funded. Consider adding options about Social Security/Medicare specifics and distinctions between federal and local responsibilities. Thank you."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_5_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_debrief_r1": {
+      "debrief": {
+        "most_important_attribute": "Healthcare spending",
+        "most_important_attribute_speculation_score": 0.15,
+        "comments": "Thank you — the survey was clear and relevant. I liked that it covered healthcare, education, climate, immigration, and taxes. It would be helpful to include brief explanations of how spending would be funded and how proposals might affect households like mine. Please ensure responses remain confidential."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_6_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_debrief_r1": {
+      "debrief": {
+        "most_important_attribute": "Tax rate",
+        "most_important_attribute_speculation_score": 0.2,
+        "comments": "Overall the study was clear and straightforward. I would appreciate more context on trade-offs and real-world cost implications for each policy, clearer definitions for attribute levels (e.g., what constitutes “moderate” spending), and the option to rank or rate proposals in addition to choosing one. Consider reducing repetitive questions to limit fatigue."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_7_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_debrief_r1": {
+      "debrief": {
+        "most_important_attribute": "Tax rate",
+        "most_important_attribute_speculation_score": 0.2,
+        "comments": "Thank you for the study. The scenarios were generally clear, but I would have liked more detail about how each policy would affect my local community, taxes, jobs, and access to healthcare. Some descriptions felt a bit abstract — concrete examples of real-world impacts (on farms, local hospitals, and schools) would help. Overall it was easy to use; please keep future surveys straightforward and mindful of rural concerns."
+      }
+    },
+    "conjoint_policy_experiment_20260405T113918Z_bdod6b_8_conjoint_policy_experiment_20260405T113918Z_bdod6b_s1_debrief_r1": {
+      "debrief": {
+        "most_important_attribute": "Healthcare spending",
+        "most_important_attribute_speculation_score": 0.2,
+        "comments": "Thank you for the opportunity to participate. The scenarios were clear and easy to compare, and I appreciated the concise attribute descriptions. A few suggestions: include more detail on how taxes are structured (progressive vs. flat) and on the budget constraints behind spending levels so choices reflect realistic trade-offs; present some scenarios with differing demographic contexts (urban vs. rural) for comparison; and be explicit about how results will be used and confidentiality protections. Overall, a well-designed study and I’m glad to contribute."
+      }
+    }
+  }
+}

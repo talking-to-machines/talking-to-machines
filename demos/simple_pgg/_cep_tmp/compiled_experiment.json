@@ -1,0 +1,397 @@
+{
+  "schema_version": "1.0",
+  "experiment_id": "simple_pgg",
+  "config_hash": "daa0a340ce01b98e",
+  "cep_hash": "008681bee0a6eaa307f1366812621519a56cb6490121b5cf69b8806db20af33e",
+  "run_id": "simple_pgg_20260405T113644Z_xaji0y",
+  "settings": {
+    "experiment_id": "simple_pgg",
+    "model_name": "gpt-4.1-mini",
+    "hf_inference_endpoint": "",
+    "temperature": 0.0,
+    "random_seed": 42,
+    "profile_fields": "ALL",
+    "build_profile_qa": true,
+    "build_profile_backstories": false,
+    "num_agents_per_session": 4,
+    "module_sequence": [
+      "task1"
+    ],
+    "context_overflow_policy": "terminate"
+  },
+  "constants": {
+    "task1": {
+      "MAX_NUM_ROUNDS": 3,
+      "PLAYERS_PER_GROUP": 2,
+      "MIN_ENDOWMENT": 0,
+      "MAX_ENDOWMENT": 10
+    }
+  },
+  "fields": [
+    {
+      "field_class": "Player",
+      "module": "task1",
+      "name": "decision",
+      "type": "integer",
+      "response_options": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "response_options_intro": "Please choose one of the following:",
+      "randomise_options_order": false,
+      "validate": true,
+      "generate_speculation_score": true,
+      "format_response": true
+    },
+    {
+      "field_class": "Group",
+      "module": "task1",
+      "name": "total_contribution",
+      "type": "integer",
+      "response_options": null,
+      "response_options_intro": "nan",
+      "randomise_options_order": false,
+      "validate": false,
+      "generate_speculation_score": false,
+      "format_response": true
+    },
+    {
+      "field_class": "Player",
+      "module": "task1",
+      "name": "public_account_earnings",
+      "type": "integer",
+      "response_options": null,
+      "response_options_intro": "nan",
+      "randomise_options_order": false,
+      "validate": false,
+      "generate_speculation_score": false,
+      "format_response": true
+    },
+    {
+      "field_class": "Player",
+      "module": "task1",
+      "name": "private_account_remaining",
+      "type": "integer",
+      "response_options": null,
+      "response_options_intro": "nan",
+      "randomise_options_order": false,
+      "validate": false,
+      "generate_speculation_score": false,
+      "format_response": true
+    },
+    {
+      "field_class": "Player",
+      "module": "task1",
+      "name": "total_earnings",
+      "type": "integer",
+      "response_options": null,
+      "response_options_intro": "nan",
+      "randomise_options_order": false,
+      "validate": false,
+      "generate_speculation_score": false,
+      "format_response": true
+    }
+  ],
+  "facilitator_functions": [
+    {
+      "name": "assign_groups",
+      "definition": "nan",
+      "kwargs": {}
+    },
+    {
+      "name": "calculate_total_contribution",
+      "definition": "Calculate the total number of tokens contributed to the public account in this round using the following formula:\nPlayer 1's contribution to public account in this round + Player 2's contribution to public account in this round\nRespond with only the resulting nunber without providing any explanations.",
+      "kwargs": {}
+    },
+    {
+      "name": "calculate_public_account_earnings",
+      "definition": "Calculate Player ID {{ player.agent_id }}'s earnings from the public account this round using the following formula:\n({{ group.total_contribution }} × 2) ÷ {{ group.num_players }}\nRespond with only the resulting number without providing any explanations.",
+      "kwargs": {}
+    },
+    {
+      "name": "calculate_private_account_remaining",
+      "definition": "Calculate Player ID {{ player.agent_id }}'s remaining private tokens this round using the following formula:\n10 − {{ player.decision }}\nRespond with only the resulting number without any explanations.",
+      "kwargs": {}
+    },
+    {
+      "name": "calculate_total_earnings",
+      "definition": "Calculate Player ID {{ player.agent_id }}'s total earnings this round using the following formula:\n{{ player.public_account_earnings }} + {{ player.private_account_remaining }}\nRespond with only the resulting number without any explanations.",
+      "kwargs": {}
+    }
+  ],
+  "prompts": {
+    "task1": [
+      {
+        "module": "task1",
+        "prompt_sequence": 0,
+        "type": "CONTEXT",
+        "is_displayed": "round_number == 1",
+        "is_adapted": true,
+        "human_text": "Introduction context.",
+        "llm_text": "You are participating in a decision-making experiment. Your endowment is 10 tokens.",
+        "field_class": null,
+        "field_name": null,
+        "kwargs": {}
+      },
+      {
+        "module": "task1",
+        "prompt_sequence": 1,
+        "type": "PRIVATE_QUESTION",
+        "is_displayed": null,
+        "is_adapted": true,
+        "human_text": "How much will you contribute?",
+        "llm_text": "How many tokens would you contribute to the group fund? Tokens in the public account will be multiplied by a factor of 2 and distributed equally among all players. Tokens kept in your private account will not be shared and remain yours. Choose a value between 0 and 10.",
+        "field_class": "Player",
+        "field_name": "decision",
+        "kwargs": {}
+      },
+      {
+        "module": "task1",
+        "prompt_sequence": 2,
+        "type": "FACILITATOR",
+        "is_displayed": null,
+        "is_adapted": false,
+        "human_text": "nan",
+        "llm_text": "calculate_total_contribution",
+        "field_class": "Group",
+        "field_name": "total_contribution",
+        "kwargs": {}
+      },
+      {
+        "module": "task1",
+        "prompt_sequence": 3,
+        "type": "FACILITATOR",
+        "is_displayed": null,
+        "is_adapted": false,
+        "human_text": "nan",
+        "llm_text": "calculate_public_account_earnings",
+        "field_class": "Player",
+        "field_name": "public_account_earnings",
+        "kwargs": {}
+      },
+      {
+        "module": "task1",
+        "prompt_sequence": 4,
+        "type": "FACILITATOR",
+        "is_displayed": null,
+        "is_adapted": false,
+        "human_text": "nan",
+        "llm_text": "calculate_private_account_remaining",
+        "field_class": "Player",
+        "field_name": "private_account_remaining",
+        "kwargs": {}
+      },
+      {
+        "module": "task1",
+        "prompt_sequence": 5,
+        "type": "FACILITATOR",
+        "is_displayed": null,
+        "is_adapted": false,
+        "human_text": "nan",
+        "llm_text": "calculate_total_earnings",
+        "field_class": "Player",
+        "field_name": "total_earnings",
+        "kwargs": {}
+      },
+      {
+        "module": "task1",
+        "prompt_sequence": 6,
+        "type": "CONTEXT",
+        "is_displayed": null,
+        "is_adapted": false,
+        "human_text": "nan",
+        "llm_text": "The total contribution for this round is {{ group.total_contribution }} tokens. Your total earnings for this round is {{ player.total_earnings }} tokens.",
+        "field_class": null,
+        "field_name": null,
+        "kwargs": {}
+      }
+    ]
+  },
+  "profiles": {
+    "short_names": [
+      "ID",
+      "age",
+      "gender"
+    ],
+    "full_names": [
+      "ID",
+      "What is your age?",
+      "What is your gender?"
+    ],
+    "rows": [
+      {
+        "ID": "1",
+        "age": "25",
+        "gender": "Male"
+      },
+      {
+        "ID": "2",
+        "age": "32",
+        "gender": "Female"
+      },
+      {
+        "ID": "3",
+        "age": "28",
+        "gender": "Male"
+      },
+      {
+        "ID": "4",
+        "age": "41",
+        "gender": "Female"
+      }
+    ],
+    "id_column": "ID",
+    "included_columns": [
+      "ID",
+      "age",
+      "gender"
+    ]
+  },
+  "module_sequence": [
+    "task1"
+  ],
+  "assignment_plan": {
+    "random_seed": 42,
+    "group_assignments": {
+      "task1": {
+        "1": {
+          "group1": [
+            "1",
+            "3"
+          ],
+          "group2": [
+            "2",
+            "4"
+          ]
+        },
+        "2": {
+          "group1": [
+            "1",
+            "3"
+          ],
+          "group2": [
+            "2",
+            "4"
+          ]
+        },
+        "3": {
+          "group1": [
+            "1",
+            "3"
+          ],
+          "group2": [
+            "2",
+            "4"
+          ]
+        }
+      }
+    },
+    "manual_variables": [
+      {
+        "profile_id": 1,
+        "module": "task1",
+        "round_number": 1,
+        "class": "Player",
+        "name": "treatment",
+        "value": "control"
+      },
+      {
+        "profile_id": 1,
+        "module": "task1",
+        "round_number": 2,
+        "class": "Player",
+        "name": "treatment",
+        "value": "control"
+      },
+      {
+        "profile_id": 1,
+        "module": "task1",
+        "round_number": 3,
+        "class": "Player",
+        "name": "treatment",
+        "value": "control"
+      },
+      {
+        "profile_id": 2,
+        "module": "task1",
+        "round_number": 1,
+        "class": "Player",
+        "name": "treatment",
+        "value": "treatment_A"
+      },
+      {
+        "profile_id": 2,
+        "module": "task1",
+        "round_number": 2,
+        "class": "Player",
+        "name": "treatment",
+        "value": "treatment_A"
+      },
+      {
+        "profile_id": 2,
+        "module": "task1",
+        "round_number": 3,
+        "class": "Player",
+        "name": "treatment",
+        "value": "treatment_A"
+      },
+      {
+        "profile_id": 3,
+        "module": "task1",
+        "round_number": 1,
+        "class": "Player",
+        "name": "treatment",
+        "value": "control"
+      },
+      {
+        "profile_id": 3,
+        "module": "task1",
+        "round_number": 2,
+        "class": "Player",
+        "name": "treatment",
+        "value": "control"
+      },
+      {
+        "profile_id": 3,
+        "module": "task1",
+        "round_number": 3,
+        "class": "Player",
+        "name": "treatment",
+        "value": "control"
+      },
+      {
+        "profile_id": 4,
+        "module": "task1",
+        "round_number": 1,
+        "class": "Player",
+        "name": "treatment",
+        "value": "treatment_A"
+      },
+      {
+        "profile_id": 4,
+        "module": "task1",
+        "round_number": 2,
+        "class": "Player",
+        "name": "treatment",
+        "value": "treatment_A"
+      },
+      {
+        "profile_id": 4,
+        "module": "task1",
+        "round_number": 3,
+        "class": "Player",
+        "name": "treatment",
+        "value": "treatment_A"
+      }
+    ]
+  }
+}

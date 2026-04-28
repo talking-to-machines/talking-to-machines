@@ -1,0 +1,13 @@
+module,name,value,type
+conjoint,PLAYER_TYPE,Assume the role of a human participant in a policy evaluation study. You will be presented with pairs of hypothetical policy proposals and asked to choose which you prefer. Please respond as a real person with the provided background would.,text
+conjoint,MAX_NUM_ROUNDS,5,integer
+conjoint,PLAYERS_PER_GROUP,1,integer
+conjoint,NUM_PROFILES_PER_TASK,2,integer
+conjoint,CONJOINT_ATTRIBUTES,"[""tax_rate"", ""healthcare_spending"", ""education_spending"", ""immigration_policy"", ""climate_policy""]",text
+conjoint,CONJOINT_LEVELS_TAX_RATE,"[""10% flat tax"", ""Progressive (15-35%)"", ""Current rates maintained""]",text
+conjoint,CONJOINT_LEVELS_HEALTHCARE_SPENDING,"[""Increase by 20%"", ""Maintain current levels"", ""Decrease by 15%""]",text
+conjoint,CONJOINT_LEVELS_EDUCATION_SPENDING,"[""Double public school funding"", ""Maintain current levels"", ""Shift to voucher system""]",text
+conjoint,CONJOINT_LEVELS_IMMIGRATION_POLICY,"[""Open borders"", ""Points-based system"", ""Reduce by 50%""]",text
+conjoint,CONJOINT_LEVELS_CLIMATE_POLICY,"[""Carbon tax ($50/ton)"", ""Green subsidies only"", ""No new regulations""]",text
+debrief,PLAYERS_PER_GROUP,1,integer
+debrief,MAX_NUM_ROUNDS,1,integer

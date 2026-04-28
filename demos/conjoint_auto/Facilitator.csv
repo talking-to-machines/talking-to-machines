@@ -1,0 +1,12 @@
+name,definition,kwargs
+assign_groups,,
+select_profile_a_tax_rate,"Without providing any explanation, sample at random from {{ C.conjoint.CONJOINT_LEVELS_TAX_RATE }}.",
+select_profile_a_healthcare_spending,"Without providing any explanation, sample at random from {{ C.conjoint.CONJOINT_LEVELS_HEALTHCARE_SPENDING }}.",
+select_profile_a_education_spending,"Without providing any explanation, sample at random from {{ C.conjoint.CONJOINT_LEVELS_EDUCATION_SPENDING }}.",
+select_profile_a_immigration_policy,"Without providing any explanation, sample at random from {{ C.conjoint.CONJOINT_LEVELS_IMMIGRATION_POLICY }}.",
+select_profile_a_climate_policy,"Without providing any explanation, sample at random from {{ C.conjoint.CONJOINT_LEVELS_CLIMATE_POLICY }}.",
+select_profile_b_tax_rate,"Without providing any explanation, sample at random from {{ C.conjoint.CONJOINT_LEVELS_TAX_RATE }}.",
+select_profile_b_healthcare_spending,"Without providing any explanation, sample at random from {{ C.conjoint.CONJOINT_LEVELS_HEALTHCARE_SPENDING }}.",
+select_profile_b_education_spending,"Without providing any explanation, sample at random from {{ C.conjoint.CONJOINT_LEVELS_EDUCATION_SPENDING }}.",
+select_profile_b_immigration_policy,"Without providing any explanation, sample at random from {{ C.conjoint.CONJOINT_LEVELS_IMMIGRATION_POLICY }}.",
+select_profile_b_climate_policy,"Without providing any explanation, sample at random from {{ C.conjoint.CONJOINT_LEVELS_CLIMATE_POLICY }}.",

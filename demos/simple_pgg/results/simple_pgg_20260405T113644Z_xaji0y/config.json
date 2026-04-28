@@ -1,0 +1,15 @@
+{
+  "experiment_id": "simple_pgg",
+  "model_name": "gpt-4.1-mini",
+  "hf_inference_endpoint": "",
+  "temperature": 0.0,
+  "random_seed": 42,
+  "profile_fields": "ALL",
+  "build_profile_qa": true,
+  "build_profile_backstories": false,
+  "num_agents_per_session": 4,
+  "module_sequence": [
+    "task1"
+  ],
+  "context_overflow_policy": "terminate"
+}

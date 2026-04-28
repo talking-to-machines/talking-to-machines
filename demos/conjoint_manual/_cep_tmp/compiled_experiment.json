@@ -1,0 +1,3590 @@
+{
+  "schema_version": "1.0",
+  "experiment_id": "conjoint_manual_experiment",
+  "config_hash": "f04bb4d137e06bd1",
+  "cep_hash": "db6f815b0fc3f182ecd77aeaadf78e7184ec9c355c9f1a48b1b0d95eb081d9e3",
+  "run_id": "conjoint_manual_experiment_20260405T113845Z_bdod6b",
+  "settings": {
+    "experiment_id": "conjoint_manual_experiment",
+    "model_name": "gpt-5-mini",
+    "hf_inference_endpoint": "",
+    "temperature": 0.5,
+    "random_seed": 123,
+    "profile_fields": "ALL",
+    "build_profile_qa": true,
+    "build_profile_backstories": false,
+    "num_agents_per_session": 8,
+    "module_sequence": [
+      "conjoint",
+      "debrief"
+    ],
+    "context_overflow_policy": "terminate"
+  },
+  "constants": {
+    "conjoint": {
+      "PLAYER_TYPE": "Assume the role of a human participant in an experiment on political preferences.",
+      "MAX_NUM_ROUNDS": 5,
+      "PLAYERS_PER_GROUP": 1,
+      "NUM_PROFILES_PER_TASK": 2,
+      "NUM_ATTRIBUTES": 5
+    },
+    "debrief": {
+      "PLAYERS_PER_GROUP": 1,
+      "MAX_NUM_ROUNDS": 1
+    }
+  },
+  "fields": [
+    {
+      "field_class": "Player",
+      "module": "conjoint",
+      "name": "chosen_profile",
+      "type": "category",
+      "response_options": [
+        "Profile A",
+        "Profile B"
+      ],
+      "response_options_intro": "Which policy profile do you prefer?",
+      "randomise_options_order": false,
+      "validate": true,
+      "generate_speculation_score": true,
+      "format_response": true
+    },
+    {
+      "field_class": "Player",
+      "module": "conjoint",
+      "name": "choice_confidence",
+      "type": "integer",
+      "response_options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "response_options_intro": "On a scale of 1 to 7, how confident are you in your choice?",
+      "randomise_options_order": false,
+      "validate": true,
+      "generate_speculation_score": true,
+      "format_response": true
+    },
+    {
+      "field_class": "Player",
+      "module": "conjoint",
+      "name": "choice_reasoning",
+      "type": "text",
+      "response_options": null,
+      "response_options_intro": "nan",
+      "randomise_options_order": false,
+      "validate": false,
+      "generate_speculation_score": false,
+      "format_response": true
+    },
+    {
+      "field_class": "Player",
+      "module": "debrief",
+      "name": "most_important_attribute",
+      "type": "category",
+      "response_options": [
+        "Tax rate",
+        "Healthcare spending",
+        "Education spending",
+        "Immigration policy",
+        "Climate policy"
+      ],
+      "response_options_intro": "Which policy attribute was most important to your decisions?",
+      "randomise_options_order": true,
+      "validate": true,
+      "generate_speculation_score": true,
+      "format_response": true
+    },
+    {
+      "field_class": "Player",
+      "module": "debrief",
+      "name": "comments",
+      "type": "text",
+      "response_options": null,
+      "response_options_intro": "nan",
+      "randomise_options_order": false,
+      "validate": false,
+      "generate_speculation_score": false,
+      "format_response": true
+    }
+  ],
+  "facilitator_functions": [
+    {
+      "name": "assign_groups",
+      "definition": "nan",
+      "kwargs": {}
+    }
+  ],
+  "prompts": {
+    "conjoint": [
+      {
+        "module": "conjoint",
+        "prompt_sequence": 0,
+        "type": "CONTEXT",
+        "is_displayed": "round_number == 1",
+        "is_adapted": true,
+        "human_text": "nan",
+        "llm_text": "Assume the role of a human participant in an experiment on political preferences.",
+        "field_class": null,
+        "field_name": null,
+        "kwargs": {}
+      },
+      {
+        "module": "conjoint",
+        "prompt_sequence": 1,
+        "type": "CONTEXT",
+        "is_displayed": "round_number == 1",
+        "is_adapted": false,
+        "human_text": "You will be shown {{ C.conjoint.MAX_NUM_ROUNDS }} pairs of hypothetical policy proposals. Each proposal is described by five attributes: tax rate, healthcare spending, education spending, immigration policy, and climate policy. For each pair, please indicate which proposal you would prefer to see implemented.",
+        "llm_text": "You will be shown 5 pairs of hypothetical policy proposals. Each proposal is described by five attributes: tax rate, healthcare spending, education spending, immigration policy, and climate policy. For each pair, please indicate which proposal you would prefer to see implemented.",
+        "field_class": null,
+        "field_name": null,
+        "kwargs": {}
+      },
+      {
+        "module": "conjoint",
+        "prompt_sequence": 2,
+        "type": "PRIVATE_QUESTION",
+        "is_displayed": null,
+        "is_adapted": false,
+        "human_text": "Which one of the the two policy proposals do you prefer?\n\nPROFILE A:\n- Tax rate: {{ conjoint.player.profile_a_tax_rate }}\n- Healthcare: {{ conjoint.player.profile_a_healthcare_spending }}\n- Education: {{ conjoint.player.profile_a_education_spending }}\n- Immigration: {{ conjoint.player.profile_a_immigration_policy }}\n- Climate: {{ conjoint.player.profile_a_climate_policy }}\n\nPROFILE B:\n- Tax rate: {{ conjoint.player.profile_b_tax_rate }}\n- Healthcare: {{ conjoint.player.profile_b_healthcare_spending }}\n- Education: {{ conjoint.player.profile_b_education_spending }}\n- Immigration: {{ conjoint.player.profile_b_immigration_policy }}\n- Climate: {{ conjoint.player.profile_b_climate_policy }}\n\nWhich profile do you prefer?",
+        "llm_text": "Which one of the the two policy proposals do you prefer? Provide your response in the following format: [\"Profile A\", \"Profile B\"]\n\nPROFILE A:\n- Tax rate: {{ player.profile_a_tax_rate }}\n- Healthcare: {{ player.profile_a_healthcare_spending }}\n- Education: {{ player.profile_a_education_spending }}\n- Immigration: {{ player.profile_a_immigration_policy }}\n- Climate: {{ player.profile_a_climate_policy }}\n\nPROFILE B:\n- Tax rate: {{ player.profile_b_tax_rate }}\n\n- Healthcare: {{ player.profile_b_healthcare_spending }}\n- Education: {{ player.profile_b_education_spending }}\n- Immigration: {{ player.profile_b_immigration_policy }}\n- Climate: {{ player.profile_b_climate_policy }}",
+        "field_class": "Player",
+        "field_name": "chosen_profile",
+        "kwargs": {}
+      },
+      {
+        "module": "conjoint",
+        "prompt_sequence": 3,
+        "type": "PRIVATE_QUESTION",
+        "is_displayed": null,
+        "is_adapted": false,
+        "human_text": "How confident are you in this choice?",
+        "llm_text": "How confident are you in this choice?",
+        "field_class": "Player",
+        "field_name": "choice_confidence",
+        "kwargs": {}
+      },
+      {
+        "module": "conjoint",
+        "prompt_sequence": 4,
+        "type": "PRIVATE_QUESTION",
+        "is_displayed": null,
+        "is_adapted": false,
+        "human_text": "Please briefly explain why you chose this profile.",
+        "llm_text": "Please briefly explain why you chose this profile.",
+        "field_class": "Player",
+        "field_name": "choice_reasoning",
+        "kwargs": {}
+      }
+    ],
+    "debrief": [
+      {
+        "module": "debrief",
+        "prompt_sequence": 0,
+        "type": "PRIVATE_QUESTION",
+        "is_displayed": null,
+        "is_adapted": false,
+        "human_text": "Which policy attribute was most important to your decisions?",
+        "llm_text": "Which policy attribute was most important to your decisions?",
+        "field_class": "Player",
+        "field_name": "most_important_attribute",
+        "kwargs": {}
+      },
+      {
+        "module": "debrief",
+        "prompt_sequence": 1,
+        "type": "PRIVATE_QUESTION",
+        "is_displayed": null,
+        "is_adapted": false,
+        "human_text": "Do you have any additional comments about this study?",
+        "llm_text": "Do you have any additional comments about this study?",
+        "field_class": "Player",
+        "field_name": "comments",
+        "kwargs": {}
+      }
+    ]
+  },
+  "profiles": {
+    "short_names": [
+      "ID",
+      "gender",
+      "age",
+      "college",
+      "income_bracket",
+      "party_affiliation",
+      "urban_rural"
+    ],
+    "full_names": [
+      "ID",
+      "What is your gender?",
+      "What is your age?",
+      "Do you have a college education?",
+      "What is your household income bracket?",
+      "What is your political party affiliation?",
+      "Do you live in an urban, suburban, or rural area?"
+    ],
+    "rows": [
+      {
+        "ID": "1",
+        "gender": "Female",
+        "age": "34",
+        "college": "Yes",
+        "income_bracket": "$60k-$100k",
+        "party_affiliation": "Democrat",
+        "urban_rural": "Urban"
+      },
+      {
+        "ID": "2",
+        "gender": "Male",
+        "age": "52",
+        "college": "No",
+        "income_bracket": "$30k-$60k",
+        "party_affiliation": "Republican",
+        "urban_rural": "Rural"
+      },
+      {
+        "ID": "3",
+        "gender": "Female",
+        "age": "28",
+        "college": "Yes",
+        "income_bracket": "Over $100k",
+        "party_affiliation": "Independent",
+        "urban_rural": "Urban"
+      },
+      {
+        "ID": "4",
+        "gender": "Male",
+        "age": "67",
+        "college": "Yes",
+        "income_bracket": "$60k-$100k",
+        "party_affiliation": "Republican",
+        "urban_rural": "Suburban"
+      },
+      {
+        "ID": "5",
+        "gender": "Female",
+        "age": "41",
+        "college": "No",
+        "income_bracket": "Under $30k",
+        "party_affiliation": "Democrat",
+        "urban_rural": "Suburban"
+      },
+      {
+        "ID": "6",
+        "gender": "Male",
+        "age": "23",
+        "college": "Yes",
+        "income_bracket": "$30k-$60k",
+        "party_affiliation": "Independent",
+        "urban_rural": "Urban"
+      },
+      {
+        "ID": "7",
+        "gender": "Female",
+        "age": "59",
+        "college": "No",
+        "income_bracket": "$30k-$60k",
+        "party_affiliation": "Republican",
+        "urban_rural": "Rural"
+      },
+      {
+        "ID": "8",
+        "gender": "Male",
+        "age": "45",
+        "college": "Yes",
+        "income_bracket": "Over $100k",
+        "party_affiliation": "Democrat",
+        "urban_rural": "Suburban"
+      }
+    ],
+    "id_column": "ID",
+    "included_columns": [
+      "ID",
+      "gender",
+      "age",
+      "college",
+      "income_bracket",
+      "party_affiliation",
+      "urban_rural"
+    ]
+  },
+  "module_sequence": [
+    "conjoint",
+    "debrief"
+  ],
+  "assignment_plan": {
+    "random_seed": 123,
+    "group_assignments": {},
+    "manual_variables": [
+      {
+        "profile_id": 1,
+        "module": "nan",
+        "round_number": "",
+        "class": "Agent",
+        "name": "treatment",
+        "value": "control"
+      },
+      {
+        "profile_id": 2,
+        "module": "nan",
+        "round_number": "",
+        "class": "Agent",
+        "name": "treatment",
+        "value": "framed"
+      },
+      {
+        "profile_id": 3,
+        "module": "nan",
+        "round_number": "",
+        "class": "Agent",
+        "name": "treatment",
+        "value": "control"
+      },
+      {
+        "profile_id": 4,
+        "module": "nan",
+        "round_number": "",
+        "class": "Agent",
+        "name": "treatment",
+        "value": "framed"
+      },
+      {
+        "profile_id": 5,
+        "module": "nan",
+        "round_number": "",
+        "class": "Agent",
+        "name": "treatment",
+        "value": "control"
+      },
+      {
+        "profile_id": 6,
+        "module": "nan",
+        "round_number": "",
+        "class": "Agent",
+        "name": "treatment",
+        "value": "framed"
+      },
+      {
+        "profile_id": 7,
+        "module": "nan",
+        "round_number": "",
+        "class": "Agent",
+        "name": "treatment",
+        "value": "control"
+      },
+      {
+        "profile_id": 8,
+        "module": "nan",
+        "round_number": "",
+        "class": "Agent",
+        "name": "treatment",
+        "value": "framed"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_a_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "10% flat tax"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Progressive (15-35%)"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_tax_rate",
+        "value": "Current rates maintained"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Decrease by 15%"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Increase by 20%"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_healthcare_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Shift to voucher system"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Maintain current levels"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_education_spending",
+        "value": "Double public school funding"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Open borders"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Points-based system"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_immigration_policy",
+        "value": "Reduce by 50%"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 1,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 2,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 3,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 4,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 5,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 6,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      },
+      {
+        "profile_id": 7,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 1,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 2,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Green subsidies only"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 3,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 4,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "No new regulations"
+      },
+      {
+        "profile_id": 8,
+        "module": "conjoint",
+        "round_number": 5,
+        "class": "Player",
+        "name": "profile_b_climate_policy",
+        "value": "Carbon tax ($50/ton)"
+      }
+    ]
+  }
+}

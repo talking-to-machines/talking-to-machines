@@ -1,0 +1,16 @@
+{
+  "experiment_id": "conjoint_policy_experiment",
+  "model_name": "gpt-5-mini",
+  "hf_inference_endpoint": "",
+  "temperature": 0.5,
+  "random_seed": 123,
+  "profile_fields": "ALL",
+  "build_profile_qa": true,
+  "build_profile_backstories": false,
+  "num_agents_per_session": 8,
+  "module_sequence": [
+    "conjoint",
+    "debrief"
+  ],
+  "context_overflow_policy": "terminate"
+}

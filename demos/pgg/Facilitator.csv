@@ -1,0 +1,15 @@
+name,definition,kwargs
+assign_groups,,
+assign_endowment,Choose a random integer between {{ C.pgg.PGG_ENDOWMENT_MIN }} and {{ C.pgg.PGG_ENDOWMENT_MAX }} as the initial endowment assigned to this player. Respond with only the resulting endowment without providing any explanations.,
+calculate_total_contribution,"Calculate the total number of tokens contributed to the public account by all participants in this round using the following formula:
+Player 1's contribution to public account in this round + Player 2's contribution to public account in this round + Player 3's contribution to public account in this round + Player 4's contribution to public account in this round
+Respond with only the resulting nunber without providing any explanations.",
+calculate_public_account_earnings,"Calculate Player ID {{ player.agent_id }}'s earnings from the public account this round using the following formula:
+({{ group.total_contribution }} _ {{ C.pgg.PGG_MULTIPLIER }}) / {{ C.pgg.PLAYERS_PER_GROUP }}
+Respond with only the resulting number without providing any explanations.",
+calculate_private_account_remaining,"Calculate Player ID {{ player.agent_id }}'s remaining private tokens this round using the following formula:
+{{ player.endowment }} _ {{ player.decision }}
+Respond with only the resulting number without any explanations.",
+calculate_total_earnings,"Calculate Player ID {{ player.agent_id }}'s total earnings this round using the following formula:
+{{ player.public_account_earnings }} + {{ player.private_account_remaining }}
+Respond with only the resulting number without any explanations.",

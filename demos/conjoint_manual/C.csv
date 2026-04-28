@@ -1,0 +1,8 @@
+module,name,value,type
+conjoint,PLAYER_TYPE,Assume the role of a human participant in an experiment on political preferences.,text
+conjoint,MAX_NUM_ROUNDS,5,integer
+conjoint,PLAYERS_PER_GROUP,1,integer
+conjoint,NUM_PROFILES_PER_TASK,2,integer
+conjoint,NUM_ATTRIBUTES,5,integer
+debrief,PLAYERS_PER_GROUP,1,integer
+debrief,MAX_NUM_ROUNDS,1,integer
