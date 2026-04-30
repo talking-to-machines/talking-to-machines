@@ -310,5 +310,5 @@ You may also explore these example experimental designs and their accompanying p
 ---
 
 ## 📹 Video Walkthrough
-A video walkthrough on how to populate the prompt template workbook based on a simple public goods experiment can be found here: [Video Walkthrough](https://www.loom.com/share/2a9c02bfb9094afcbe7767d168179dfd)
+A video walkthrough on how to populate the prompt template workbook based on a simple public goods experiment can be found here: [Video Walkthrough](https://www.loom.com/share/8ecad62ff7b947efb90d338a303262e1)
 
