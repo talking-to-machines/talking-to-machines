@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.storage.serializers &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.storage.serializers</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.storage.serializers</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Storage serializers (Phase 13 supplement).</span>
+
+<span class="sd">Centralised serialization helpers used across the storage layer.</span>
+
+<span class="sd">Provides:</span>
+<span class="sd">  - ``to_json_safe``    — recursively convert arbitrary objects to JSON-safe types</span>
+<span class="sd">  - ``serialize_session`` — convert a Session object tree to a plain dict</span>
+<span class="sd">  - ``deserialize_session`` — restore a Session from a plain dict</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># JSON-safe conversion</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="to_json_safe"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.serializers.to_json_safe">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">to_json_safe</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Recursively convert an arbitrary object to a JSON-serializable form.</span>
+
+<span class="sd">    Handles primitives, ``datetime``, ``Path``, sets, lists, tuples, dicts,</span>
+<span class="sd">    objects with a ``to_dict()`` method, and dataclasses. Falls back to</span>
+<span class="sd">    ``str()`` for unsupported types.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        obj: The object to convert.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A JSON-safe equivalent (composed of ``None``, ``bool``, ``int``,</span>
+<span class="sd">        ``float``, ``str``, ``list``, and ``dict`` values).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">obj</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">datetime</span><span class="p">,)):</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">set</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">to_json_safe</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">)]</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">to_json_safe</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="n">to_json_safe</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;to_dict&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">to_json_safe</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+
+    <span class="c1"># Dataclass fallback</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
+
+        <span class="k">if</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">is_dataclass</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">to_json_safe</span><span class="p">(</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">asdict</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="c1"># Last resort: str</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Serialization helpers for experiment data structures</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="serialize_message"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.serializers.serialize_message">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">serialize_message</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensure a message dictionary is JSON-safe.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        msg: A message dictionary (typically from a conversation history).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A recursively sanitized copy of the message dictionary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">to_json_safe</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="serialize_player"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.serializers.serialize_player">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">serialize_player</span><span class="p">(</span><span class="n">player</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serialize a Player object to a plain dictionary.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        player: A ``Player`` instance with ``player_id``,</span>
+<span class="sd">            ``agent_instance_id``, ``agent_id``, and ``group_id`` attributes.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary containing the player&#39;s identifying fields.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;player_id&quot;</span><span class="p">:</span> <span class="n">player</span><span class="o">.</span><span class="n">player_id</span><span class="p">,</span>
+        <span class="s2">&quot;agent_instance_id&quot;</span><span class="p">:</span> <span class="n">player</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">,</span>
+        <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="n">player</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+        <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="n">player</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="serialize_group"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.serializers.serialize_group">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">serialize_group</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serialize a Group object to a plain dictionary.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        group: A ``Group`` instance with ``group_id``, ``subsession_id``,</span>
+<span class="sd">            ``players``, and ``turn_order`` attributes.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary containing group metadata, serialized players, and</span>
+<span class="sd">        turn order.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+        <span class="s2">&quot;subsession_id&quot;</span><span class="p">:</span> <span class="n">group</span><span class="o">.</span><span class="n">subsession_id</span><span class="p">,</span>
+        <span class="s2">&quot;players&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">serialize_player</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">],</span>
+        <span class="s2">&quot;turn_order&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">group</span><span class="o">.</span><span class="n">turn_order</span><span class="p">),</span>
+    <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="serialize_subsession"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.serializers.serialize_subsession">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">serialize_subsession</span><span class="p">(</span><span class="n">subsession</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serialize a Subsession object to a plain dictionary.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        subsession: A ``Subsession`` instance with ``subsession_id``,</span>
+<span class="sd">            ``module_id``, ``round_number``, and ``groups`` attributes.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary containing subsession metadata and serialized groups.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;subsession_id&quot;</span><span class="p">:</span> <span class="n">subsession</span><span class="o">.</span><span class="n">subsession_id</span><span class="p">,</span>
+        <span class="s2">&quot;module_id&quot;</span><span class="p">:</span> <span class="n">subsession</span><span class="o">.</span><span class="n">module_id</span><span class="p">,</span>
+        <span class="s2">&quot;round_number&quot;</span><span class="p">:</span> <span class="n">subsession</span><span class="o">.</span><span class="n">round_number</span><span class="p">,</span>
+        <span class="s2">&quot;groups&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">serialize_group</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">subsession</span><span class="o">.</span><span class="n">groups</span><span class="p">],</span>
+    <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="serialize_module"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.serializers.serialize_module">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">serialize_module</span><span class="p">(</span><span class="n">module</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serialize a Module object to a plain dictionary.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        module: A ``Module`` instance with ``module_id``, ``session_id``,</span>
+<span class="sd">            ``module_name``, and ``subsessions`` attributes.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary containing module metadata and serialized subsessions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;module_id&quot;</span><span class="p">:</span> <span class="n">module</span><span class="o">.</span><span class="n">module_id</span><span class="p">,</span>
+        <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">module</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="s2">&quot;module_name&quot;</span><span class="p">:</span> <span class="n">module</span><span class="o">.</span><span class="n">module_name</span><span class="p">,</span>
+        <span class="s2">&quot;subsessions&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">serialize_subsession</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="n">subsessions</span><span class="p">],</span>
+    <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="serialize_agent"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.serializers.serialize_agent">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">serialize_agent</span><span class="p">(</span><span class="n">agent</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serialize an Agent object to a plain dictionary.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        agent: An ``Agent`` instance with ``agent_id``,</span>
+<span class="sd">            ``agent_instance_id``, ``profile_info``,</span>
+<span class="sd">            and optional ``is_human`` and ``state`` attributes.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary containing agent metadata, profile information,</span>
+<span class="sd">        treatment label, human flag, and agent state.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+        <span class="s2">&quot;agent_instance_id&quot;</span><span class="p">:</span> <span class="n">agent</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">,</span>
+        <span class="s2">&quot;profile_info&quot;</span><span class="p">:</span> <span class="n">to_json_safe</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">profile_info</span><span class="p">),</span>
+        <span class="s2">&quot;is_human&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="s2">&quot;is_human&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+        <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">to_json_safe</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="s2">&quot;state&quot;</span><span class="p">,</span> <span class="p">{})),</span>
+    <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="serialize_session"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.serializers.serialize_session">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">serialize_session</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serialize a full Session object tree to a plain dictionary.</span>
+
+<span class="sd">    This produces the canonical checkpoint format used for saving and</span>
+<span class="sd">    restoring experiment state.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: A ``Session`` instance with ``session_id``, ``run_id``,</span>
+<span class="sd">            ``experiment_id``, ``cep_hash``, ``agents``, and ``modules``</span>
+<span class="sd">            attributes.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A nested dictionary representing the entire session hierarchy</span>
+<span class="sd">        (session -&gt; modules -&gt; subsessions -&gt; groups -&gt; players).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="s2">&quot;run_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+        <span class="s2">&quot;experiment_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span>
+        <span class="s2">&quot;cep_hash&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">cep_hash</span><span class="p">,</span>
+        <span class="s2">&quot;agents&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">serialize_agent</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">agents</span><span class="p">],</span>
+        <span class="s2">&quot;modules&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">serialize_module</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">modules</span><span class="p">],</span>
+    <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="deserialize_session"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.serializers.deserialize_session">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">deserialize_session</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Restore a Session from a serialized dictionary.</span>
+
+<span class="sd">    Reconstructs the full object hierarchy: ``Session`` -&gt; ``Module`` -&gt;</span>
+<span class="sd">    ``Subsession`` -&gt; ``Group`` -&gt; ``Player``, plus the list of ``Agent``</span>
+<span class="sd">    objects.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data: A dictionary previously produced by :func:`serialize_session`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A ``Session`` object with fully populated ``agents`` and ``modules``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">Session</span><span class="p">,</span>
+        <span class="n">Agent</span><span class="p">,</span>
+        <span class="n">Player</span><span class="p">,</span>
+        <span class="n">Group</span><span class="p">,</span>
+        <span class="n">Subsession</span><span class="p">,</span>
+        <span class="n">Module</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;session_id&quot;</span><span class="p">],</span>
+        <span class="n">run_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;run_id&quot;</span><span class="p">],</span>
+        <span class="n">experiment_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">],</span>
+        <span class="n">cep_hash</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cep_hash&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">session</span><span class="o">.</span><span class="n">agents</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">Agent</span><span class="p">(</span>
+            <span class="n">agent_id</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">&quot;agent_id&quot;</span><span class="p">],</span>
+            <span class="n">agent_instance_id</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">&quot;agent_instance_id&quot;</span><span class="p">],</span>
+            <span class="n">profile_info</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;profile_info&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+            <span class="n">is_human</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_human&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="n">state</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;state&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;agents&quot;</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">m_data</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;modules&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="n">Module</span><span class="p">(</span>
+            <span class="n">module_id</span><span class="o">=</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;module_id&quot;</span><span class="p">],</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;session_id&quot;</span><span class="p">],</span>
+            <span class="n">module_name</span><span class="o">=</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;module_name&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">s_data</span> <span class="ow">in</span> <span class="n">m_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;subsessions&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="n">subsession</span> <span class="o">=</span> <span class="n">Subsession</span><span class="p">(</span>
+                <span class="n">subsession_id</span><span class="o">=</span><span class="n">s_data</span><span class="p">[</span><span class="s2">&quot;subsession_id&quot;</span><span class="p">],</span>
+                <span class="n">module_id</span><span class="o">=</span><span class="n">s_data</span><span class="p">[</span><span class="s2">&quot;module_id&quot;</span><span class="p">],</span>
+                <span class="n">round_number</span><span class="o">=</span><span class="n">s_data</span><span class="p">[</span><span class="s2">&quot;round_number&quot;</span><span class="p">],</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">g_data</span> <span class="ow">in</span> <span class="n">s_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;groups&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="n">players</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">Player</span><span class="p">(</span>
+                        <span class="n">player_id</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;player_id&quot;</span><span class="p">],</span>
+                        <span class="n">agent_instance_id</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;agent_instance_id&quot;</span><span class="p">],</span>
+                        <span class="n">agent_id</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;agent_id&quot;</span><span class="p">],</span>
+                        <span class="n">group_id</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;group_id&quot;</span><span class="p">],</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">g_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;players&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="p">]</span>
+                <span class="n">group</span> <span class="o">=</span> <span class="n">Group</span><span class="p">(</span>
+                    <span class="n">group_id</span><span class="o">=</span><span class="n">g_data</span><span class="p">[</span><span class="s2">&quot;group_id&quot;</span><span class="p">],</span>
+                    <span class="n">subsession_id</span><span class="o">=</span><span class="n">g_data</span><span class="p">[</span><span class="s2">&quot;subsession_id&quot;</span><span class="p">],</span>
+                    <span class="n">players</span><span class="o">=</span><span class="n">players</span><span class="p">,</span>
+                    <span class="n">turn_order</span><span class="o">=</span><span class="n">g_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;turn_order&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+                <span class="p">)</span>
+                <span class="n">subsession</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">subsessions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subsession</span><span class="p">)</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">session</span></div>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># JSON file helpers</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="load_json"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.serializers.load_json">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">load_json</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a JSON file and return its parsed contents.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path: Filesystem path to the JSON file.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The deserialized Python object (typically a ``dict`` or ``list``).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        FileNotFoundError: If the file does not exist.</span>
+<span class="sd">        json.JSONDecodeError: If the file contains invalid JSON.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="save_json"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.serializers.save_json">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">save_json</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span> <span class="n">indent</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Save data as a JSON file, creating parent directories as needed.</span>
+
+<span class="sd">    The data is first converted to a JSON-safe form via :func:`to_json_safe`</span>
+<span class="sd">    before serialization.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data: The object to serialize and write.</span>
+<span class="sd">        path: Destination file path.</span>
+<span class="sd">        indent: Number of spaces for JSON indentation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">to_json_safe</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+        <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+    <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.core.facilitator &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.core.facilitator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.core.facilitator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Facilitator engine for executing experiment control functions.</span>
+
+<span class="sd">Provides ``FacilitatorEngine``, which executes facilitator functions at</span>
+<span class="sd">runtime. The built-in ``assign_groups`` function delegates to the</span>
+<span class="sd">``RandomisationEngine``, while custom (natural-language) functions are</span>
+<span class="sd">sent to an LLM via the ``LLMRouter`` and their responses are parsed as</span>
+<span class="sd">state updates.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">jinja2.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxedEnvironment</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">FacilitatorFunction</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExperimentState</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.randomisation</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomisationEngine</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.gateway.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMRouter</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">_BUILTIN_NAMES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;assign_groups&quot;</span><span class="p">}</span>
+
+<span class="n">_VALID_RUNTIME_GROUP_STRATEGIES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;random&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;keep&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;swap&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;stratified&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="FacilitatorEngine"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.facilitator.FacilitatorEngine">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">FacilitatorEngine</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Executes facilitator functions at runtime.</span>
+
+<span class="sd">    Dispatches the built-in ``assign_groups`` function to the</span>
+<span class="sd">    randomisation engine and routes all other functions through an</span>
+<span class="sd">    LLM call.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        _state: The experiment state store for reading/writing fields.</span>
+<span class="sd">        _rng: Randomisation engine used by built-in facilitators.</span>
+<span class="sd">        _router: LLM router for custom facilitator calls.</span>
+<span class="sd">        _model: Model name passed to the LLM router.</span>
+<span class="sd">        _temperature: Sampling temperature for LLM calls.</span>
+<span class="sd">        _jinja_env: Sandboxed Jinja2 environment for template rendering.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">state</span><span class="p">:</span> <span class="s2">&quot;ExperimentState&quot;</span><span class="p">,</span>
+        <span class="n">randomisation</span><span class="p">:</span> <span class="s2">&quot;RandomisationEngine&quot;</span><span class="p">,</span>
+        <span class="n">router</span><span class="p">:</span> <span class="s2">&quot;LLMRouter&quot;</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the facilitator engine.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            state: The experiment state store.</span>
+<span class="sd">            randomisation: Randomisation engine for group assignment.</span>
+<span class="sd">            router: LLM router instance for custom facilitator calls.</span>
+<span class="sd">            model_name: Name of the LLM model to use.</span>
+<span class="sd">            temperature: Sampling temperature for LLM generation.</span>
+<span class="sd">                Defaults to ``0.0``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span> <span class="o">=</span> <span class="n">randomisation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_router</span> <span class="o">=</span> <span class="n">router</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">model_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_temperature</span> <span class="o">=</span> <span class="n">temperature</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_jinja_env</span> <span class="o">=</span> <span class="n">SandboxedEnvironment</span><span class="p">()</span>
+
+<div class="viewcode-block" id="FacilitatorEngine.execute"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.facilitator.FacilitatorEngine.execute">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fn</span><span class="p">:</span> <span class="n">FacilitatorFunction</span><span class="p">,</span>
+        <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">prompt_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute a facilitator function and return its response and rendered prompt.</span>
+
+<span class="sd">        For built-in functions, delegates to the appropriate internal</span>
+<span class="sd">        method and returns a result dict. For custom functions, makes</span>
+<span class="sd">        an LLM call and returns the raw text response.</span>
+
+<span class="sd">        Facilitator-level kwargs (from the Facilitator worksheet) are</span>
+<span class="sd">        merged with prompt-level kwargs (from the Prompts worksheet).</span>
+<span class="sd">        Prompt-level kwargs take precedence on conflicts.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            fn: The ``FacilitatorFunction`` definition to execute.</span>
+<span class="sd">            context: Current experiment context dict (agent IDs, etc.).</span>
+<span class="sd">            prompt_args: Optional keyword arguments from the Prompts</span>
+<span class="sd">                worksheet ``kwargs`` column.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A tuple of ``(result, rendered_prompt)``. For built-in</span>
+<span class="sd">            facilitators, *result* is a dict of state updates and</span>
+<span class="sd">            *rendered_prompt* is an empty string. For custom LLM</span>
+<span class="sd">            facilitators, *result* is the LLM response string and</span>
+<span class="sd">            *rendered_prompt* is the Jinja-rendered definition.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Merge facilitator-level kwargs with prompt-level kwargs</span>
+        <span class="n">merged_args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">if</span> <span class="n">fn</span><span class="o">.</span><span class="n">kwargs</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">prompt_args</span><span class="p">:</span>
+            <span class="n">merged_args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">prompt_args</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fn</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;assign_groups&quot;</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_assign_groups</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">merged_args</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span><span class="p">,</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_execute_llm_facilitator</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span></div>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Built-in facilitators</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_assign_groups</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">:</span> <span class="n">FacilitatorFunction</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">prompt_args</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Assign agents to groups via the randomisation engine.</span>
+
+<span class="sd">        Reads ``strategy`` from *prompt_args* and ``agent_ids`` /</span>
+<span class="sd">        ``players_per_group`` from the context.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            fn: The facilitator function definition.</span>
+<span class="sd">            context: Must contain ``all_session_agent_ids`` or</span>
+<span class="sd">                ``agent_ids`` (list of str). May contain</span>
+<span class="sd">                ``players_per_group`` (int, defaults to 2).</span>
+<span class="sd">            prompt_args: Keyword arguments from the Prompts worksheet.</span>
+<span class="sd">                Supports ``strategy`` and ``stratify_by``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dict with key ``group_assignments`` mapping group IDs to</span>
+<span class="sd">            lists of agent IDs, or an empty dict if ``agent_ids`` is</span>
+<span class="sd">            missing or empty.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Facilitator: assign_groups&quot;</span><span class="p">)</span>
+        <span class="n">agent_ids</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;all_session_agent_ids&quot;</span><span class="p">,</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;agent_ids&quot;</span><span class="p">,</span> <span class="p">[]))</span>
+        <span class="n">players_per_group</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;players_per_group&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">strategy</span> <span class="o">=</span> <span class="n">prompt_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="s2">&quot;random&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">strategy</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_VALID_RUNTIME_GROUP_STRATEGIES</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;assign_groups: strategy &#39;</span><span class="si">%s</span><span class="s2">&#39; is not valid at runtime.&quot;</span><span class="p">,</span> <span class="n">strategy</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">agent_ids</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{}</span>
+
+        <span class="c1"># Build stratify_by from profile info if needed</span>
+        <span class="n">stratify_by</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;stratified&quot;</span><span class="p">:</span>
+            <span class="n">stratify_attr</span> <span class="o">=</span> <span class="n">prompt_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stratify_by&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">stratify_attr</span><span class="p">:</span>
+                <span class="n">agents_profile_info</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;agents_profile_info&quot;</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="n">stratify_by</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">agents_profile_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">aid</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">stratify_attr</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">aid</span> <span class="ow">in</span> <span class="n">agent_ids</span>
+                <span class="p">]</span>
+
+        <span class="n">groups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">assign_groups</span><span class="p">(</span>
+            <span class="n">agent_ids</span><span class="o">=</span><span class="n">agent_ids</span><span class="p">,</span>
+            <span class="n">players_per_group</span><span class="o">=</span><span class="n">players_per_group</span><span class="p">,</span>
+            <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span>
+            <span class="n">path</span><span class="o">=</span><span class="s2">&quot;groups&quot;</span><span class="p">,</span>
+            <span class="n">stratify_by</span><span class="o">=</span><span class="n">stratify_by</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;group_assignments&quot;</span><span class="p">:</span> <span class="n">groups</span><span class="p">}</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Custom (LLM) facilitator</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">template_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Render a Jinja2 template string with the given context.</span>
+
+<span class="sd">        Falls back to returning the raw template string if rendering</span>
+<span class="sd">        fails.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            template_str: A Jinja2 template string.</span>
+<span class="sd">            context: Variable bindings for template rendering.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The rendered string, or the raw template on error.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">tmpl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jinja_env</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">template_str</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">tmpl</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="o">**</span><span class="n">context</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Facilitator Jinja rendering error: </span><span class="si">%s</span><span class="s2"> — returning raw template.&quot;</span><span class="p">,</span> <span class="n">exc</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">template_str</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_execute_llm_facilitator</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">:</span> <span class="n">FacilitatorFunction</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute a custom facilitator function via an LLM call.</span>
+
+<span class="sd">        Renders the function definition as a Jinja2 template, sends it</span>
+<span class="sd">        as the system prompt, replays the group&#39;s conversation history</span>
+<span class="sd">        as actual turns, and appends the rendered instruction as the</span>
+<span class="sd">        final user message.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            fn: The custom facilitator function definition. Its</span>
+<span class="sd">                ``definition`` field is rendered as a Jinja2 template.</span>
+<span class="sd">            context: Current experiment context dict. If a</span>
+<span class="sd">                ``facilitator_messages`` key is present, those messages</span>
+<span class="sd">                are included as prior conversation turns so the</span>
+<span class="sd">                facilitator can see the full group history and its own</span>
+<span class="sd">                prior responses.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A tuple of ``(result, rendered_definition)`` where *result*</span>
+<span class="sd">            is the raw LLM response and *rendered_definition* is the</span>
+<span class="sd">            Jinja-rendered definition text. Returns ``(&quot;&quot;, rendered)``</span>
+<span class="sd">            if the LLM call fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rendered_definition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">definition</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="n">system_prompt</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;You are a facilitator for a social science experiment. &quot;</span>
+            <span class="s2">&quot;Execute the instruction below. Your response will be stored &quot;</span>
+            <span class="s2">&quot;directly as the facilitator&#39;s output.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Instruction: </span><span class="si">{</span><span class="n">rendered_definition</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">message_history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">system_prompt</span><span class="p">},</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Replay group conversation history as actual turns.</span>
+        <span class="c1"># - Facilitator&#39;s own prior responses keep role=&quot;assistant&quot;</span>
+        <span class="c1"># - All other messages become role=&quot;user&quot; prefixed with sender</span>
+        <span class="c1">#   identity and round context so the facilitator can distinguish</span>
+        <span class="c1">#   who said what and when.</span>
+        <span class="n">facilitator_messages</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;facilitator_messages&quot;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">facilitator_messages</span><span class="p">:</span>
+            <span class="n">sender</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sender_agent_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">content</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">sender</span> <span class="o">==</span> <span class="s2">&quot;facilitator&quot;</span><span class="p">:</span>
+                <span class="c1"># Facilitator&#39;s own prior response</span>
+                <span class="n">message_history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">content</span><span class="p">})</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Agent message — prefix with sender and round context</span>
+                <span class="n">module</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;module&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="n">round_num</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;round_number&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">prefix_parts</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">if</span> <span class="n">sender</span><span class="p">:</span>
+                    <span class="n">prefix_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sender</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">module</span><span class="p">:</span>
+                    <span class="n">prefix_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;module=</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">round_num</span><span class="p">:</span>
+                    <span class="n">prefix_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round=</span><span class="si">{</span><span class="n">round_num</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">prefix_parts</span><span class="p">)</span><span class="si">}</span><span class="s2">] &quot;</span> <span class="k">if</span> <span class="n">prefix_parts</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+                <span class="n">message_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">content</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Final user turn: the current instruction prompt</span>
+        <span class="n">message_history</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">rendered_definition</span><span class="p">})</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_router</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+                <span class="n">message_history</span><span class="o">=</span><span class="n">message_history</span><span class="p">,</span>
+                <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span>
+                <span class="n">temperature</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_temperature</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="n">rendered_definition</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Facilitator LLM call failed: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">rendered_definition</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

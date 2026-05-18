@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.authoring.validators.context_window_validator &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.authoring.validators.context_window_validator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.authoring.validators.context_window_validator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Context window validator (compile-time estimation).</span>
+
+<span class="sd">Estimates worst-case context window usage for each module in an</span>
+<span class="sd">experiment and warns or errors when the estimate approaches or</span>
+<span class="sd">exceeds the model&#39;s context window limit.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.schema_validator</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValidationError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.gateway.model_registry</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_model_spec</span><span class="p">,</span>
+    <span class="n">WARNING_THRESHOLD</span><span class="p">,</span>
+    <span class="n">SYSTEM_PROMPT_ESTIMATE</span><span class="p">,</span>
+    <span class="n">AVG_RESPONSE_TOKENS</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.gateway.token_estimator</span><span class="w"> </span><span class="kn">import</span> <span class="n">estimate_tokens</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ContextWindowValidator"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.validators.html#talkingtomachines.authoring.validators.context_window_validator.ContextWindowValidator">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ContextWindowValidator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Estimates worst-case context window usage at compile time.</span>
+
+<span class="sd">    For each module, computes a conservative upper-bound token estimate</span>
+<span class="sd">    based on prompt lengths, number of rounds, and players per group.</span>
+<span class="sd">    Emits a ``ValidationError`` when the estimate exceeds the model&#39;s</span>
+<span class="sd">    context window, or logs a warning when utilisation passes</span>
+<span class="sd">    ``WARNING_THRESHOLD``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">prompts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
+        <span class="n">constants</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+        <span class="n">module_sequence</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">num_agents_per_session</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the context window validator.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model_name: Name of the LLM model (used to look up the</span>
+<span class="sd">                context window size via the model registry).</span>
+<span class="sd">            prompts: Mapping ``{module: [PromptDefinition, ...]}`` as</span>
+<span class="sd">                returned by the prompts parser.</span>
+<span class="sd">            constants: Nested dictionary ``{module: {name: value}}``</span>
+<span class="sd">                as returned by the constants parser.</span>
+<span class="sd">            module_sequence: Ordered list of module names from the</span>
+<span class="sd">                ``MODULE_SEQUENCE`` setting.</span>
+<span class="sd">            num_agents_per_session: Number of agents per session,</span>
+<span class="sd">                used as the default ``PLAYERS_PER_GROUP`` fallback.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span> <span class="o">=</span> <span class="n">model_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prompts</span> <span class="o">=</span> <span class="n">prompts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_constants</span> <span class="o">=</span> <span class="n">constants</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_module_sequence</span> <span class="o">=</span> <span class="n">module_sequence</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_agents</span> <span class="o">=</span> <span class="n">num_agents_per_session</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ValidationError</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="ContextWindowValidator.validate"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.validators.html#talkingtomachines.authoring.validators.context_window_validator.ContextWindowValidator.validate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ValidationError</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run context window estimation for each module and return errors.</span>
+
+<span class="sd">        Computes worst-case token usage assuming all prompts are</span>
+<span class="sd">        displayed, all agents respond every round, and all rounds</span>
+<span class="sd">        execute. Emits an error if the estimate exceeds the model&#39;s</span>
+<span class="sd">        context limit, or a warning if it exceeds</span>
+<span class="sd">        ``WARNING_THRESHOLD``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of ``ValidationError`` instances. An empty list</span>
+<span class="sd">            indicates that all modules are within safe limits.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">get_model_spec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="p">)</span>
+        <span class="n">max_tokens</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">max_context_tokens</span>
+
+        <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_module_sequence</span><span class="p">:</span>
+            <span class="n">module_consts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constants</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">max_rounds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">module_consts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;MAX_NUM_ROUNDS&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">players_per_group</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+                <span class="n">module_consts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;PLAYERS_PER_GROUP&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_agents</span><span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="n">module_prompts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">module_prompts</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Estimate tokens per prompt text</span>
+            <span class="n">prompt_token_estimates</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">module_prompts</span><span class="p">:</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="s2">&quot;llm_text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+                <span class="n">prompt_token_estimates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">estimate_tokens</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+            <span class="n">avg_prompt_tokens</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">sum</span><span class="p">(</span><span class="n">prompt_token_estimates</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_token_estimates</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">prompt_token_estimates</span>
+                <span class="k">else</span> <span class="mi">100</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Worst case: all prompts displayed, all agents respond, all rounds run</span>
+            <span class="c1"># Context grows as: system + sum over rounds of (prompts + agent_responses)</span>
+            <span class="n">turns_per_round</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">module_prompts</span><span class="p">)</span> <span class="o">*</span> <span class="n">players_per_group</span>
+            <span class="n">tokens_per_round</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">module_prompts</span><span class="p">)</span> <span class="o">*</span> <span class="n">avg_prompt_tokens</span>
+                <span class="o">+</span> <span class="n">turns_per_round</span> <span class="o">*</span> <span class="n">AVG_RESPONSE_TOKENS</span>
+            <span class="p">)</span>
+            <span class="n">total_estimate</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+                <span class="n">SYSTEM_PROMPT_ESTIMATE</span>
+                <span class="o">+</span> <span class="n">max_rounds</span> <span class="o">*</span> <span class="n">tokens_per_round</span>
+                <span class="o">+</span> <span class="n">avg_prompt_tokens</span>  <span class="c1"># Current prompt being sent</span>
+            <span class="p">)</span>
+
+            <span class="n">utilization</span> <span class="o">=</span> <span class="n">total_estimate</span> <span class="o">/</span> <span class="n">max_tokens</span> <span class="k">if</span> <span class="n">max_tokens</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+
+            <span class="k">if</span> <span class="n">total_estimate</span> <span class="o">&gt;</span> <span class="n">max_tokens</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                    <span class="s2">&quot;Settings&quot;</span><span class="p">,</span>
+                    <span class="kc">None</span><span class="p">,</span>
+                    <span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Module &#39;</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">&#39;: estimated worst-case context usage &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">total_estimate</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> tokens) EXCEEDS model &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;context window (</span><span class="si">{</span><span class="n">max_tokens</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> tokens). &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Consider reducing MAX_NUM_ROUNDS (</span><span class="si">{</span><span class="n">max_rounds</span><span class="si">}</span><span class="s2">), &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;PLAYERS_PER_GROUP (</span><span class="si">{</span><span class="n">players_per_group</span><span class="si">}</span><span class="s2">), or setting &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;CONTEXT_OVERFLOW_POLICY to &#39;truncate&#39; or &#39;summarize&#39;.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">utilization</span> <span class="o">&gt;</span> <span class="n">WARNING_THRESHOLD</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Module &#39;</span><span class="si">%s</span><span class="s2">&#39;: estimated context usage is </span><span class="si">%.0f%%</span><span class="s2"> of </span><span class="si">%s</span><span class="s2"> context window &quot;</span>
+                    <span class="s2">&quot;(</span><span class="si">%s</span><span class="s2"> / </span><span class="si">%s</span><span class="s2"> tokens). Risk of overflow at runtime.&quot;</span><span class="p">,</span>
+                    <span class="n">module</span><span class="p">,</span>
+                    <span class="n">utilization</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">total_estimate</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">max_tokens</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span></div>
+
+<div class="viewcode-block" id="ContextWindowValidator.get_summary"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.validators.html#talkingtomachines.authoring.validators.context_window_validator.ContextWindowValidator.get_summary">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a summary dictionary of model context limits.</span>
+
+<span class="sd">        Intended for CLI display so users can see the model&#39;s token</span>
+<span class="sd">        constraints at a glance.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary with keys ``&quot;model_name&quot;``,</span>
+<span class="sd">            ``&quot;max_context_tokens&quot;``, and ``&quot;max_output_tokens&quot;``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">get_model_spec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;model_name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="p">,</span>
+            <span class="s2">&quot;max_context_tokens&quot;</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">max_context_tokens</span><span class="p">,</span>
+            <span class="s2">&quot;max_output_tokens&quot;</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">max_output_tokens</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_err</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sheet</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Record a validation error.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sheet: Name of the worksheet where the error was found.</span>
+<span class="sd">            row: Row index, or ``None`` for sheet-level errors.</span>
+<span class="sd">            col: Column name, or ``None`` when not applicable.</span>
+<span class="sd">            message: Human-readable error description.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">ValidationError</span><span class="p">(</span><span class="n">sheet</span><span class="o">=</span><span class="n">sheet</span><span class="p">,</span> <span class="n">row</span><span class="o">=</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>
+        <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

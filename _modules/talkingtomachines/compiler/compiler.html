@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.compiler.compiler &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.compiler.compiler</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.compiler.compiler</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Experiment Compiler (Phase 3).</span>
+
+<span class="sd">Transforms parsed worksheet data into a validated, serializable</span>
+<span class="sd">Compiled Experiment Package (CEP).</span>
+
+<span class="sd">Pipeline:</span>
+<span class="sd">  1. Run all four validators (schema → reference → flow → provider)</span>
+<span class="sd">  2. Call resolver.py to expand statically-resolvable Jinja references</span>
+<span class="sd">  3. Call id_generator.py to assign stable, deterministic IDs</span>
+<span class="sd">  4. Emit assignment plans using the randomisation engine</span>
+<span class="sd">  5. Build CEP and compute cep_hash</span>
+<span class="sd">  6. Serialize CEP to compiled_experiment.json in the run folder</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.authoring.parsers.settings_parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_settings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.authoring.parsers.constants_parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_constants</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.authoring.parsers.fields_parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_fields</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.authoring.parsers.facilitator_parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_facilitators</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.authoring.parsers.prompts_parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_prompts</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.authoring.parsers.profiles_parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_profiles</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.authoring.parsers.manual_parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_manual_sheets</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.authoring.validators.schema_validator</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SchemaValidator</span><span class="p">,</span>
+    <span class="n">ValidationError</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.authoring.validators.reference_validator</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ReferenceValidator</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.authoring.validators.flow_validator</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowValidator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.authoring.validators.provider_validator</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProviderValidator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.compiler.resolver</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_prompts</span><span class="p">,</span> <span class="n">resolve_facilitators</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.compiler.id_generator</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">compute_config_hash</span><span class="p">,</span>
+    <span class="n">compute_cep_hash</span><span class="p">,</span>
+    <span class="n">make_run_id</span><span class="p">,</span>
+    <span class="n">make_agent_id</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.compiler.cep_schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">CompiledExperiment</span><span class="p">,</span> <span class="n">AssignmentPlan</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="CompilationError"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.compiler.CompilationError">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">CompilationError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when compilation fails due to validation errors.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        errors: List of ``ValidationError`` instances describing each failure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">errors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ValidationError</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise with a list of validation errors.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            errors: One or more ``ValidationError`` instances collected</span>
+<span class="sd">                during the compilation pipeline.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="n">errors</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">errors</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Compilation failed with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span><span class="si">}</span><span class="s2"> error(s):</span><span class="se">\n</span><span class="si">{</span><span class="n">lines</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Compiler"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.compiler.Compiler">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">Compiler</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compiles a prompt template (Excel or dict of DataFrames) into a CEP.</span>
+
+<span class="sd">    The compilation pipeline validates all worksheet data, resolves</span>
+<span class="sd">    compile-time Jinja references, generates deterministic IDs, builds</span>
+<span class="sd">    treatment/group assignment plans, and emits a serializable</span>
+<span class="sd">    ``CompiledExperiment`` package.</span>
+
+<span class="sd">    Usage::</span>
+
+<span class="sd">        compiler = Compiler.from_excel(&quot;path/to/template.xlsx&quot;)</span>
+<span class="sd">        cep = compiler.compile(output_dir=&quot;experiment_results/my_exp/run_001&quot;)</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        _sheets: Dictionary mapping sheet names to their parsed DataFrames.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sheets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the compiler with parsed worksheet data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sheets: Dictionary mapping sheet names (e.g. ``&quot;Settings&quot;``,</span>
+<span class="sd">                ``&quot;Prompts&quot;``) to pandas DataFrames.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span> <span class="o">=</span> <span class="n">sheets</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Factory methods</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="Compiler.from_excel"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.compiler.Compiler.from_excel">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_excel</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Compiler&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load all sheets from an Excel file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path: Path to the ``.xlsx`` template file.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new ``Compiler`` instance with all sheets parsed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">xl</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">ExcelFile</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;openpyxl&quot;</span><span class="p">)</span>
+        <span class="n">sheets</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="n">xl</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;Profiles&quot;</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">xl</span><span class="o">.</span><span class="n">sheet_names</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">sheets</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Compiler.from_csv_dir"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.compiler.Compiler.from_csv_dir">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_csv_dir</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Compiler&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load sheets from a directory of CSV files.</span>
+
+<span class="sd">        Each CSV filename (without extension) is used as the sheet name.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            directory: Path to the directory containing CSV files.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new ``Compiler`` instance with all CSVs parsed as sheets.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+        <span class="n">sheets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">csv_file</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*.csv&quot;</span><span class="p">):</span>
+            <span class="n">header</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">csv_file</span><span class="o">.</span><span class="n">stem</span> <span class="o">==</span> <span class="s2">&quot;Profiles&quot;</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">sheets</span><span class="p">[</span><span class="n">csv_file</span><span class="o">.</span><span class="n">stem</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">csv_file</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">header</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">sheets</span><span class="p">)</span></div>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Main compile entry point</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="Compiler.compile"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.compiler.Compiler.compile">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">output_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">raise_on_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CompiledExperiment</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the full compilation pipeline.</span>
+
+<span class="sd">        Executes validation, Jinja resolution, ID generation, assignment</span>
+<span class="sd">        planning, and CEP construction. Optionally persists the result</span>
+<span class="sd">        to disk.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            output_dir: If provided, saves ``compiled_experiment.json``</span>
+<span class="sd">                to this directory.</span>
+<span class="sd">            raise_on_error: If ``True`` (default), raises</span>
+<span class="sd">                ``CompilationError`` on any validation error. If ``False``,</span>
+<span class="sd">                logs warnings and continues.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A ``CompiledExperiment`` instance.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            CompilationError: If validation errors are found and</span>
+<span class="sd">                ``raise_on_error`` is ``True``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">all_errors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ValidationError</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="c1"># Step 1: Parse all sheets</span>
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="n">settings_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Settings&quot;</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">())</span>
+        <span class="n">settings</span> <span class="o">=</span> <span class="n">parse_settings</span><span class="p">(</span><span class="n">settings_df</span><span class="p">)</span>
+
+        <span class="n">constants_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">())</span>
+        <span class="n">constants</span> <span class="o">=</span> <span class="n">parse_constants</span><span class="p">(</span><span class="n">constants_df</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">constants_df</span><span class="o">.</span><span class="n">empty</span> <span class="k">else</span> <span class="p">{}</span>
+
+        <span class="n">fields_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Fields&quot;</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">())</span>
+        <span class="n">fields</span><span class="p">,</span> <span class="n">field_index</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">parse_fields</span><span class="p">(</span><span class="n">fields_df</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">fields_df</span><span class="o">.</span><span class="n">empty</span> <span class="k">else</span> <span class="p">([],</span> <span class="p">{})</span>
+        <span class="p">)</span>
+
+        <span class="n">facilitator_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Facilitator&quot;</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">())</span>
+        <span class="n">facilitators</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">parse_facilitators</span><span class="p">(</span><span class="n">facilitator_df</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">facilitator_df</span><span class="o">.</span><span class="n">empty</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="p">)</span>
+
+        <span class="n">prompts_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Prompts&quot;</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">())</span>
+        <span class="n">prompts</span> <span class="o">=</span> <span class="n">parse_prompts</span><span class="p">(</span><span class="n">prompts_df</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">prompts_df</span><span class="o">.</span><span class="n">empty</span> <span class="k">else</span> <span class="p">{}</span>
+
+        <span class="n">profiles_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Profiles&quot;</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">())</span>
+        <span class="n">profiles</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">parse_profiles</span><span class="p">(</span><span class="n">profiles_df</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">profile_fields</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">profiles_df</span><span class="o">.</span><span class="n">empty</span>
+            <span class="k">else</span> <span class="p">{}</span>
+        <span class="p">)</span>
+
+        <span class="n">manual_sheets</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;Manual_&quot;</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="c1"># Extract profile IDs for cross-validation</span>
+        <span class="n">profile_ids</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">profiles</span> <span class="ow">and</span> <span class="n">profiles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rows&quot;</span><span class="p">):</span>
+            <span class="n">pid_col</span> <span class="o">=</span> <span class="n">profiles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id_column&quot;</span><span class="p">,</span> <span class="s2">&quot;ID&quot;</span><span class="p">)</span>
+            <span class="n">profile_ids</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pid_col</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">profiles</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pid_col</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="p">}</span>
+        <span class="n">manual_registry</span> <span class="o">=</span> <span class="n">parse_manual_sheets</span><span class="p">(</span><span class="n">manual_sheets</span><span class="p">,</span> <span class="n">profile_ids</span><span class="o">=</span><span class="n">profile_ids</span><span class="p">)</span>
+
+        <span class="c1"># Extract Manual_ variable names organised by class for validation</span>
+        <span class="n">manual_names_by_class</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">_pid</span><span class="p">,</span> <span class="n">_mod</span><span class="p">,</span> <span class="n">_rnd</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">manual_registry</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">cls</span><span class="p">:</span>
+                <span class="n">manual_names_by_class</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="c1"># Step 2: Run validators (collect all errors)</span>
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="n">schema_errors</span> <span class="o">=</span> <span class="n">SchemaValidator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="p">)</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+        <span class="n">all_errors</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">schema_errors</span><span class="p">)</span>
+
+        <span class="n">profile_short_names</span> <span class="o">=</span> <span class="n">profiles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;short_names&quot;</span><span class="p">,</span> <span class="p">[])</span> <span class="k">if</span> <span class="n">profiles</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">facilitator_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">facilitators</span><span class="p">]</span>
+
+        <span class="n">ref_errors</span> <span class="o">=</span> <span class="n">ReferenceValidator</span><span class="p">(</span>
+            <span class="n">sheets</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="p">,</span>
+            <span class="n">constants</span><span class="o">=</span><span class="n">constants</span><span class="p">,</span>
+            <span class="n">field_index</span><span class="o">=</span><span class="n">field_index</span><span class="p">,</span>
+            <span class="n">module_names</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">module_sequence</span><span class="p">,</span>
+            <span class="n">profile_short_names</span><span class="o">=</span><span class="n">profile_short_names</span><span class="p">,</span>
+            <span class="n">facilitator_names</span><span class="o">=</span><span class="n">facilitator_names</span><span class="p">,</span>
+            <span class="n">manual_names_by_class</span><span class="o">=</span><span class="n">manual_names_by_class</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+        <span class="n">all_errors</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ref_errors</span><span class="p">)</span>
+
+        <span class="n">flow_errors</span> <span class="o">=</span> <span class="n">FlowValidator</span><span class="p">(</span>
+            <span class="n">prompts</span><span class="o">=</span><span class="n">prompts</span><span class="p">,</span>
+            <span class="n">constants</span><span class="o">=</span><span class="n">constants</span><span class="p">,</span>
+            <span class="n">module_names</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">module_sequence</span><span class="p">,</span>
+            <span class="n">field_index</span><span class="o">=</span><span class="n">field_index</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+        <span class="n">all_errors</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">flow_errors</span><span class="p">)</span>
+
+        <span class="c1"># Detect multimodal and RAG usage from prompt text and settings</span>
+        <span class="n">all_prompt_text</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">llm_text</span>
+            <span class="k">for</span> <span class="n">module_prompts</span> <span class="ow">in</span> <span class="n">prompts</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">module_prompts</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="s2">&quot;llm_text&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">llm_text</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.gateway.media</span><span class="w"> </span><span class="kn">import</span> <span class="n">has_video</span><span class="p">,</span> <span class="n">has_audio</span>
+
+        <span class="n">_has_video</span> <span class="o">=</span> <span class="n">has_video</span><span class="p">(</span><span class="n">all_prompt_text</span><span class="p">)</span>
+        <span class="n">_has_audio</span> <span class="o">=</span> <span class="n">has_audio</span><span class="p">(</span><span class="n">all_prompt_text</span><span class="p">)</span>
+        <span class="c1"># RAG is enabled if any prompt has rag_vector_store_id in kwargs</span>
+        <span class="n">_has_rag</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span>
+            <span class="nb">hasattr</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="s2">&quot;kwargs&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rag_vector_store_id&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">module_prompts</span> <span class="ow">in</span> <span class="n">prompts</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">module_prompts</span>
+        <span class="p">)</span>
+
+        <span class="c1"># API key validation</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.gateway.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_provider_api_key</span>
+
+        <span class="n">key_ok</span><span class="p">,</span> <span class="n">key_msg</span> <span class="o">=</span> <span class="n">check_provider_api_key</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">key_ok</span><span class="p">:</span>
+            <span class="n">all_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">ValidationError</span><span class="p">(</span>
+                    <span class="n">sheet</span><span class="o">=</span><span class="s2">&quot;Settings&quot;</span><span class="p">,</span>
+                    <span class="n">row</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">col</span><span class="o">=</span><span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">,</span>
+                    <span class="n">message</span><span class="o">=</span><span class="n">key_msg</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">provider_errors</span> <span class="o">=</span> <span class="n">ProviderValidator</span><span class="p">(</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span>
+            <span class="n">has_rag</span><span class="o">=</span><span class="n">_has_rag</span><span class="p">,</span>
+            <span class="n">has_video</span><span class="o">=</span><span class="n">_has_video</span><span class="p">,</span>
+            <span class="n">has_audio</span><span class="o">=</span><span class="n">_has_audio</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+        <span class="n">all_errors</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">provider_errors</span><span class="p">)</span>
+
+        <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.authoring.validators.context_window_validator</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">ContextWindowValidator</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">ctx_errors</span> <span class="o">=</span> <span class="n">ContextWindowValidator</span><span class="p">(</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span>
+            <span class="n">prompts</span><span class="o">=</span><span class="n">prompts</span><span class="p">,</span>
+            <span class="n">constants</span><span class="o">=</span><span class="n">constants</span><span class="p">,</span>
+            <span class="n">module_sequence</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">module_sequence</span><span class="p">,</span>
+            <span class="n">num_agents_per_session</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">num_agents_per_session</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+        <span class="n">all_errors</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ctx_errors</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">all_errors</span> <span class="ow">and</span> <span class="n">raise_on_error</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">CompilationError</span><span class="p">(</span><span class="n">all_errors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">all_errors</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">err</span> <span class="ow">in</span> <span class="n">all_errors</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Validation warning: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="c1"># Step 3: Resolve compile-time Jinja refs</span>
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="n">resolved_prompts</span> <span class="o">=</span> <span class="n">resolve_prompts</span><span class="p">(</span><span class="n">prompts</span><span class="p">,</span> <span class="n">constants</span><span class="p">)</span>
+        <span class="n">resolved_facilitators</span> <span class="o">=</span> <span class="n">resolve_facilitators</span><span class="p">(</span><span class="n">facilitators</span><span class="p">,</span> <span class="n">constants</span><span class="p">)</span>
+
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="c1"># Step 4: Compute config hash and run ID</span>
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="n">parsed_canonical</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;settings&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="s2">&quot;constants&quot;</span><span class="p">:</span> <span class="n">constants</span><span class="p">,</span>
+            <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">],</span>
+            <span class="s2">&quot;prompts&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="n">t</span><span class="p">:</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">ps</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">ps</span> <span class="ow">in</span> <span class="n">resolved_prompts</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">},</span>
+        <span class="p">}</span>
+        <span class="n">config_hash</span> <span class="o">=</span> <span class="n">compute_config_hash</span><span class="p">(</span><span class="n">parsed_canonical</span><span class="p">)</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">random_seed</span><span class="p">)</span>
+        <span class="n">run_id</span> <span class="o">=</span> <span class="n">make_run_id</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span> <span class="n">rng</span><span class="p">)</span>
+
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="c1"># Step 5: Emit assignment plan</span>
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="n">agent_ids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">profiles</span> <span class="ow">and</span> <span class="n">profiles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rows&quot;</span><span class="p">):</span>
+            <span class="n">id_col</span> <span class="o">=</span> <span class="n">profiles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id_column&quot;</span><span class="p">,</span> <span class="s2">&quot;ID&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">profiles</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">]:</span>
+                <span class="n">pid</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">id_col</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">pid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">agent_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">make_agent_id</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span> <span class="n">pid</span><span class="p">))</span>
+
+        <span class="n">assignment_plan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_assignment_plan</span><span class="p">(</span>
+            <span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="p">,</span>
+            <span class="n">agent_ids</span><span class="o">=</span><span class="n">agent_ids</span><span class="p">,</span>
+            <span class="n">constants</span><span class="o">=</span><span class="n">constants</span><span class="p">,</span>
+            <span class="n">rng</span><span class="o">=</span><span class="n">rng</span><span class="p">,</span>
+            <span class="n">prompts</span><span class="o">=</span><span class="n">prompts</span><span class="p">,</span>
+            <span class="n">facilitators</span><span class="o">=</span><span class="n">facilitators</span><span class="p">,</span>
+            <span class="n">profiles</span><span class="o">=</span><span class="n">profiles</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="c1"># Step 6: Build CEP</span>
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="n">cep_dict</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;schema_version&quot;</span><span class="p">:</span> <span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;experiment_id&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span>
+            <span class="s2">&quot;config_hash&quot;</span><span class="p">:</span> <span class="n">config_hash</span><span class="p">,</span>
+            <span class="s2">&quot;cep_hash&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>  <span class="c1"># filled after</span>
+            <span class="s2">&quot;run_id&quot;</span><span class="p">:</span> <span class="n">run_id</span><span class="p">,</span>
+            <span class="s2">&quot;settings&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="s2">&quot;constants&quot;</span><span class="p">:</span> <span class="n">constants</span><span class="p">,</span>
+            <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">],</span>
+            <span class="s2">&quot;facilitator_functions&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">resolved_facilitators</span><span class="p">],</span>
+            <span class="s2">&quot;prompts&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="n">t</span><span class="p">:</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">ps</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">ps</span> <span class="ow">in</span> <span class="n">resolved_prompts</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;profiles&quot;</span><span class="p">:</span> <span class="n">profiles</span><span class="p">,</span>
+            <span class="s2">&quot;module_sequence&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">module_sequence</span><span class="p">,</span>
+            <span class="s2">&quot;assignment_plan&quot;</span><span class="p">:</span> <span class="n">assignment_plan</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+        <span class="p">}</span>
+        <span class="n">cep_hash</span> <span class="o">=</span> <span class="n">compute_cep_hash</span><span class="p">(</span><span class="n">cep_dict</span><span class="p">)</span>
+        <span class="n">cep_dict</span><span class="p">[</span><span class="s2">&quot;cep_hash&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cep_hash</span>
+
+        <span class="n">cep</span> <span class="o">=</span> <span class="n">CompiledExperiment</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">cep_dict</span><span class="p">)</span>
+
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="c1"># Step 7: Save to disk if output_dir given</span>
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="k">if</span> <span class="n">output_dir</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">cep</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">out</span> <span class="o">/</span> <span class="s2">&quot;compiled_experiment.json&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;CEP saved to </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">out</span> <span class="o">/</span> <span class="s2">&quot;compiled_experiment.json&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cep</span></div>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Internal helpers</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_assignment_plan</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">settings</span><span class="p">,</span>
+        <span class="n">agent_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">constants</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">rng</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">,</span>
+        <span class="n">prompts</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">facilitators</span><span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">profiles</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AssignmentPlan</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build assignment plan from ``Manual_`` sheet entries.</span>
+
+<span class="sd">        Parses ``Manual_`` entries into group assignments and general</span>
+<span class="sd">        manual variables. Treatment is no longer a special concept —</span>
+<span class="sd">        it is just another variable set via the ``Manual_`` sheet.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            settings: Parsed experiment settings object.</span>
+<span class="sd">            agent_ids: List of deterministic agent IDs derived from profiles.</span>
+<span class="sd">            constants: Parsed constants dictionary keyed by module name.</span>
+<span class="sd">            rng: Seeded random number generator for reproducibility.</span>
+<span class="sd">            prompts: Unused, kept for signature compatibility.</span>
+<span class="sd">            facilitators: Unused, kept for signature compatibility.</span>
+<span class="sd">            profiles: Unused, kept for signature compatibility.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An ``AssignmentPlan`` containing group assignments and</span>
+<span class="sd">            manual variable definitions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Parse Manual_ sheets once</span>
+        <span class="n">manual_sheets</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;Manual_&quot;</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">manual_registry</span> <span class="o">=</span> <span class="n">parse_manual_sheets</span><span class="p">(</span><span class="n">manual_sheets</span><span class="p">)</span>
+
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="c1"># Separate group assignments from other manual variables</span>
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="n">group_assignments</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">manual_variables</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">round_num</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">manual_registry</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="bp">cls</span> <span class="o">==</span> <span class="s2">&quot;Group&quot;</span> <span class="ow">and</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;id_in_subsession&quot;</span><span class="p">:</span>
+                <span class="c1"># Group assignment entry</span>
+                <span class="n">agent_id</span> <span class="o">=</span> <span class="n">make_agent_id</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+                <span class="n">group_label</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+                <span class="c1"># Determine target modules</span>
+                <span class="n">target_modules</span> <span class="o">=</span> <span class="p">[</span><span class="n">module</span><span class="p">]</span> <span class="k">if</span> <span class="n">module</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">module_sequence</span><span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">target_modules</span><span class="p">:</span>
+                    <span class="n">module_consts</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">{})</span>
+                    <span class="n">max_rounds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">module_consts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;MAX_NUM_ROUNDS&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+                    <span class="c1"># Determine target rounds</span>
+                    <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">notna</span><span class="p">(</span><span class="n">round_num</span><span class="p">)</span> <span class="ow">and</span> <span class="n">round_num</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                        <span class="n">target_rounds</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">round_num</span><span class="p">)]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">target_rounds</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_rounds</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+
+                    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">target_rounds</span><span class="p">:</span>
+                        <span class="n">t_dict</span> <span class="o">=</span> <span class="n">group_assignments</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">{})</span>
+                        <span class="n">r_dict</span> <span class="o">=</span> <span class="n">t_dict</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="p">{})</span>
+                        <span class="n">r_dict</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">group_label</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># All other entries (including treatment) go into</span>
+                <span class="c1"># manual_variables for runtime application</span>
+                <span class="n">manual_variables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;profile_id&quot;</span><span class="p">:</span> <span class="n">pid</span><span class="p">,</span>
+                        <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module</span> <span class="k">if</span> <span class="n">module</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;round_number&quot;</span><span class="p">:</span> <span class="p">(</span>
+                            <span class="nb">int</span><span class="p">(</span><span class="n">round_num</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">notna</span><span class="p">(</span><span class="n">round_num</span><span class="p">)</span> <span class="ow">and</span> <span class="n">round_num</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span>
+                            <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+                        <span class="p">),</span>
+                        <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="bp">cls</span><span class="p">,</span>
+                        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+                        <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">AssignmentPlan</span><span class="p">(</span>
+            <span class="n">random_seed</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">random_seed</span><span class="p">,</span>
+            <span class="n">group_assignments</span><span class="o">=</span><span class="n">group_assignments</span><span class="p">,</span>
+            <span class="n">manual_variables</span><span class="o">=</span><span class="n">manual_variables</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

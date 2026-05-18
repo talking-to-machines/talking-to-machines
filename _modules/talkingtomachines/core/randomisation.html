@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.core.randomisation &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.core.randomisation</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.core.randomisation</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Randomisation Engine</span>
+
+<span class="sd">Implements group assignment strategies and utility randomisation as a</span>
+<span class="sd">first-class, logged, replayable component.</span>
+
+<span class="sd">Child seeds are derived deterministically using HMAC-SHA256:</span>
+<span class="sd">    child_seed = HMAC-SHA256(global_seed, path_components)</span>
+
+<span class="sd">Every randomisation event is logged with:</span>
+<span class="sd">    event_type, seed_used, inputs, realized_output, timestamp</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">hmac</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Event log</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="RandomisationEvent"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.randomisation.RandomisationEvent">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RandomisationEvent</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A single logged randomisation event for auditability and replay.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        event_type: Category of the randomisation event (e.g.</span>
+<span class="sd">            ``&quot;treatment_assignment&quot;``, ``&quot;group_assignment&quot;``,</span>
+<span class="sd">            ``&quot;turn_order_shuffle&quot;``, ``&quot;options_shuffle&quot;``).</span>
+<span class="sd">        seed_used: The derived seed used for this specific event.</span>
+<span class="sd">        inputs: Dictionary of input parameters that were passed to</span>
+<span class="sd">            the randomisation function.</span>
+<span class="sd">        realized_output: The concrete output produced by the</span>
+<span class="sd">            randomisation (e.g. assignment mapping, shuffled list).</span>
+<span class="sd">        timestamp: ISO-8601 UTC timestamp of when the event occurred.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">seed_used</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">inputs</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="n">realized_output</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span>
+        <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="RandomisationEvent.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.randomisation.RandomisationEvent.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the event to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary containing all event fields.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;event_type&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_type</span><span class="p">,</span>
+            <span class="s2">&quot;seed_used&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">seed_used</span><span class="p">,</span>
+            <span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span>
+            <span class="s2">&quot;realized_output&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">realized_output</span><span class="p">,</span>
+            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
+        <span class="p">}</span></div></div>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Seed derivation</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_derive_seed</span><span class="p">(</span><span class="n">global_seed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deterministically derive a child seed using HMAC-SHA256.</span>
+
+<span class="sd">    Combines the global seed with a path string to produce a</span>
+<span class="sd">    reproducible child seed. The first 8 bytes of the HMAC digest</span>
+<span class="sd">    are converted to an integer.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        global_seed: The experiment-level random seed.</span>
+<span class="sd">        path: A dot-delimited path string that uniquely identifies</span>
+<span class="sd">            the randomisation context (e.g.</span>
+<span class="sd">            ``&quot;turn_order.g1.round_1&quot;``).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A deterministic integer seed derived from the inputs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">global_seed</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+    <span class="n">digest</span> <span class="o">=</span> <span class="n">hmac</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">)</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span>
+    <span class="c1"># Convert first 8 bytes to int</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">digest</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span> <span class="n">byteorder</span><span class="o">=</span><span class="s2">&quot;big&quot;</span><span class="p">)</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Randomisation Engine</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="RandomisationEngine"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.randomisation.RandomisationEngine">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RandomisationEngine</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Centralised, logged, replayable randomisation engine.</span>
+
+<span class="sd">    All randomisation calls are deterministic given the same</span>
+<span class="sd">    ``global_seed`` and the same sequence of calls. Every operation</span>
+<span class="sd">    is recorded as a ``RandomisationEvent`` for auditability and</span>
+<span class="sd">    replay.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        _global_seed: The experiment-level random seed from which</span>
+<span class="sd">            all child seeds are derived.</span>
+<span class="sd">        _events: Accumulated list of randomisation events.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">global_seed</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the randomisation engine.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            global_seed: The experiment-level random seed used to</span>
+<span class="sd">                derive all child seeds via HMAC-SHA256.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_global_seed</span> <span class="o">=</span> <span class="n">global_seed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">RandomisationEvent</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">events</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">RandomisationEvent</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a copy of all recorded randomisation events.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of ``RandomisationEvent`` instances.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_rng</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a seeded ``Random`` instance for a given path.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path: Dot-delimited path string identifying the</span>
+<span class="sd">                randomisation context.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A ``random.Random`` instance seeded deterministically.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">seed</span> <span class="o">=</span> <span class="n">_derive_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_global_seed</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">output</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Record a randomisation event.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            event_type: Category label for the event.</span>
+<span class="sd">            seed: The derived seed that was used.</span>
+<span class="sd">            inputs: Dictionary of input parameters.</span>
+<span class="sd">            output: The realised output of the randomisation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">RandomisationEvent</span><span class="p">(</span>
+                <span class="n">event_type</span><span class="o">=</span><span class="n">event_type</span><span class="p">,</span>
+                <span class="n">seed_used</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span>
+                <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span>
+                <span class="n">realized_output</span><span class="o">=</span><span class="n">output</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Group assignment strategies</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="RandomisationEngine.assign_groups"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.randomisation.RandomisationEngine.assign_groups">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">assign_groups</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">agent_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">players_per_group</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;random&quot;</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;groups&quot;</span><span class="p">,</span>
+        <span class="n">previous_groups</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stratify_by</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">manual_groups</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Assign agents to groups using the specified strategy.</span>
+
+<span class="sd">        Supported strategies: ``&quot;random&quot;``, ``&quot;keep&quot;``, ``&quot;swap&quot;``,</span>
+<span class="sd">        ``&quot;stratified&quot;``, ``&quot;manual&quot;``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_ids: List of agent identifiers to assign.</span>
+<span class="sd">            players_per_group: Target number of agents per group.</span>
+<span class="sd">            strategy: Group formation strategy name.</span>
+<span class="sd">            path: Seed derivation path for deterministic</span>
+<span class="sd">                randomisation.</span>
+<span class="sd">            previous_groups: Group assignments from the previous</span>
+<span class="sd">                round, used by ``&quot;keep&quot;`` and ``&quot;swap&quot;`` strategies.</span>
+<span class="sd">            stratify_by: Profile attribute values aligned with</span>
+<span class="sd">                *agent_ids* for the ``&quot;stratified&quot;`` strategy.</span>
+<span class="sd">            manual_groups: Pre-defined group assignments for the</span>
+<span class="sd">                ``&quot;manual&quot;`` strategy.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary mapping group labels to lists of agent IDs</span>
+<span class="sd">            (``{group_label: [agent_id, ...]}``).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">seed</span> <span class="o">=</span> <span class="n">_derive_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_global_seed</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;random&quot;</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_random_groups</span><span class="p">(</span><span class="n">agent_ids</span><span class="p">,</span> <span class="n">players_per_group</span><span class="p">,</span> <span class="n">rng</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;keep&quot;</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">previous_groups</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_random_groups</span><span class="p">(</span>
+                <span class="n">agent_ids</span><span class="p">,</span> <span class="n">players_per_group</span><span class="p">,</span> <span class="n">rng</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;swap&quot;</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_swap_groups</span><span class="p">(</span>
+                <span class="n">agent_ids</span><span class="p">,</span> <span class="n">players_per_group</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">previous_groups</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;stratified&quot;</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stratified_groups</span><span class="p">(</span>
+                <span class="n">agent_ids</span><span class="p">,</span> <span class="n">players_per_group</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">stratify_by</span> <span class="ow">or</span> <span class="p">[]</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;manual&quot;</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">manual_groups</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Unknown group strategy &#39;</span><span class="si">%s</span><span class="s2">&#39;, falling back to random.&quot;</span><span class="p">,</span> <span class="n">strategy</span>
+            <span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_random_groups</span><span class="p">(</span><span class="n">agent_ids</span><span class="p">,</span> <span class="n">players_per_group</span><span class="p">,</span> <span class="n">rng</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="p">(</span>
+            <span class="s2">&quot;group_assignment&quot;</span><span class="p">,</span>
+            <span class="n">seed</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;strategy&quot;</span><span class="p">:</span> <span class="n">strategy</span><span class="p">,</span>
+                <span class="s2">&quot;agent_ids&quot;</span><span class="p">:</span> <span class="n">agent_ids</span><span class="p">,</span>
+                <span class="s2">&quot;players_per_group&quot;</span><span class="p">:</span> <span class="n">players_per_group</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">result</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_random_groups</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">agent_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rng</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Form groups by shuffling agents and chunking into fixed sizes.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_ids: List of agent identifiers.</span>
+<span class="sd">            size: Target number of agents per group.</span>
+<span class="sd">            rng: Seeded random number generator.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary mapping group labels (``&quot;g1&quot;``, ``&quot;g2&quot;``,</span>
+<span class="sd">            ...) to lists of agent IDs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">shuffled</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">agent_ids</span><span class="p">)</span>
+        <span class="n">rng</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">shuffled</span><span class="p">)</span>
+        <span class="n">groups</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chunk_start</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">shuffled</span><span class="p">),</span> <span class="n">size</span><span class="p">)):</span>
+            <span class="n">chunk</span> <span class="o">=</span> <span class="n">shuffled</span><span class="p">[</span><span class="n">chunk_start</span> <span class="p">:</span> <span class="n">chunk_start</span> <span class="o">+</span> <span class="n">size</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">chunk</span><span class="p">:</span>
+                <span class="n">groups</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;g</span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">chunk</span>
+        <span class="k">return</span> <span class="n">groups</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_swap_groups</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">agent_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">rng</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">,</span>
+        <span class="n">previous</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Re-form groups by swapping approximately 50% of members.</span>
+
+<span class="sd">        Retains half of each previous group&#39;s members and</span>
+<span class="sd">        redistributes the remaining agents randomly. Falls back to</span>
+<span class="sd">        fully random groups if no previous assignments exist.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_ids: List of agent identifiers.</span>
+<span class="sd">            size: Target number of agents per group.</span>
+<span class="sd">            rng: Seeded random number generator.</span>
+<span class="sd">            previous: Previous round&#39;s group assignments</span>
+<span class="sd">                (``{group_label: [agent_id, ...]}``).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary mapping group labels to lists of agent IDs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">previous</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_random_groups</span><span class="p">(</span><span class="n">agent_ids</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">rng</span><span class="p">)</span>
+        <span class="c1"># Simple implementation: re-randomise 50% of agents</span>
+        <span class="n">fixed_count</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">new_groups</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">agents_pool</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">agent_ids</span><span class="p">)</span>
+        <span class="n">rng</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">agents_pool</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">gid</span><span class="p">,</span> <span class="n">members</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">previous</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="n">kept</span> <span class="o">=</span> <span class="n">members</span><span class="p">[:</span><span class="n">fixed_count</span><span class="p">]</span>
+            <span class="n">new_groups</span><span class="p">[</span><span class="n">gid</span><span class="p">]</span> <span class="o">=</span> <span class="n">kept</span>
+        <span class="c1"># Distribute remaining agents</span>
+        <span class="n">assigned</span> <span class="o">=</span> <span class="p">{</span><span class="n">a</span> <span class="k">for</span> <span class="n">members</span> <span class="ow">in</span> <span class="n">new_groups</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">members</span><span class="p">}</span>
+        <span class="n">remaining</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">agents_pool</span> <span class="k">if</span> <span class="n">a</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">assigned</span><span class="p">]</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">gid</span> <span class="ow">in</span> <span class="n">new_groups</span><span class="p">:</span>
+            <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_groups</span><span class="p">[</span><span class="n">gid</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">size</span> <span class="ow">and</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">remaining</span><span class="p">):</span>
+                <span class="n">new_groups</span><span class="p">[</span><span class="n">gid</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">remaining</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+                <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">new_groups</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_stratified_groups</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">agent_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">rng</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">,</span>
+        <span class="n">strata</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Form groups balanced by a profile attribute.</span>
+
+<span class="sd">        Agents are bucketed by stratum, shuffled within each bucket,</span>
+<span class="sd">        then interleaved so that each group receives a mix of strata.</span>
+<span class="sd">        Falls back to random groups if the strata length does not</span>
+<span class="sd">        match *agent_ids*.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_ids: List of agent identifiers.</span>
+<span class="sd">            size: Target number of agents per group.</span>
+<span class="sd">            rng: Seeded random number generator.</span>
+<span class="sd">            strata: Profile attribute values aligned with</span>
+<span class="sd">                *agent_ids* for stratification.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary mapping group labels to lists of agent IDs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">strata</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">agent_ids</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_random_groups</span><span class="p">(</span><span class="n">agent_ids</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">rng</span><span class="p">)</span>
+
+        <span class="n">stratum_buckets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">aid</span><span class="p">,</span> <span class="n">stratum</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">agent_ids</span><span class="p">,</span> <span class="n">strata</span><span class="p">):</span>
+            <span class="n">stratum_buckets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">stratum</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">aid</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">bucket</span> <span class="ow">in</span> <span class="n">stratum_buckets</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">rng</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">bucket</span><span class="p">)</span>
+
+        <span class="c1"># Interleave strata into groups</span>
+        <span class="n">interleaved</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">strata_lists</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">stratum_buckets</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">max_len</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sl</span><span class="p">)</span> <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">strata_lists</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_len</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">strata_lists</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">sl</span><span class="p">):</span>
+                    <span class="n">interleaved</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sl</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="n">groups</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chunk_start</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">interleaved</span><span class="p">),</span> <span class="n">size</span><span class="p">)):</span>
+            <span class="n">chunk</span> <span class="o">=</span> <span class="n">interleaved</span><span class="p">[</span><span class="n">chunk_start</span> <span class="p">:</span> <span class="n">chunk_start</span> <span class="o">+</span> <span class="n">size</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">chunk</span><span class="p">:</span>
+                <span class="n">groups</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;g</span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">chunk</span>
+        <span class="k">return</span> <span class="n">groups</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Turn order and option shuffling</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="RandomisationEngine.shuffle_turn_order"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.randomisation.RandomisationEngine.shuffle_turn_order">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">shuffle_turn_order</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">agent_instance_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">group_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Shuffle the speaking order within a group for a given round.</span>
+
+<span class="sd">        Deterministic: the same inputs always produce the same order.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_instance_ids: List of agent instance identifiers</span>
+<span class="sd">                in the group.</span>
+<span class="sd">            group_id: The group identifier.</span>
+<span class="sd">            round_number: The current round number.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new list of agent instance IDs in shuffled order.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;turn_order.</span><span class="si">{</span><span class="n">group_id</span><span class="si">}</span><span class="s2">.round_</span><span class="si">{</span><span class="n">round_number</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">seed</span> <span class="o">=</span> <span class="n">_derive_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_global_seed</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+        <span class="n">shuffled</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">agent_instance_ids</span><span class="p">)</span>
+        <span class="n">rng</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">shuffled</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="p">(</span>
+            <span class="s2">&quot;turn_order_shuffle&quot;</span><span class="p">,</span>
+            <span class="n">seed</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="n">group_id</span><span class="p">,</span>
+                <span class="s2">&quot;round_number&quot;</span><span class="p">:</span> <span class="n">round_number</span><span class="p">,</span>
+                <span class="s2">&quot;original_order&quot;</span><span class="p">:</span> <span class="n">agent_instance_ids</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">shuffled</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">shuffled</span></div>
+
+<div class="viewcode-block" id="RandomisationEngine.shuffle_options"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.randomisation.RandomisationEngine.shuffle_options">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">shuffle_options</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">options</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+        <span class="n">player_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">prompt_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Shuffle response options for a specific player and prompt.</span>
+
+<span class="sd">        Deterministic: the same inputs always produce the same</span>
+<span class="sd">        shuffle.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            options: List of response options to shuffle.</span>
+<span class="sd">            player_id: The player identifier requesting the options.</span>
+<span class="sd">            prompt_name: Name of the prompt associated with the</span>
+<span class="sd">                options.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new list with the options in shuffled order.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;options.</span><span class="si">{</span><span class="n">player_id</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">prompt_name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">seed</span> <span class="o">=</span> <span class="n">_derive_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_global_seed</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+        <span class="n">shuffled</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+        <span class="n">rng</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">shuffled</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="p">(</span>
+            <span class="s2">&quot;options_shuffle&quot;</span><span class="p">,</span>
+            <span class="n">seed</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;player_id&quot;</span><span class="p">:</span> <span class="n">player_id</span><span class="p">,</span>
+                <span class="s2">&quot;prompt_name&quot;</span><span class="p">:</span> <span class="n">prompt_name</span><span class="p">,</span>
+                <span class="s2">&quot;original_options&quot;</span><span class="p">:</span> <span class="n">options</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">shuffled</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">shuffled</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

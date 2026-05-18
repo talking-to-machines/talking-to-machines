@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.interface package &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="talkingtomachines.interface.auth package" href="talkingtomachines.interface.auth.html" />
+    <link rel="prev" title="talkingtomachines.generative package" href="talkingtomachines.generative.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">talkingtomachines</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.agents.html">talkingtomachines.agents package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.analytics.html">talkingtomachines.analytics package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.html">talkingtomachines.authoring package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.compiler.html">talkingtomachines.compiler package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.core.html">talkingtomachines.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.gateway.html">talkingtomachines.gateway package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.generative.html">talkingtomachines.generative package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">talkingtomachines.interface package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="talkingtomachines.interface.auth.html">talkingtomachines.interface.auth package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.interface.prompt_template">talkingtomachines.interface.prompt_template module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.interface.validate_template">talkingtomachines.interface.validate_template module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.interface">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.management.html">talkingtomachines.management package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.orchestrator.html">talkingtomachines.orchestrator package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.storage.html">talkingtomachines.storage package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">talkingtomachines</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.interface package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/talkingtomachines.interface.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="talkingtomachines-interface-package">
+<h1>talkingtomachines.interface package<a class="headerlink" href="#talkingtomachines-interface-package" title="Permalink to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="talkingtomachines.interface.auth.html">talkingtomachines.interface.auth package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.interface.auth.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.interface.auth.html#module-talkingtomachines.interface.auth.account_setup">talkingtomachines.interface.auth.account_setup module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.interface.auth.html#module-talkingtomachines.interface.auth.login">talkingtomachines.interface.auth.login module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.interface.auth.html#module-talkingtomachines.interface.auth">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-talkingtomachines.interface.prompt_template">
+<span id="talkingtomachines-interface-prompt-template-module"></span><h2>talkingtomachines.interface.prompt_template module<a class="headerlink" href="#module-talkingtomachines.interface.prompt_template" title="Permalink to this heading"></a></h2>
+<p>Legacy prompt-template parser and experiment runner.</p>
+<p>This module implements the original (pre-CLI) entry point for the Talking
+to Machines platform.  It reads an Excel prompt template, extracts
+settings, treatments, roles, prompts, profiles, and constants from their
+respective worksheets, initialises experiment sessions, and runs them in
+test or full (parallel) mode.</p>
+<dl class="simple">
+<dt>Module-level constants:</dt><dd><p>PROMPT_TEMPLATE_SHEETS: Required worksheet names in a prompt template.
+SPECIAL_ROLES: Role labels that receive special handling (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;facilitator&quot;</span></code>).
+SUPPORTED_PROMPT_TYPES: Valid values for the <code class="docutils literal notranslate"><span class="pre">type</span></code> column in the prompt worksheet.
+BOOLEAN_KEYS: Setting/prompt keys whose string values are coerced to <code class="docutils literal notranslate"><span class="pre">bool</span></code>.</p>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.prompt_template.extract_constants">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.prompt_template.</span></span><span class="sig-name descname"><span class="pre">extract_constants</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">sheet_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/prompt_template.html#extract_constants"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.prompt_template.extract_constants" title="Permalink to this definition"></a></dt>
+<dd><p>Extracts constants from a specified Excel worksheet and returns them as a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The path to the Excel file containing the constants.</p></li>
+<li><p><strong>sheet_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The name of the worksheet to extract constants from.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A dictionary with a single key “constants”, where the value is another dictionary</dt><dd><p>mapping the first column values to the second column values. If the second column
+contains string representations of lists, they are converted to actual lists.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the worksheet does not contain the required fields or if the data format
+    is invalid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.prompt_template.extract_profiles">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.prompt_template.</span></span><span class="sig-name descname"><span class="pre">extract_profiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">sheet_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/prompt_template.html#extract_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.prompt_template.extract_profiles" title="Permalink to this definition"></a></dt>
+<dd><p>Extracts subject profiles from the profile worksheet in the prompt template.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The file path to the prompt template.</p></li>
+<li><p><strong>sheet_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The name of the sheet to read from the prompt template.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A dictionary containing:</dt><dd><ul class="simple">
+<li><p>”profiles_mapping” (dict): A dictionary mapping of the first row of the sheet.</p></li>
+<li><p>”profiles” (pd.DataFrame): A DataFrame containing the remaining data with new column headers.</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If mandatory fields are not present in the profile worksheet.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.prompt_template.extract_prompts">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.prompt_template.</span></span><span class="sig-name descname"><span class="pre">extract_prompts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">sheet_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">role_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/prompt_template.html#extract_prompts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.prompt_template.extract_prompts" title="Permalink to this definition"></a></dt>
+<dd><p>Extracts prompts from the prompt worksheet in the prompt template and returns them as a dictionary.</p>
+<p>This function reads the prompt worksheet from the prompt template file, validates the presence
+of mandatory fields, processes the prompts, and returns them in a structured format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The file path to the prompt template file.</p></li>
+<li><p><strong>sheet_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The name of the worksheet to read from the prompt template file.</p></li>
+<li><p><strong>role_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a>) – A list of roles to be used in the experiment.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A dictionary containing a list of prompts. Each prompt is represented as a dictionary</dt><dd><p>with relevant fields and their corresponding values.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If mandatory fields are not present in the prompts_template worksheet.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.prompt_template.extract_roles">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.prompt_template.</span></span><span class="sig-name descname"><span class="pre">extract_roles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">sheet_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/prompt_template.html#extract_roles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.prompt_template.extract_roles" title="Permalink to this definition"></a></dt>
+<dd><p>Extract roles from an Excel worksheet and convert them into a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The path to the Excel file containing the role worksheet.</p></li>
+<li><p><strong>sheet_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The name of the worksheet to read roles from.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A dictionary with a single key “roles”, where the value is another</dt><dd><p>dictionary mapping role labels to Role objects. Each Role object
+contains attributes parsed from the worksheet.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the role worksheet does not contain mandatory fields or
+    if the data format is invalid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.prompt_template.extract_settings">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.prompt_template.</span></span><span class="sig-name descname"><span class="pre">extract_settings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">sheet_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/prompt_template.html#extract_settings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.prompt_template.extract_settings" title="Permalink to this definition"></a></dt>
+<dd><p>Extracts the experimental settings from a specified worksheet in the prompt template.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The file path to the prompt template.</p></li>
+<li><p><strong>sheet_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The name of the worksheet containing the experimental settings.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A dictionary representation of the experimental settings, where the keys are the</dt><dd><p>values from the first column and the values are the corresponding values from the
+second column.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the mandatory fields are not present in the settings worksheet.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.prompt_template.extract_treatments">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.prompt_template.</span></span><span class="sig-name descname"><span class="pre">extract_treatments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">sheet_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/prompt_template.html#extract_treatments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.prompt_template.extract_treatments" title="Permalink to this definition"></a></dt>
+<dd><p>Extracts treatment information from an Excel worksheet and returns it as a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The file path to the Excel workbook.</p></li>
+<li><p><strong>sheet_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The name of the worksheet containing treatment data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A dictionary with a single key “treatments”, where the value is another dictionary</dt><dd><p>mapping treatment labels to <cite>Treatment</cite> objects. Each <cite>Treatment</cite> object is created
+based on the data in the worksheet.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>The function performs the following steps:</dt><dd><ol class="arabic simple">
+<li><p>Reads the specified worksheet into a pandas DataFrame.</p></li>
+<li><p>Validates the presence of mandatory fields in the worksheet.</p></li>
+<li><p>Iterates through each row of the DataFrame to extract treatment labels and their
+corresponding attributes.</p></li>
+<li><p>Parses the “value” field as a JSON-style string if possible, or treats it as plain text.</p></li>
+<li><p>Creates a <cite>Treatment</cite> object for each treatment label and adds it to the resulting dictionary.</p></li>
+</ol>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the treatment worksheet fails validation.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/json.html#json.JSONDecodeError" title="(in Python v3.14)"><strong>json.JSONDecodeError</strong></a> – If the “value” field contains invalid JSON and cannot be parsed.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.prompt_template.main">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.prompt_template.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/interface/prompt_template.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.prompt_template.main" title="Permalink to this definition"></a></dt>
+<dd><p>Legacy CLI entry point for parsing a prompt template and running an experiment.</p>
+<p>Parses command-line arguments to locate an Excel prompt template file,
+validates it, extracts all worksheet data, initialises experiment
+sessions (one per constant permutation), and prompts the user to run
+in <em>test</em> or <em>full</em> mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#SystemExit" title="(in Python v3.14)"><strong>SystemExit</strong></a> – Via <code class="docutils literal notranslate"><span class="pre">argparse</span></code> if required arguments are missing.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – Propagated from validation helpers when the template
+    is malformed.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.prompt_template.parse_prompt_text_field">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.prompt_template.</span></span><span class="sig-name descname"><span class="pre">parse_prompt_text_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text_field</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">role_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_response_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/prompt_template.html#parse_prompt_text_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.prompt_template.parse_prompt_text_field" title="Permalink to this definition"></a></dt>
+<dd><p>Parses the prompt text for the llm_text and response_options fields, converting them into Python objects and assigning to roles.</p>
+<p>If text_field is a plain string (i.e. not a dictionary literal), this function
+creates a dictionary where the keys are the roles in role_list (excluding those in SPECIAL_ROLES)
+and the value is the plain string.</p>
+<p>Otherwise, if text_field is a string representation of a dictionary, it is parsed as a Python dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text_field</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The text field to parse.</p></li>
+<li><p><strong>role_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a>) – A list of role names.</p></li>
+<li><p><strong>round_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The round ID associated with that round.</p></li>
+<li><p><strong>prompt_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The type of the prompt.</p></li>
+<li><p><strong>is_response_options</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Boolean indicator on whether the function is parsing the text for the llm_text field or response_options field.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary mapping roles to the prompt text field.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.prompt_template.parse_range_response_options">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.prompt_template.</span></span><span class="sig-name descname"><span class="pre">parse_range_response_options</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/prompt_template.html#parse_range_response_options"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.prompt_template.parse_range_response_options" title="Permalink to this definition"></a></dt>
+<dd><p>Parses a dictionary of response options, converting any tuple values into a range object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>response_options</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – A dictionary where keys represent roles and values are either
+tuples (to be converted into range objects) or other types
+(which are left unchanged).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A dictionary with the same keys as the input, where tuple values are replaced</dt><dd><p>with range objects, and other values remain unchanged.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.prompt_template.print_session_settings">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.prompt_template.</span></span><span class="sig-name descname"><span class="pre">print_session_settings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIInterviewExperiment" title="talkingtomachines.management.experiment.AItoAIInterviewExperiment"><span class="pre">AItoAIInterviewExperiment</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">constant_permutation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/prompt_template.html#print_session_settings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.prompt_template.print_session_settings" title="Permalink to this definition"></a></dt>
+<dd><p>Prints the experimental settings and configuration details for an AI-to-AI interview experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>session</strong> (<a class="reference internal" href="talkingtomachines.management.html#talkingtomachines.management.experiment.AItoAIInterviewExperiment" title="talkingtomachines.management.experiment.AItoAIInterviewExperiment"><em>AItoAIInterviewExperiment</em></a>) – An object containing all relevant session parameters and settings.</p></li>
+<li><p><strong>constant_permutation</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – A dictionary representing constant permutations used in the session.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+<p>The function outputs a formatted summary of the session’s configuration, including model information,
+API keys, session and role details, treatment and assignment strategies, random seed, roles,
+and interview prompts.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.prompt_template.run_session_wrapper">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.prompt_template.</span></span><span class="sig-name descname"><span class="pre">run_session_wrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/prompt_template.html#run_session_wrapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.prompt_template.run_session_wrapper" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper function to execute a session with the provided arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>args</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a>) – A tuple containing the following elements:
+- session: An object with a <cite>run_session</cite> method to execute the session.
+- test_mode (bool): A flag indicating whether the session should run in test mode.
+- version (str): The version identifier for the session.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.interface.validate_template">
+<span id="talkingtomachines-interface-validate-template-module"></span><h2>talkingtomachines.interface.validate_template module<a class="headerlink" href="#module-talkingtomachines.interface.validate_template" title="Permalink to this heading"></a></h2>
+<p>Validation helpers for prompt template workbooks.</p>
+<p>This module provides functions that validate the structure and content of
+Excel-based prompt template files used to configure experiments on the
+Talking to Machines platform.  Validators check file paths, required
+worksheets, column headers, and mandatory field presence.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.validate_template.validate_constant_sheet">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.validate_template.</span></span><span class="sig-name descname"><span class="pre">validate_constant_sheet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">constants</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/validate_template.html#validate_constant_sheet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.validate_template.validate_constant_sheet" title="Permalink to this definition"></a></dt>
+<dd><p>Validates the structure of the constants worksheet.</p>
+<p>This function checks that the DataFrame has the expected column headers: “constant_label” and “value”.
+If the columns do not match the expected headers, an assertion error is raised.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>constants</strong> (<em>pd.DataFrame</em>) – The DataFrame to validate.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.14)"><strong>AssertionError</strong></a> – If the DataFrame does not have the expected columns.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.validate_template.validate_prompt_sheet">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.validate_template.</span></span><span class="sig-name descname"><span class="pre">validate_prompt_sheet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/validate_template.html#validate_prompt_sheet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.validate_template.validate_prompt_sheet" title="Permalink to this definition"></a></dt>
+<dd><p>Validates the structure of a prompts_template worksheet containing prompt data.</p>
+<p>This function checks if the DataFrame has the expected column headers.
+If the columns do not match the expected headers, an assertion error is raised.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>prompts</strong> (<em>pd.DataFrame</em>) – The DataFrame containing the prompt data to be validated.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.14)"><strong>AssertionError</strong></a> – If the columns of the DataFrame do not match the expected columns.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.validate_template.validate_prompt_template_path">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.validate_template.</span></span><span class="sig-name descname"><span class="pre">validate_prompt_template_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/validate_template.html#validate_prompt_template_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.validate_template.validate_prompt_template_path" title="Permalink to this definition"></a></dt>
+<dd><p>Validates the provided file path to ensure it points to an existing Excel prompt template file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The path to the prompt template file that needs to be validated.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the file does not exist at the provided path or is not an Excel file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.validate_template.validate_prompt_template_sheets">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.validate_template.</span></span><span class="sig-name descname"><span class="pre">validate_prompt_template_sheets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">excel_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ExcelFile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">required_sheet_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/validate_template.html#validate_prompt_template_sheets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.validate_template.validate_prompt_template_sheets" title="Permalink to this definition"></a></dt>
+<dd><p>Validates that all required sheets are present in the given prompt template file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>excel_file</strong> (<em>pd.ExcelFile</em>) – The Excel file to validate.</p></li>
+<li><p><strong>required_sheet_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em>) – A list of sheet names that are required to be present in the Excel file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If any of the required sheets are missing from the Excel file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.validate_template.validate_role_sheet">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.validate_template.</span></span><span class="sig-name descname"><span class="pre">validate_role_sheet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">roles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/validate_template.html#validate_role_sheet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.validate_template.validate_role_sheet" title="Permalink to this definition"></a></dt>
+<dd><p>Validates the structure of the role worksheet.</p>
+<p>This function checks if the provided DataFrame has the expected column headers.
+It raises an assertion error if the columns do not match the expected structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>roles</strong> (<em>pd.DataFrame</em>) – The DataFrame containing roles to be validated.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.14)"><strong>AssertionError</strong></a> – If the columns of the DataFrame do not match the expected columns.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.validate_template.validate_settings_sheet">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.validate_template.</span></span><span class="sig-name descname"><span class="pre">validate_settings_sheet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">settings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/validate_template.html#validate_settings_sheet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.validate_template.validate_settings_sheet" title="Permalink to this definition"></a></dt>
+<dd><p>Validates the experimental settings worksheet to ensure it has the correct structure and required settings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>settings</strong> (<em>pd.DataFrame</em>) – A DataFrame containing the experimental settings.
+It should have columns “name” and “value”.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.14)"><strong>AssertionError</strong></a> – If the columns of the DataFrame do not match the expected columns.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.14)"><strong>AssertionError</strong></a> – If any of the required settings are missing from the “name” column.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.interface.validate_template.validate_treatment_sheet">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.interface.validate_template.</span></span><span class="sig-name descname"><span class="pre">validate_treatment_sheet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatments</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/interface/validate_template.html#validate_treatment_sheet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.interface.validate_template.validate_treatment_sheet" title="Permalink to this definition"></a></dt>
+<dd><p>Validates the structure of the treatments worksheet.</p>
+<p>This function checks if the treatments DataFrame has the expected column headers.
+It raises an assertion error if the columns do not match the expected columns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>treatments</strong> (<em>pd.DataFrame</em>) – The DataFrame containing treatment data to be validated.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AssertionError" title="(in Python v3.14)"><strong>AssertionError</strong></a> – If the columns of the treatments DataFrame do not match the expected columns.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.interface">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-talkingtomachines.interface" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="talkingtomachines.generative.html" class="btn btn-neutral float-left" title="talkingtomachines.generative package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="talkingtomachines.interface.auth.html" class="btn btn-neutral float-right" title="talkingtomachines.interface.auth package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

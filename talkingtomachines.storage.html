@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.storage package &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="talkingtomachines.orchestrator package" href="talkingtomachines.orchestrator.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">talkingtomachines</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.agents.html">talkingtomachines.agents package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.analytics.html">talkingtomachines.analytics package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.html">talkingtomachines.authoring package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.compiler.html">talkingtomachines.compiler package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.core.html">talkingtomachines.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.gateway.html">talkingtomachines.gateway package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.generative.html">talkingtomachines.generative package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.interface.html">talkingtomachines.interface package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.management.html">talkingtomachines.management package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.orchestrator.html">talkingtomachines.orchestrator package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">talkingtomachines.storage package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.storage.artifact_manager">talkingtomachines.storage.artifact_manager module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.storage.codebook">talkingtomachines.storage.codebook module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.storage.event_log">talkingtomachines.storage.event_log module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.storage.experiment">talkingtomachines.storage.experiment module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.storage.exporters">talkingtomachines.storage.exporters module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.storage.serializers">talkingtomachines.storage.serializers module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.storage">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">talkingtomachines</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.storage package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/talkingtomachines.storage.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="talkingtomachines-storage-package">
+<h1>talkingtomachines.storage package<a class="headerlink" href="#talkingtomachines-storage-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-talkingtomachines.storage.artifact_manager">
+<span id="talkingtomachines-storage-artifact-manager-module"></span><h2>talkingtomachines.storage.artifact_manager module<a class="headerlink" href="#module-talkingtomachines.storage.artifact_manager" title="Permalink to this heading"></a></h2>
+<p>Artifact manager.</p>
+<p>Manages the run folder structure and orchestrates artifact saving.</p>
+<p>Run folder structure:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">template_dir</span><span class="o">&gt;/</span>
+  <span class="n">results</span><span class="o">/</span>
+    <span class="o">&lt;</span><span class="n">run_id</span><span class="o">&gt;/</span>
+      <span class="n">config</span><span class="o">.</span><span class="n">json</span>
+      <span class="n">compiled_experiment</span><span class="o">.</span><span class="n">json</span>
+      <span class="n">assignments</span><span class="o">.</span><span class="n">csv</span>
+      <span class="n">traces</span><span class="o">.</span><span class="n">jsonl</span>
+      <span class="n">events</span><span class="o">.</span><span class="n">csv</span>
+      <span class="n">metrics</span><span class="o">.</span><span class="n">csv</span>
+      <span class="n">player</span><span class="o">.</span><span class="n">csv</span>
+      <span class="n">agent_table</span><span class="o">.</span><span class="n">csv</span>
+      <span class="n">group_table</span><span class="o">.</span><span class="n">csv</span>
+      <span class="n">session_table</span><span class="o">.</span><span class="n">csv</span>
+      <span class="n">codebook</span><span class="o">.</span><span class="n">json</span>
+      <span class="n">checkpoints</span><span class="o">/</span>
+        <span class="o">&lt;</span><span class="n">session_id</span><span class="o">&gt;.</span><span class="n">json</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.storage.artifact_manager.ArtifactManager">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.artifact_manager.</span></span><span class="sig-name descname"><span class="pre">ArtifactManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/storage/artifact_manager.html#ArtifactManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.artifact_manager.ArtifactManager" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Creates and manages the run folder for a single experiment run.</p>
+<p>The run folder follows a structured layout containing configuration files,
+compiled experiment data, CSV export tables, JSONL traces, and checkpoint
+files.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.storage.artifact_manager.ArtifactManager._run_dir">
+<span class="sig-name descname"><span class="pre">_run_dir</span></span><a class="headerlink" href="#talkingtomachines.storage.artifact_manager.ArtifactManager._run_dir" title="Permalink to this definition"></a></dt>
+<dd><p>Path to the run directory
+(<code class="docutils literal notranslate"><span class="pre">&lt;base_dir&gt;/results/&lt;run_id&gt;</span></code>).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="talkingtomachines.storage.artifact_manager.ArtifactManager.run_dir">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">run_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a></em><a class="headerlink" href="#talkingtomachines.storage.artifact_manager.ArtifactManager.run_dir" title="Permalink to this definition"></a></dt>
+<dd><p>Return the path to the run directory.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.storage.artifact_manager.ArtifactManager.save_all_artifacts">
+<span class="sig-name descname"><span class="pre">save_all_artifacts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Session" title="talkingtomachines.core.models.Session"><span class="pre">Session</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">cep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.CompiledExperiment" title="talkingtomachines.compiler.cep_schema.CompiledExperiment"><span class="pre">CompiledExperiment</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState" title="talkingtomachines.core.fields.ExperimentState"><span class="pre">ExperimentState</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_cost_usd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop_reason</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'completed'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/artifact_manager.html#ArtifactManager.save_all_artifacts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.artifact_manager.ArtifactManager.save_all_artifacts" title="Permalink to this definition"></a></dt>
+<dd><p>Save all research-ready export artifacts to the run directory.</p>
+<p>Delegates to <code class="docutils literal notranslate"><span class="pre">exporters.export_all</span></code> for CSV tables and
+<code class="docutils literal notranslate"><span class="pre">codebook.save_codebook</span></code> for the codebook JSON.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>session</strong> – The completed session object containing all experiment
+data.</p></li>
+<li><p><strong>cep</strong> – The compiled experiment package with field and prompt
+definitions.</p></li>
+<li><p><strong>state</strong> – The experiment state holding all recorded field values.</p></li>
+<li><p><strong>start_time</strong> – ISO-format timestamp for when the run started. If
+<code class="docutils literal notranslate"><span class="pre">None</span></code>, left empty in exports.</p></li>
+<li><p><strong>end_time</strong> – ISO-format timestamp for when the run ended. Defaults
+to the current UTC time if <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>total_cost_usd</strong> – Cumulative LLM API cost in USD for the run.</p></li>
+<li><p><strong>stop_reason</strong> – Reason the run terminated (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;completed&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;budget_exceeded&quot;</span></code>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary mapping artifact name to its file path.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.storage.artifact_manager.ArtifactManager.save_config">
+<span class="sig-name descname"><span class="pre">save_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.CompiledExperiment" title="talkingtomachines.compiler.cep_schema.CompiledExperiment"><span class="pre">CompiledExperiment</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/artifact_manager.html#ArtifactManager.save_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.artifact_manager.ArtifactManager.save_config" title="Permalink to this definition"></a></dt>
+<dd><p>Save the compiled experiment package and a lightweight config summary.</p>
+<p>Writes two files to the run directory:
+- <code class="docutils literal notranslate"><span class="pre">compiled_experiment.json</span></code>: the full CEP.
+- <code class="docutils literal notranslate"><span class="pre">config.json</span></code>: a summary of experiment settings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>cep</strong> – The compiled experiment package to persist.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The file path of the saved <code class="docutils literal notranslate"><span class="pre">compiled_experiment.json</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.storage.codebook">
+<span id="talkingtomachines-storage-codebook-module"></span><h2>talkingtomachines.storage.codebook module<a class="headerlink" href="#module-talkingtomachines.storage.codebook" title="Permalink to this heading"></a></h2>
+<p>Codebook generator</p>
+<p>Produces a <code class="docutils literal notranslate"><span class="pre">codebook.json</span></code> documenting all field definitions, response
+options, and data types for a compiled experiment.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.codebook.generate_codebook">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.codebook.</span></span><span class="sig-name descname"><span class="pre">generate_codebook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.CompiledExperiment" title="talkingtomachines.compiler.cep_schema.CompiledExperiment"><span class="pre">CompiledExperiment</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/codebook.html#generate_codebook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.codebook.generate_codebook" title="Permalink to this definition"></a></dt>
+<dd><p>Generate a codebook dictionary from a Compiled Experiment Package.</p>
+<p>The codebook documents all field definitions, response options, data types,
+prompt definitions, and profile columns for a compiled experiment. Fields
+are grouped by scope into logical tables (session, agent, group, responses).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>cep</strong> – The compiled experiment package containing field definitions,
+prompts, and profile information.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A structured dictionary with keys <code class="docutils literal notranslate"><span class="pre">experiment_id</span></code>, <code class="docutils literal notranslate"><span class="pre">cep_hash</span></code>,
+<code class="docutils literal notranslate"><span class="pre">schema_version</span></code>, <code class="docutils literal notranslate"><span class="pre">tables</span></code>, <code class="docutils literal notranslate"><span class="pre">prompts</span></code>, and <code class="docutils literal notranslate"><span class="pre">profile_columns</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.codebook.save_codebook">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.codebook.</span></span><span class="sig-name descname"><span class="pre">save_codebook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.CompiledExperiment" title="talkingtomachines.compiler.cep_schema.CompiledExperiment"><span class="pre">CompiledExperiment</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/codebook.html#save_codebook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.codebook.save_codebook" title="Permalink to this definition"></a></dt>
+<dd><p>Save a codebook as <code class="docutils literal notranslate"><span class="pre">codebook.json</span></code> in the specified directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cep</strong> – The compiled experiment package to generate the codebook from.</p></li>
+<li><p><strong>output_dir</strong> – Directory where <code class="docutils literal notranslate"><span class="pre">codebook.json</span></code> will be written.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The absolute file path of the saved <code class="docutils literal notranslate"><span class="pre">codebook.json</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.storage.event_log">
+<span id="talkingtomachines-storage-event-log-module"></span><h2>talkingtomachines.storage.event_log module<a class="headerlink" href="#module-talkingtomachines.storage.event_log" title="Permalink to this heading"></a></h2>
+<p>Event logger (Phase 13).</p>
+<p>Appends structured event records to a JSONL file.  Thread-safe via file lock.</p>
+<dl class="simple">
+<dt>Event types logged:</dt><dd><p>llm_call, llm_retry, llm_fallback, facilitator_call, facilitator_llm_call,
+validation_pass, validation_fail, randomisation, group_assignment,
+treatment_assignment, stop_rule_evaluated, budget_check, tool_call,
+rag_call, checkpoint_saved, checkpoint_loaded</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.storage.event_log.EventLogger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.event_log.</span></span><span class="sig-name descname"><span class="pre">EventLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/storage/event_log.html#EventLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.event_log.EventLogger" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Thread-safe append-mode JSONL event logger.</p>
+<p>Each event is written as a single JSON line to the log file. File-level
+thread safety is ensured via a <code class="docutils literal notranslate"><span class="pre">threading.Lock</span></code>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.storage.event_log.EventLogger._path">
+<span class="sig-name descname"><span class="pre">_path</span></span><a class="headerlink" href="#talkingtomachines.storage.event_log.EventLogger._path" title="Permalink to this definition"></a></dt>
+<dd><p>Path to the JSONL log file.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.storage.event_log.EventLogger._lock">
+<span class="sig-name descname"><span class="pre">_lock</span></span><a class="headerlink" href="#talkingtomachines.storage.event_log.EventLogger._lock" title="Permalink to this definition"></a></dt>
+<dd><p>Threading lock used to synchronize concurrent writes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.storage.event_log.EventLogger.log">
+<span class="sig-name descname"><span class="pre">log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_instance_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">extra</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/event_log.html#EventLogger.log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.event_log.EventLogger.log" title="Permalink to this definition"></a></dt>
+<dd><p>Append a single event record to the JSONL log.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_type</strong> – Category of the event (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;llm_call&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;validation_fail&quot;</span></code>).</p></li>
+<li><p><strong>run_id</strong> – Identifier for the current experiment run.</p></li>
+<li><p><strong>session_id</strong> – Identifier for the current session.</p></li>
+<li><p><strong>group_id</strong> – Identifier for the group associated with this event.</p></li>
+<li><p><strong>agent_instance_id</strong> – Identifier for the agent instance that
+triggered the event.</p></li>
+<li><p><strong>data</strong> – Optional dictionary of additional event payload fields
+merged into the record.</p></li>
+<li><p><strong>**extra</strong> – Arbitrary keyword arguments merged into the record.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.storage.experiment">
+<span id="talkingtomachines-storage-experiment-module"></span><h2>talkingtomachines.storage.experiment module<a class="headerlink" href="#module-talkingtomachines.storage.experiment" title="Permalink to this heading"></a></h2>
+<p>Legacy experiment storage utilities.</p>
+<p>Provides functions for saving session output to JSON and CSV files,
+and for parsing JSON fields that may contain Markdown code-block delimiters.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.experiment.parse_json_field">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.experiment.</span></span><span class="sig-name descname"><span class="pre">parse_json_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json_field</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/storage/experiment.html#parse_json_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.experiment.parse_json_field" title="Permalink to this definition"></a></dt>
+<dd><p>Parses a JSON string field, removing optional Markdown-style JSON code block delimiters
+(e.g., <code class="docutils literal notranslate"><span class="pre">`json</span> <span class="pre">...</span> <span class="pre">`</span></code>) if present, and attempts to decode the JSON string into a Python object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>json_field</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The JSON string to parse. It may optionally include Markdown-style
+code block delimiters.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>The parsed JSON object (e.g., a dictionary or list) if the input</dt><dd><p>is valid JSON. If the input is not valid JSON, the original string
+is returned.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a> or <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a> or <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.experiment.save_session">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.experiment.</span></span><span class="sig-name descname"><span class="pre">save_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_results_as_csv</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/experiment.html#save_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.experiment.save_session" title="Permalink to this definition"></a></dt>
+<dd><p>Save the outputs of a session to a local JSON file in the experiment_results folder at the root directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>session</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – The session to be saved.</p></li>
+<li><p><strong>save_results_as_csv</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Indicates whether the results of the session will be saved as CSV format.
+Defaults to False</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.experiment.save_session_as_csv">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.experiment.</span></span><span class="sig-name descname"><span class="pre">save_session_as_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/experiment.html#save_session_as_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.experiment.save_session_as_csv" title="Permalink to this definition"></a></dt>
+<dd><p>Reads a JSON file containing the outputs of a session, processes the data to extract relevant information,
+and saves the result as a CSV file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The path to the JSON file containing the session data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.storage.exporters">
+<span id="talkingtomachines-storage-exporters-module"></span><h2>talkingtomachines.storage.exporters module<a class="headerlink" href="#module-talkingtomachines.storage.exporters" title="Permalink to this heading"></a></h2>
+<p>Multi-table CSV exporter</p>
+<p>Produces research-ready export tables from a completed Session object.</p>
+<dl class="simple">
+<dt>Tables:</dt><dd><p>session_table.csv   — one row per session
+agent_table.csv     — one row per agent per session
+group_table.csv     — one row per group per subsession
+player.csv          — one row per player per subsession
+assignments.csv     — one row per manual assignment or group assignment</p>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.exporters.export_all">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.exporters.</span></span><span class="sig-name descname"><span class="pre">export_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Session" title="talkingtomachines.core.models.Session"><span class="pre">Session</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">cep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.CompiledExperiment" title="talkingtomachines.compiler.cep_schema.CompiledExperiment"><span class="pre">CompiledExperiment</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState" title="talkingtomachines.core.fields.ExperimentState"><span class="pre">ExperimentState</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_cost_usd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop_reason</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'completed'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/exporters.html#export_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.exporters.export_all" title="Permalink to this definition"></a></dt>
+<dd><p>Export all research-ready CSV tables to the specified directory.</p>
+<p>Produces <code class="docutils literal notranslate"><span class="pre">session_table.csv</span></code>, <code class="docutils literal notranslate"><span class="pre">agent_table.csv</span></code>, <code class="docutils literal notranslate"><span class="pre">group_table.csv</span></code>,
+<code class="docutils literal notranslate"><span class="pre">responses.csv</span></code>, <code class="docutils literal notranslate"><span class="pre">assignments.csv</span></code>, <code class="docutils literal notranslate"><span class="pre">metrics.csv</span></code>, and optionally
+<code class="docutils literal notranslate"><span class="pre">events.csv</span></code> (if <code class="docutils literal notranslate"><span class="pre">traces.jsonl</span></code> exists).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>session</strong> – The completed session object containing experiment data.</p></li>
+<li><p><strong>cep</strong> – The compiled experiment package with field and module definitions.</p></li>
+<li><p><strong>state</strong> – The experiment state holding all recorded field values.</p></li>
+<li><p><strong>output_dir</strong> – Directory where CSV files will be written.</p></li>
+<li><p><strong>start_time</strong> – ISO-format timestamp for when the run started.</p></li>
+<li><p><strong>end_time</strong> – ISO-format timestamp for when the run ended.</p></li>
+<li><p><strong>total_cost_usd</strong> – Cumulative LLM API cost in USD for the run.</p></li>
+<li><p><strong>stop_reason</strong> – Reason the run terminated (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;completed&quot;</span></code>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary mapping table name (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;session_table&quot;</span></code>) to its
+file path.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.storage.serializers">
+<span id="talkingtomachines-storage-serializers-module"></span><h2>talkingtomachines.storage.serializers module<a class="headerlink" href="#module-talkingtomachines.storage.serializers" title="Permalink to this heading"></a></h2>
+<p>Storage serializers (Phase 13 supplement).</p>
+<p>Centralised serialization helpers used across the storage layer.</p>
+<dl class="simple">
+<dt>Provides:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">to_json_safe</span></code>    — recursively convert arbitrary objects to JSON-safe types</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">serialize_session</span></code> — convert a Session object tree to a plain dict</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">deserialize_session</span></code> — restore a Session from a plain dict</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.serializers.deserialize_session">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.serializers.</span></span><span class="sig-name descname"><span class="pre">deserialize_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/serializers.html#deserialize_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.serializers.deserialize_session" title="Permalink to this definition"></a></dt>
+<dd><p>Restore a Session from a serialized dictionary.</p>
+<p>Reconstructs the full object hierarchy: <code class="docutils literal notranslate"><span class="pre">Session</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Module</span></code> -&gt;
+<code class="docutils literal notranslate"><span class="pre">Subsession</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Group</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Player</span></code>, plus the list of <code class="docutils literal notranslate"><span class="pre">Agent</span></code>
+objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> – A dictionary previously produced by <a class="reference internal" href="#talkingtomachines.storage.serializers.serialize_session" title="talkingtomachines.storage.serializers.serialize_session"><code class="xref py py-func docutils literal notranslate"><span class="pre">serialize_session()</span></code></a>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A <code class="docutils literal notranslate"><span class="pre">Session</span></code> object with fully populated <code class="docutils literal notranslate"><span class="pre">agents</span></code> and <code class="docutils literal notranslate"><span class="pre">modules</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.serializers.load_json">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.serializers.</span></span><span class="sig-name descname"><span class="pre">load_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/serializers.html#load_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.serializers.load_json" title="Permalink to this definition"></a></dt>
+<dd><p>Load a JSON file and return its parsed contents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – Filesystem path to the JSON file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The deserialized Python object (typically a <code class="docutils literal notranslate"><span class="pre">dict</span></code> or <code class="docutils literal notranslate"><span class="pre">list</span></code>).</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FileNotFoundError" title="(in Python v3.14)"><strong>FileNotFoundError</strong></a> – If the file does not exist.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/json.html#json.JSONDecodeError" title="(in Python v3.14)"><strong>json.JSONDecodeError</strong></a> – If the file contains invalid JSON.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.serializers.save_json">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.serializers.</span></span><span class="sig-name descname"><span class="pre">save_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">indent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/serializers.html#save_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.serializers.save_json" title="Permalink to this definition"></a></dt>
+<dd><p>Save data as a JSON file, creating parent directories as needed.</p>
+<p>The data is first converted to a JSON-safe form via <a class="reference internal" href="#talkingtomachines.storage.serializers.to_json_safe" title="talkingtomachines.storage.serializers.to_json_safe"><code class="xref py py-func docutils literal notranslate"><span class="pre">to_json_safe()</span></code></a>
+before serialization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – The object to serialize and write.</p></li>
+<li><p><strong>path</strong> – Destination file path.</p></li>
+<li><p><strong>indent</strong> – Number of spaces for JSON indentation.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.serializers.serialize_agent">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.serializers.</span></span><span class="sig-name descname"><span class="pre">serialize_agent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/serializers.html#serialize_agent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.serializers.serialize_agent" title="Permalink to this definition"></a></dt>
+<dd><p>Serialize an Agent object to a plain dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>agent</strong> – An <code class="docutils literal notranslate"><span class="pre">Agent</span></code> instance with <code class="docutils literal notranslate"><span class="pre">agent_id</span></code>,
+<code class="docutils literal notranslate"><span class="pre">agent_instance_id</span></code>, <code class="docutils literal notranslate"><span class="pre">profile_info</span></code>,
+and optional <code class="docutils literal notranslate"><span class="pre">is_human</span></code> and <code class="docutils literal notranslate"><span class="pre">state</span></code> attributes.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing agent metadata, profile information,
+treatment label, human flag, and agent state.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.serializers.serialize_group">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.serializers.</span></span><span class="sig-name descname"><span class="pre">serialize_group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/serializers.html#serialize_group"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.serializers.serialize_group" title="Permalink to this definition"></a></dt>
+<dd><p>Serialize a Group object to a plain dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>group</strong> – A <code class="docutils literal notranslate"><span class="pre">Group</span></code> instance with <code class="docutils literal notranslate"><span class="pre">group_id</span></code>, <code class="docutils literal notranslate"><span class="pre">subsession_id</span></code>,
+<code class="docutils literal notranslate"><span class="pre">players</span></code>, and <code class="docutils literal notranslate"><span class="pre">turn_order</span></code> attributes.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing group metadata, serialized players, and
+turn order.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.serializers.serialize_message">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.serializers.</span></span><span class="sig-name descname"><span class="pre">serialize_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/serializers.html#serialize_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.serializers.serialize_message" title="Permalink to this definition"></a></dt>
+<dd><p>Ensure a message dictionary is JSON-safe.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> – A message dictionary (typically from a conversation history).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A recursively sanitized copy of the message dictionary.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.serializers.serialize_module">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.serializers.</span></span><span class="sig-name descname"><span class="pre">serialize_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/serializers.html#serialize_module"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.serializers.serialize_module" title="Permalink to this definition"></a></dt>
+<dd><p>Serialize a Module object to a plain dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>module</strong> – A <code class="docutils literal notranslate"><span class="pre">Module</span></code> instance with <code class="docutils literal notranslate"><span class="pre">module_id</span></code>, <code class="docutils literal notranslate"><span class="pre">session_id</span></code>,
+<code class="docutils literal notranslate"><span class="pre">module_name</span></code>, and <code class="docutils literal notranslate"><span class="pre">subsessions</span></code> attributes.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing module metadata and serialized subsessions.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.serializers.serialize_player">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.serializers.</span></span><span class="sig-name descname"><span class="pre">serialize_player</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">player</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/serializers.html#serialize_player"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.serializers.serialize_player" title="Permalink to this definition"></a></dt>
+<dd><p>Serialize a Player object to a plain dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>player</strong> – A <code class="docutils literal notranslate"><span class="pre">Player</span></code> instance with <code class="docutils literal notranslate"><span class="pre">player_id</span></code>,
+<code class="docutils literal notranslate"><span class="pre">agent_instance_id</span></code>, <code class="docutils literal notranslate"><span class="pre">agent_id</span></code>, and <code class="docutils literal notranslate"><span class="pre">group_id</span></code> attributes.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing the player’s identifying fields.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.serializers.serialize_session">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.serializers.</span></span><span class="sig-name descname"><span class="pre">serialize_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/serializers.html#serialize_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.serializers.serialize_session" title="Permalink to this definition"></a></dt>
+<dd><p>Serialize a full Session object tree to a plain dictionary.</p>
+<p>This produces the canonical checkpoint format used for saving and
+restoring experiment state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>session</strong> – A <code class="docutils literal notranslate"><span class="pre">Session</span></code> instance with <code class="docutils literal notranslate"><span class="pre">session_id</span></code>, <code class="docutils literal notranslate"><span class="pre">run_id</span></code>,
+<code class="docutils literal notranslate"><span class="pre">experiment_id</span></code>, <code class="docutils literal notranslate"><span class="pre">cep_hash</span></code>, <code class="docutils literal notranslate"><span class="pre">agents</span></code>, and <code class="docutils literal notranslate"><span class="pre">modules</span></code>
+attributes.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A nested dictionary representing the entire session hierarchy
+(session -&gt; modules -&gt; subsessions -&gt; groups -&gt; players).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.serializers.serialize_subsession">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.serializers.</span></span><span class="sig-name descname"><span class="pre">serialize_subsession</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subsession</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/serializers.html#serialize_subsession"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.serializers.serialize_subsession" title="Permalink to this definition"></a></dt>
+<dd><p>Serialize a Subsession object to a plain dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>subsession</strong> – A <code class="docutils literal notranslate"><span class="pre">Subsession</span></code> instance with <code class="docutils literal notranslate"><span class="pre">subsession_id</span></code>,
+<code class="docutils literal notranslate"><span class="pre">module_id</span></code>, <code class="docutils literal notranslate"><span class="pre">round_number</span></code>, and <code class="docutils literal notranslate"><span class="pre">groups</span></code> attributes.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing subsession metadata and serialized groups.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.storage.serializers.to_json_safe">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.storage.serializers.</span></span><span class="sig-name descname"><span class="pre">to_json_safe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/storage/serializers.html#to_json_safe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.storage.serializers.to_json_safe" title="Permalink to this definition"></a></dt>
+<dd><p>Recursively convert an arbitrary object to a JSON-serializable form.</p>
+<p>Handles primitives, <code class="docutils literal notranslate"><span class="pre">datetime</span></code>, <code class="docutils literal notranslate"><span class="pre">Path</span></code>, sets, lists, tuples, dicts,
+objects with a <code class="docutils literal notranslate"><span class="pre">to_dict()</span></code> method, and dataclasses. Falls back to
+<code class="docutils literal notranslate"><span class="pre">str()</span></code> for unsupported types.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>obj</strong> – The object to convert.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A JSON-safe equivalent (composed of <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">bool</span></code>, <code class="docutils literal notranslate"><span class="pre">int</span></code>,
+<code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">str</span></code>, <code class="docutils literal notranslate"><span class="pre">list</span></code>, and <code class="docutils literal notranslate"><span class="pre">dict</span></code> values).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.storage">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-talkingtomachines.storage" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="talkingtomachines.orchestrator.html" class="btn btn-neutral float-left" title="talkingtomachines.orchestrator package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

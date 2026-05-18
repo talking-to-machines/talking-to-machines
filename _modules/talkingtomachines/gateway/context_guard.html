@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.gateway.context_guard &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.gateway.context_guard</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.gateway.context_guard</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Runtime context window guard.</span>
+
+<span class="sd">Checks the estimated token count of a message list against the model&#39;s</span>
+<span class="sd">context window limit before each LLM call and applies the configured</span>
+<span class="sd">overflow policy:</span>
+
+<span class="sd">- **terminate** -- raise :class:`ContextWindowExceededError`.</span>
+<span class="sd">- **truncate** -- sliding-window removal that keeps the system prompt,</span>
+<span class="sd">  the first exchange, and the most recent messages.</span>
+<span class="sd">- **summarize** -- use the LLM to summarise older messages, falling</span>
+<span class="sd">  back to truncation on failure.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.gateway.model_registry</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_model_spec</span><span class="p">,</span>
+    <span class="n">OUTPUT_RESERVE_TOKENS</span><span class="p">,</span>
+    <span class="n">SAFETY_MARGIN</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.gateway.token_estimator</span><span class="w"> </span><span class="kn">import</span> <span class="n">estimate_messages_tokens</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.gateway.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMRouter</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ContextWindowExceededError"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.context_guard.ContextWindowExceededError">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ContextWindowExceededError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when the context window is exceeded under the ``terminate`` policy.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="ContextGuard"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.context_guard.ContextGuard">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ContextGuard</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Guards against context window overflow.</span>
+
+<span class="sd">    Computes an effective token limit from the model&#39;s context window</span>
+<span class="sd">    (applying :data:`SAFETY_MARGIN` and reserving</span>
+<span class="sd">    :data:`OUTPUT_RESERVE_TOKENS` for the response), then enforces that</span>
+<span class="sd">    limit using the chosen overflow policy.</span>
+
+<span class="sd">    Usage::</span>
+
+<span class="sd">        guard = ContextGuard(model_name=&quot;gpt-4o&quot;, policy=&quot;truncate&quot;)</span>
+<span class="sd">        safe_messages = guard.apply(messages, router=router, temperature=0.0)</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model_name: The model identifier used to look up the context</span>
+<span class="sd">            window size via :func:`get_model_spec`.</span>
+<span class="sd">        policy: Overflow policy -- one of ``&quot;terminate&quot;``,</span>
+<span class="sd">            ``&quot;truncate&quot;``, or ``&quot;summarize&quot;``. Defaults to</span>
+<span class="sd">            ``&quot;terminate&quot;``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">policy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;terminate&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the guard for a specific model and overflow policy.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span> <span class="o">=</span> <span class="n">model_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_policy</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">get_model_spec</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_effective_limit</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">max_context_tokens</span> <span class="o">*</span> <span class="n">SAFETY_MARGIN</span><span class="p">)</span> <span class="o">-</span> <span class="n">OUTPUT_RESERVE_TOKENS</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">effective_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The maximum number of input tokens allowed after safety margins.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The effective token limit as an integer.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_effective_limit</span>
+
+<div class="viewcode-block" id="ContextGuard.apply"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.context_guard.ContextGuard.apply">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+        <span class="n">router</span><span class="p">:</span> <span class="s2">&quot;LLMRouter | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check token count and apply the overflow policy if needed.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            messages: The full conversation message list to validate.</span>
+<span class="sd">            router: An optional :class:`LLMRouter` required by the</span>
+<span class="sd">                ``&quot;summarize&quot;`` policy to generate summaries.</span>
+<span class="sd">            temperature: Sampling temperature passed to the summarisation</span>
+<span class="sd">                call. Defaults to ``0.0``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A (possibly shortened) message list that fits within the</span>
+<span class="sd">            model&#39;s effective context window.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ContextWindowExceededError: If the policy is ``&quot;terminate&quot;``</span>
+<span class="sd">                and the message list exceeds the effective limit.</span>
+<span class="sd">            ValueError: If the policy string is not recognised.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">current_tokens</span> <span class="o">=</span> <span class="n">estimate_messages_tokens</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">current_tokens</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_effective_limit</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">messages</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;Context window usage (</span><span class="si">%d</span><span class="s2"> tokens) exceeds effective limit (</span><span class="si">%d</span><span class="s2"> tokens) &quot;</span>
+            <span class="s2">&quot;for model &#39;</span><span class="si">%s</span><span class="s2">&#39;. Applying &#39;</span><span class="si">%s</span><span class="s2">&#39; policy.&quot;</span><span class="p">,</span>
+            <span class="n">current_tokens</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_effective_limit</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_policy</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_policy</span> <span class="o">==</span> <span class="s2">&quot;terminate&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ContextWindowExceededError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Context window exceeded for model &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2">&#39;: &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">current_tokens</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> tokens &gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_effective_limit</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> effective limit. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Policy is &#39;terminate&#39;. Set CONTEXT_OVERFLOW_POLICY to &#39;truncate&#39; or &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;&#39;summarize&#39; in your Settings sheet to handle this automatically.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_policy</span> <span class="o">==</span> <span class="s2">&quot;truncate&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_truncate</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_policy</span> <span class="o">==</span> <span class="s2">&quot;summarize&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_summarize</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">router</span><span class="p">,</span> <span class="n">temperature</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown overflow policy: &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_policy</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_truncate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply sliding-window truncation to fit the context window.</span>
+
+<span class="sd">        Preserves three anchored messages and fills the remaining token</span>
+<span class="sd">        budget with the most recent middle messages:</span>
+
+<span class="sd">        - ``messages[0]``: system prompt</span>
+<span class="sd">        - ``messages[1]``: first conversation message (first-round context)</span>
+<span class="sd">        - ``messages[-1]``: current user prompt</span>
+
+<span class="sd">        Oldest middle messages are removed first. A system-role marker</span>
+<span class="sd">        noting the number of removed messages is inserted when truncation</span>
+<span class="sd">        occurs.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            messages: The full conversation message list.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A truncated message list that fits within the effective</span>
+<span class="sd">            token limit.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">messages</span>
+
+        <span class="n">system</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">first_exchange</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">current_prompt</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">middle</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># Token budget for preserved messages</span>
+        <span class="n">preserved_tokens</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">estimate_messages_tokens</span><span class="p">([</span><span class="n">system</span><span class="p">])</span>
+            <span class="o">+</span> <span class="n">estimate_messages_tokens</span><span class="p">([</span><span class="n">first_exchange</span><span class="p">])</span>
+            <span class="o">+</span> <span class="n">estimate_messages_tokens</span><span class="p">([</span><span class="n">current_prompt</span><span class="p">])</span>
+        <span class="p">)</span>
+
+        <span class="n">middle_budget</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_effective_limit</span> <span class="o">-</span> <span class="n">preserved_tokens</span>
+
+        <span class="c1"># Walk from the END of middle (newest) backward to keep the most recent</span>
+        <span class="n">kept_middle</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">accumulated</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">middle</span><span class="p">):</span>
+            <span class="n">msg_tokens</span> <span class="o">=</span> <span class="n">estimate_messages_tokens</span><span class="p">([</span><span class="n">msg</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">accumulated</span> <span class="o">+</span> <span class="n">msg_tokens</span> <span class="o">&lt;=</span> <span class="n">middle_budget</span><span class="p">:</span>
+                <span class="n">kept_middle</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
+                <span class="n">accumulated</span> <span class="o">+=</span> <span class="n">msg_tokens</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="n">truncated_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">middle</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">kept_middle</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">truncated_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Truncated </span><span class="si">%d</span><span class="s2"> message(s) from conversation history to fit context window.&quot;</span><span class="p">,</span>
+                <span class="n">truncated_count</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">marker</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;[Note: </span><span class="si">{</span><span class="n">truncated_count</span><span class="si">}</span><span class="s2"> earlier message(s) were removed &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;from the conversation history to fit within the context window.]&quot;</span>
+                <span class="p">),</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">system</span><span class="p">,</span> <span class="n">first_exchange</span><span class="p">,</span> <span class="n">marker</span><span class="p">]</span> <span class="o">+</span> <span class="n">kept_middle</span> <span class="o">+</span> <span class="p">[</span><span class="n">current_prompt</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">system</span><span class="p">,</span> <span class="n">first_exchange</span><span class="p">]</span> <span class="o">+</span> <span class="n">kept_middle</span> <span class="o">+</span> <span class="p">[</span><span class="n">current_prompt</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_summarize</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+        <span class="n">router</span><span class="p">:</span> <span class="s2">&quot;LLMRouter | None&quot;</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Summarise older conversation history to reduce token count.</span>
+
+<span class="sd">        Splits the middle messages in half, summarises the older half</span>
+<span class="sd">        via an LLM call through *router*, and replaces those messages</span>
+<span class="sd">        with a single system-role summary block. Falls back to</span>
+<span class="sd">        :meth:`_truncate` if no router is provided or if the</span>
+<span class="sd">        summarisation call fails.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            messages: The full conversation message list.</span>
+<span class="sd">            router: The :class:`LLMRouter` used to generate the summary.</span>
+<span class="sd">            temperature: Sampling temperature for the summarisation call.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A shortened message list with older history replaced by a</span>
+<span class="sd">            concise summary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">router</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Summarize policy requires an LLMRouter but none was provided. &quot;</span>
+                <span class="s2">&quot;Falling back to truncation.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_truncate</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">messages</span>
+
+        <span class="n">system</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">first_exchange</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">current_prompt</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">middle</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># Summarize the oldest half of middle messages</span>
+        <span class="n">split_point</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">middle</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">to_summarize</span> <span class="o">=</span> <span class="n">middle</span><span class="p">[:</span><span class="n">split_point</span><span class="p">]</span>
+        <span class="n">to_keep</span> <span class="o">=</span> <span class="n">middle</span><span class="p">[</span><span class="n">split_point</span><span class="p">:]</span>
+
+        <span class="c1"># Build summarization prompt</span>
+        <span class="n">conversation_text</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;role&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;user&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">to_summarize</span>
+        <span class="p">)</span>
+        <span class="n">summary_prompt</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;You are a concise summarizer.&quot;</span><span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;Summarize the following conversation history in a brief paragraph. &quot;</span>
+                    <span class="s2">&quot;Preserve all key decisions, arguments, and facts mentioned. &quot;</span>
+                    <span class="s2">&quot;Be concise but do not omit important details.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">conversation_text</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">]</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">router</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+                <span class="n">message_history</span><span class="o">=</span><span class="n">summary_prompt</span><span class="p">,</span>
+                <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="p">,</span>
+                <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">summary_text</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Summarization LLM call failed: </span><span class="si">%s</span><span class="s2">. Falling back to truncation.&quot;</span><span class="p">,</span> <span class="n">exc</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_truncate</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+
+        <span class="n">summary_msg</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;[Summary of earlier conversation (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">to_summarize</span><span class="p">)</span><span class="si">}</span><span class="s2"> messages)]: &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">summary_text</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">),</span>
+        <span class="p">}</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">system</span><span class="p">,</span> <span class="n">first_exchange</span><span class="p">,</span> <span class="n">summary_msg</span><span class="p">]</span> <span class="o">+</span> <span class="n">to_keep</span> <span class="o">+</span> <span class="p">[</span><span class="n">current_prompt</span><span class="p">]</span>
+
+        <span class="c1"># If still over limit after summarization, fall back to truncation</span>
+        <span class="k">if</span> <span class="n">estimate_messages_tokens</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_effective_limit</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Post-summarization still exceeds limit; applying truncation.&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_truncate</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

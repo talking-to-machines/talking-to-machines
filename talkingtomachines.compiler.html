@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.compiler package &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="talkingtomachines.core package" href="talkingtomachines.core.html" />
+    <link rel="prev" title="talkingtomachines.authoring.validators package" href="talkingtomachines.authoring.validators.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">talkingtomachines</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.agents.html">talkingtomachines.agents package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.analytics.html">talkingtomachines.analytics package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.html">talkingtomachines.authoring package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">talkingtomachines.compiler package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.compiler.cep_schema">talkingtomachines.compiler.cep_schema module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.compiler.compiler">talkingtomachines.compiler.compiler module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.compiler.id_generator">talkingtomachines.compiler.id_generator module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.compiler.resolver">talkingtomachines.compiler.resolver module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.core.html">talkingtomachines.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.gateway.html">talkingtomachines.gateway package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.generative.html">talkingtomachines.generative package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.interface.html">talkingtomachines.interface package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.management.html">talkingtomachines.management package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.orchestrator.html">talkingtomachines.orchestrator package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.storage.html">talkingtomachines.storage package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">talkingtomachines</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.compiler package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/talkingtomachines.compiler.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="talkingtomachines-compiler-package">
+<h1>talkingtomachines.compiler package<a class="headerlink" href="#talkingtomachines-compiler-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-talkingtomachines.compiler.cep_schema">
+<span id="talkingtomachines-compiler-cep-schema-module"></span><h2>talkingtomachines.compiler.cep_schema module<a class="headerlink" href="#module-talkingtomachines.compiler.cep_schema" title="Permalink to this heading"></a></h2>
+<p>Compiled Experiment Package (CEP) schema definition (Phase 3).</p>
+<p>The CEP is the output of the compiler and serves as the single source of truth
+for runtime execution.  It is serialized to <code class="docutils literal notranslate"><span class="pre">compiled_experiment.json</span></code> in
+the run folder.</p>
+<p>Schema version: 1.0</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.AssignmentPlan">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.cep_schema.</span></span><span class="sig-name descname"><span class="pre">AssignmentPlan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">random_seed:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_assignments:</span> <span class="pre">dict[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manual_variables:</span> <span class="pre">list[dict]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/compiler/cep_schema.html#AssignmentPlan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.AssignmentPlan" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Pre-computed group assignments and manual variable definitions.</p>
+<p>Group assignments come from the <code class="docutils literal notranslate"><span class="pre">Manual_</span></code> sheet (entries with
+<code class="docutils literal notranslate"><span class="pre">class=&quot;Group&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">name=&quot;id_in_subsession&quot;</span></code>). All other
+<code class="docutils literal notranslate"><span class="pre">Manual_</span></code> entries (including treatment) are stored in
+<code class="docutils literal notranslate"><span class="pre">manual_variables</span></code> and applied at runtime.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.AssignmentPlan.random_seed">
+<span class="sig-name descname"><span class="pre">random_seed</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.AssignmentPlan.random_seed" title="Permalink to this definition"></a></dt>
+<dd><p>Seed used for deterministic randomisation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.AssignmentPlan.group_assignments">
+<span class="sig-name descname"><span class="pre">group_assignments</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.AssignmentPlan.group_assignments" title="Permalink to this definition"></a></dt>
+<dd><p>Nested mapping of manual group formations
+per module and round
+(<code class="docutils literal notranslate"><span class="pre">{module:</span> <span class="pre">{round:</span> <span class="pre">{group_label:</span> <span class="pre">[agent_id]}}}</span></code>).
+Empty if no manual groups are defined.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.AssignmentPlan.manual_variables">
+<span class="sig-name descname"><span class="pre">manual_variables</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.AssignmentPlan.manual_variables" title="Permalink to this definition"></a></dt>
+<dd><p>List of manual variable entries from the
+<code class="docutils literal notranslate"><span class="pre">Manual_</span></code> sheet. Each entry is a dict with keys
+<code class="docutils literal notranslate"><span class="pre">profile_id</span></code>, <code class="docutils literal notranslate"><span class="pre">module</span></code>, <code class="docutils literal notranslate"><span class="pre">round_number</span></code>, <code class="docutils literal notranslate"><span class="pre">class</span></code>,
+<code class="docutils literal notranslate"><span class="pre">name</span></code>, and <code class="docutils literal notranslate"><span class="pre">value</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.AssignmentPlan.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#talkingtomachines.compiler.cep_schema.AssignmentPlan" title="talkingtomachines.compiler.cep_schema.AssignmentPlan"><span class="pre">AssignmentPlan</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/cep_schema.html#AssignmentPlan.from_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.AssignmentPlan.from_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Reconstruct an <code class="docutils literal notranslate"><span class="pre">AssignmentPlan</span></code> from a plain dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> – Dictionary with assignment plan fields, typically
+loaded from a CEP JSON file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new <code class="docutils literal notranslate"><span class="pre">AssignmentPlan</span></code> instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.AssignmentPlan.get_manual_groups">
+<span class="sig-name descname"><span class="pre">get_manual_groups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/cep_schema.html#AssignmentPlan.get_manual_groups"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.AssignmentPlan.get_manual_groups" title="Permalink to this definition"></a></dt>
+<dd><p>Return manual group assignments for a specific module and round.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>module</strong> – Module name.</p></li>
+<li><p><strong>round_number</strong> – Round number (1-based).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dict <code class="docutils literal notranslate"><span class="pre">{group_label:</span> <span class="pre">[agent_id,</span> <span class="pre">...]}</span></code> if manual groups
+are defined for this module/round, otherwise an empty dict.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">group_assignments</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">manual_variables</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id1" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">random_seed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#id2" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.AssignmentPlan.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/cep_schema.html#AssignmentPlan.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.AssignmentPlan.to_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Serialise the assignment plan to a plain dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary containing all assignment plan fields.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.cep_schema.</span></span><span class="sig-name descname"><span class="pre">CompiledExperiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schema_version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">cep_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">constants</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">facilitator_functions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profiles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">module_sequence</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">assignment_plan</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#talkingtomachines.compiler.cep_schema.AssignmentPlan" title="talkingtomachines.compiler.cep_schema.AssignmentPlan"><span class="pre">AssignmentPlan</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/compiler/cep_schema.html#CompiledExperiment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Compiled Experiment Package (CEP).</p>
+<p>The CEP is the single source of truth for runtime execution,
+produced by the compiler and serialised to
+<code class="docutils literal notranslate"><span class="pre">compiled_experiment.json</span></code>. All Jinja compile-time references
+are pre-resolved; runtime references (<code class="docutils literal notranslate"><span class="pre">round_number</span></code>,
+<code class="docutils literal notranslate"><span class="pre">player.field</span></code>, etc.) remain as Jinja placeholders for
+evaluation at runtime.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.schema_version">
+<span class="sig-name descname"><span class="pre">schema_version</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.schema_version" title="Permalink to this definition"></a></dt>
+<dd><p>CEP schema version string (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;1.0&quot;</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.experiment_id">
+<span class="sig-name descname"><span class="pre">experiment_id</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.experiment_id" title="Permalink to this definition"></a></dt>
+<dd><p>Unique experiment identifier from the Settings
+worksheet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.config_hash">
+<span class="sig-name descname"><span class="pre">config_hash</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.config_hash" title="Permalink to this definition"></a></dt>
+<dd><p>Truncated SHA-256 hash of all parsed worksheet
+data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.cep_hash">
+<span class="sig-name descname"><span class="pre">cep_hash</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.cep_hash" title="Permalink to this definition"></a></dt>
+<dd><p>Full SHA-256 hash of the serialised CEP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.run_id">
+<span class="sig-name descname"><span class="pre">run_id</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.run_id" title="Permalink to this definition"></a></dt>
+<dd><p>Unique run identifier incorporating a UTC timestamp
+and random suffix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.settings">
+<span class="sig-name descname"><span class="pre">settings</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.settings" title="Permalink to this definition"></a></dt>
+<dd><p>Flat dictionary of experiment settings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.constants">
+<span class="sig-name descname"><span class="pre">constants</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.constants" title="Permalink to this definition"></a></dt>
+<dd><p>Nested dictionary of constants per module
+(<code class="docutils literal notranslate"><span class="pre">{module:</span> <span class="pre">{name:</span> <span class="pre">typed_value}}</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.fields">
+<span class="sig-name descname"><span class="pre">fields</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.fields" title="Permalink to this definition"></a></dt>
+<dd><p>List of field definition dictionaries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.facilitator_functions">
+<span class="sig-name descname"><span class="pre">facilitator_functions</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.facilitator_functions" title="Permalink to this definition"></a></dt>
+<dd><p>List of facilitator function
+dictionaries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.prompts">
+<span class="sig-name descname"><span class="pre">prompts</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.prompts" title="Permalink to this definition"></a></dt>
+<dd><p>Module-grouped prompt dictionaries
+(<code class="docutils literal notranslate"><span class="pre">{module:</span> <span class="pre">[prompt_dict,</span> <span class="pre">...]}</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.profiles">
+<span class="sig-name descname"><span class="pre">profiles</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.profiles" title="Permalink to this definition"></a></dt>
+<dd><p>Agent profile data from the Profiles worksheet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.module_sequence">
+<span class="sig-name descname"><span class="pre">module_sequence</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.module_sequence" title="Permalink to this definition"></a></dt>
+<dd><p>Ordered list of module names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.assignment_plan">
+<span class="sig-name descname"><span class="pre">assignment_plan</span></span><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.assignment_plan" title="Permalink to this definition"></a></dt>
+<dd><p>Pre-computed treatment and group assignments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#talkingtomachines.compiler.cep_schema.AssignmentPlan" title="talkingtomachines.compiler.cep_schema.AssignmentPlan">talkingtomachines.compiler.cep_schema.AssignmentPlan</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id3">
+<span class="sig-name descname"><span class="pre">assignment_plan</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#talkingtomachines.compiler.cep_schema.AssignmentPlan" title="talkingtomachines.compiler.cep_schema.AssignmentPlan"><span class="pre">AssignmentPlan</span></a></em><a class="headerlink" href="#id3" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id4">
+<span class="sig-name descname"><span class="pre">cep_hash</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#id4" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id5">
+<span class="sig-name descname"><span class="pre">config_hash</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#id5" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id6">
+<span class="sig-name descname"><span class="pre">constants</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id6" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id7">
+<span class="sig-name descname"><span class="pre">experiment_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#id7" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id8">
+<span class="sig-name descname"><span class="pre">facilitator_functions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id8" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id9">
+<span class="sig-name descname"><span class="pre">fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id9" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment" title="talkingtomachines.compiler.cep_schema.CompiledExperiment"><span class="pre">CompiledExperiment</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/cep_schema.html#CompiledExperiment.from_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.from_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Reconstruct a <code class="docutils literal notranslate"><span class="pre">CompiledExperiment</span></code> from a plain dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> – Dictionary with CEP fields, typically loaded from
+a <code class="docutils literal notranslate"><span class="pre">compiled_experiment.json</span></code> file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new <code class="docutils literal notranslate"><span class="pre">CompiledExperiment</span></code> instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.load">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment" title="talkingtomachines.compiler.cep_schema.CompiledExperiment"><span class="pre">CompiledExperiment</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/cep_schema.html#CompiledExperiment.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.load" title="Permalink to this definition"></a></dt>
+<dd><p>Load a <code class="docutils literal notranslate"><span class="pre">CompiledExperiment</span></code> from a JSON file on disk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – Path to a <code class="docutils literal notranslate"><span class="pre">compiled_experiment.json</span></code> file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new <code class="docutils literal notranslate"><span class="pre">CompiledExperiment</span></code> instance populated from the
+file contents.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id10">
+<span class="sig-name descname"><span class="pre">module_sequence</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id10" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id11">
+<span class="sig-name descname"><span class="pre">profiles</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></em><a class="headerlink" href="#id11" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id12">
+<span class="sig-name descname"><span class="pre">prompts</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id12" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id13">
+<span class="sig-name descname"><span class="pre">run_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#id13" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/cep_schema.html#CompiledExperiment.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.save" title="Permalink to this definition"></a></dt>
+<dd><p>Write the compiled experiment to a JSON file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – Destination file path. Parent directories must
+already exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id14">
+<span class="sig-name descname"><span class="pre">schema_version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#id14" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id15">
+<span class="sig-name descname"><span class="pre">settings</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></em><a class="headerlink" href="#id15" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/cep_schema.html#CompiledExperiment.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.to_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Serialise the compiled experiment to a plain dictionary.</p>
+<p>Recursively converts the <code class="docutils literal notranslate"><span class="pre">assignment_plan</span></code> via its own
+<code class="docutils literal notranslate"><span class="pre">to_dict</span></code> method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary containing all CEP fields, suitable for
+JSON serialisation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.cep_schema.CompiledExperiment.to_json">
+<span class="sig-name descname"><span class="pre">to_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/cep_schema.html#CompiledExperiment.to_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment.to_json" title="Permalink to this definition"></a></dt>
+<dd><p>Serialise the compiled experiment to a JSON string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>indent</strong> – Number of spaces for JSON indentation.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A formatted JSON string representation of the CEP.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.compiler.compiler">
+<span id="talkingtomachines-compiler-compiler-module"></span><h2>talkingtomachines.compiler.compiler module<a class="headerlink" href="#module-talkingtomachines.compiler.compiler" title="Permalink to this heading"></a></h2>
+<p>Experiment Compiler (Phase 3).</p>
+<p>Transforms parsed worksheet data into a validated, serializable
+Compiled Experiment Package (CEP).</p>
+<dl class="simple">
+<dt>Pipeline:</dt><dd><ol class="arabic simple">
+<li><p>Run all four validators (schema → reference → flow → provider)</p></li>
+<li><p>Call resolver.py to expand statically-resolvable Jinja references</p></li>
+<li><p>Call id_generator.py to assign stable, deterministic IDs</p></li>
+<li><p>Emit assignment plans using the randomisation engine</p></li>
+<li><p>Build CEP and compute cep_hash</p></li>
+<li><p>Serialize CEP to compiled_experiment.json in the run folder</p></li>
+</ol>
+</dd>
+</dl>
+<dl class="py exception">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.compiler.CompilationError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.compiler.</span></span><span class="sig-name descname"><span class="pre">CompilationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">errors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="talkingtomachines.authoring.validators.html#talkingtomachines.authoring.validators.schema_validator.ValidationError" title="talkingtomachines.authoring.validators.schema_validator.ValidationError"><span class="pre">talkingtomachines.authoring.validators.schema_validator.ValidationError</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/compiler/compiler.html#CompilationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.compiler.CompilationError" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></a></p>
+<p>Raised when compilation fails due to validation errors.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.compiler.CompilationError.errors">
+<span class="sig-name descname"><span class="pre">errors</span></span><a class="headerlink" href="#talkingtomachines.compiler.compiler.CompilationError.errors" title="Permalink to this definition"></a></dt>
+<dd><p>List of <code class="docutils literal notranslate"><span class="pre">ValidationError</span></code> instances describing each failure.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.compiler.Compiler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.compiler.</span></span><span class="sig-name descname"><span class="pre">Compiler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sheets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pandas.DataFrame</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/compiler/compiler.html#Compiler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.compiler.Compiler" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Compiles a prompt template (Excel or dict of DataFrames) into a CEP.</p>
+<p>The compilation pipeline validates all worksheet data, resolves
+compile-time Jinja references, generates deterministic IDs, builds
+treatment/group assignment plans, and emits a serializable
+<code class="docutils literal notranslate"><span class="pre">CompiledExperiment</span></code> package.</p>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">compiler</span> <span class="o">=</span> <span class="n">Compiler</span><span class="o">.</span><span class="n">from_excel</span><span class="p">(</span><span class="s2">&quot;path/to/template.xlsx&quot;</span><span class="p">)</span>
+<span class="n">cep</span> <span class="o">=</span> <span class="n">compiler</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;experiment_results/my_exp/run_001&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.compiler.Compiler._sheets">
+<span class="sig-name descname"><span class="pre">_sheets</span></span><a class="headerlink" href="#talkingtomachines.compiler.compiler.Compiler._sheets" title="Permalink to this definition"></a></dt>
+<dd><p>Dictionary mapping sheet names to their parsed DataFrames.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.compiler.Compiler.compile">
+<span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.14)"><span class="pre">Union</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_on_error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#talkingtomachines.compiler.cep_schema.CompiledExperiment" title="talkingtomachines.compiler.cep_schema.CompiledExperiment"><span class="pre">CompiledExperiment</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/compiler.html#Compiler.compile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.compiler.Compiler.compile" title="Permalink to this definition"></a></dt>
+<dd><p>Run the full compilation pipeline.</p>
+<p>Executes validation, Jinja resolution, ID generation, assignment
+planning, and CEP construction. Optionally persists the result
+to disk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_dir</strong> – If provided, saves <code class="docutils literal notranslate"><span class="pre">compiled_experiment.json</span></code>
+to this directory.</p></li>
+<li><p><strong>raise_on_error</strong> – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), raises
+<code class="docutils literal notranslate"><span class="pre">CompilationError</span></code> on any validation error. If <code class="docutils literal notranslate"><span class="pre">False</span></code>,
+logs warnings and continues.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A <code class="docutils literal notranslate"><span class="pre">CompiledExperiment</span></code> instance.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#talkingtomachines.compiler.compiler.CompilationError" title="talkingtomachines.compiler.compiler.CompilationError"><strong>CompilationError</strong></a> – If validation errors are found and
+    <code class="docutils literal notranslate"><span class="pre">raise_on_error</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.compiler.Compiler.from_csv_dir">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_csv_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#talkingtomachines.compiler.compiler.Compiler" title="talkingtomachines.compiler.compiler.Compiler"><span class="pre">Compiler</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/compiler.html#Compiler.from_csv_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.compiler.Compiler.from_csv_dir" title="Permalink to this definition"></a></dt>
+<dd><p>Load sheets from a directory of CSV files.</p>
+<p>Each CSV filename (without extension) is used as the sheet name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>directory</strong> – Path to the directory containing CSV files.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new <code class="docutils literal notranslate"><span class="pre">Compiler</span></code> instance with all CSVs parsed as sheets.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.compiler.Compiler.from_excel">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_excel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#talkingtomachines.compiler.compiler.Compiler" title="talkingtomachines.compiler.compiler.Compiler"><span class="pre">Compiler</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/compiler.html#Compiler.from_excel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.compiler.Compiler.from_excel" title="Permalink to this definition"></a></dt>
+<dd><p>Load all sheets from an Excel file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – Path to the <code class="docutils literal notranslate"><span class="pre">.xlsx</span></code> template file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new <code class="docutils literal notranslate"><span class="pre">Compiler</span></code> instance with all sheets parsed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.compiler.id_generator">
+<span id="talkingtomachines-compiler-id-generator-module"></span><h2>talkingtomachines.compiler.id_generator module<a class="headerlink" href="#module-talkingtomachines.compiler.id_generator" title="Permalink to this heading"></a></h2>
+<p>ID generator (Phase 3).</p>
+<p>Derives all stable, deterministic IDs per the ID derivation scheme:</p>
+<blockquote>
+<div><p>experiment_id   → from Settings sheet
+config_hash     → SHA256 of canonical JSON of all parsed sheets (16 chars)
+cep_hash        → SHA256 of serialized CEP
+run_id          → {experiment_id}_{datetime_utc}_{random_suffix}
+session_id      → {run_id}_s{n}
+module_id       → {session_id}_{module_name}
+subsession_id   → {module_id}_r{round_number}
+group_id        → {subsession_id}_g{group_number}
+agent_id        → {profile_ID}
+agent_instance_id → {run_id}_{agent_id}
+player_id       → {agent_instance_id}_{subsession_id}
+turn_id         → {group_id}_t{turn_number}_{agent_instance_id}</p>
+</div></blockquote>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.id_generator.compute_cep_hash">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.id_generator.</span></span><span class="sig-name descname"><span class="pre">compute_cep_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cep_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/id_generator.html#compute_cep_hash"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.id_generator.compute_cep_hash" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the full SHA-256 hash of a serialised CEP dictionary.</p>
+<p>Serialises the compiled experiment package (CEP) to canonical JSON
+and returns the complete SHA-256 hex digest.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>cep_dict</strong> – The CEP dictionary to hash, typically produced by
+<code class="docutils literal notranslate"><span class="pre">ExperimentConfig.to_dict()</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A 64-character hexadecimal SHA-256 digest string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.id_generator.compute_config_hash">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.id_generator.</span></span><span class="sig-name descname"><span class="pre">compute_config_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parsed_sheets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/id_generator.html#compute_config_hash"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.id_generator.compute_config_hash" title="Permalink to this definition"></a></dt>
+<dd><p>Compute a truncated SHA-256 hash of all parsed worksheet data.</p>
+<p>Serialises the parsed sheets to canonical JSON (sorted keys,
+non-ASCII preserved) and returns the first 16 hex characters of
+the SHA-256 digest.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>parsed_sheets</strong> – Dictionary of all parsed worksheet data, as
+returned by the template parser pipeline.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A 16-character hexadecimal config hash string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.id_generator.make_agent_id">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.id_generator.</span></span><span class="sig-name descname"><span class="pre">make_agent_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/id_generator.html#make_agent_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.id_generator.make_agent_id" title="Permalink to this definition"></a></dt>
+<dd><p>Derive an agent ID from a profile ID.</p>
+<p>Returns the raw profile ID as a string, matching the <code class="docutils literal notranslate"><span class="pre">ID</span></code> column
+in the Profiles worksheet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>experiment_id</strong> – The experiment identifier (retained for interface
+compatibility but not used in the ID).</p></li>
+<li><p><strong>profile_id</strong> – The agent’s profile identifier (from the Profiles
+worksheet).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The profile ID as a string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.id_generator.make_agent_instance_id">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.id_generator.</span></span><span class="sig-name descname"><span class="pre">make_agent_instance_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/id_generator.html#make_agent_instance_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.id_generator.make_agent_instance_id" title="Permalink to this definition"></a></dt>
+<dd><p>Derive an agent instance ID from a run ID and agent ID.</p>
+<p>An agent instance represents a specific agent participating in a
+specific run. Format: <code class="docutils literal notranslate"><span class="pre">{run_id}_{agent_id}</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>run_id</strong> – The parent run identifier.</p></li>
+<li><p><strong>agent_id</strong> – The agent identifier (from <code class="docutils literal notranslate"><span class="pre">make_agent_id</span></code>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A deterministic agent instance ID string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.id_generator.make_group_id">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.id_generator.</span></span><span class="sig-name descname"><span class="pre">make_group_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subsession_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/id_generator.html#make_group_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.id_generator.make_group_id" title="Permalink to this definition"></a></dt>
+<dd><p>Derive a group ID from a subsession ID and group number.</p>
+<p>Format: <code class="docutils literal notranslate"><span class="pre">{subsession_id}_g{group_number}</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subsession_id</strong> – The parent subsession identifier.</p></li>
+<li><p><strong>group_number</strong> – The group number within the subsession.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A deterministic group ID string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.id_generator.make_module_id">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.id_generator.</span></span><span class="sig-name descname"><span class="pre">make_module_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">module_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/id_generator.html#make_module_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.id_generator.make_module_id" title="Permalink to this definition"></a></dt>
+<dd><p>Derive a module ID from a session ID and module name.</p>
+<p>Format: <code class="docutils literal notranslate"><span class="pre">{session_id}_{module_name}</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>session_id</strong> – The parent session identifier.</p></li>
+<li><p><strong>module_name</strong> – Name of the module (from <code class="docutils literal notranslate"><span class="pre">MODULE_SEQUENCE</span></code>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A deterministic module ID string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.id_generator.make_player_id">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.id_generator.</span></span><span class="sig-name descname"><span class="pre">make_player_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_instance_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">subsession_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/id_generator.html#make_player_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.id_generator.make_player_id" title="Permalink to this definition"></a></dt>
+<dd><p>Derive a player ID from an agent instance ID and subsession ID.</p>
+<p>A player represents an agent instance’s participation in a
+specific subsession (round). Format:
+<code class="docutils literal notranslate"><span class="pre">{agent_instance_id}_{subsession_id}</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>agent_instance_id</strong> – The agent instance identifier.</p></li>
+<li><p><strong>subsession_id</strong> – The subsession identifier.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A deterministic player ID string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.id_generator.make_run_id">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.id_generator.</span></span><span class="sig-name descname"><span class="pre">make_run_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/random.html#random.Random" title="(in Python v3.14)"><span class="pre">random.Random</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/id_generator.html#make_run_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.id_generator.make_run_id" title="Permalink to this definition"></a></dt>
+<dd><p>Generate a unique run ID with a UTC timestamp and random suffix.</p>
+<p>Format: <code class="docutils literal notranslate"><span class="pre">{experiment_id}_{YYYYMMDDTHHMMSSZ}_{6-char</span> <span class="pre">suffix}</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>experiment_id</strong> – The experiment identifier from the Settings
+worksheet.</p></li>
+<li><p><strong>rng</strong> – Optional <code class="docutils literal notranslate"><span class="pre">random.Random</span></code> instance for deterministic
+suffix generation. A new instance is created if <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A unique run ID string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.id_generator.make_session_id">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.id_generator.</span></span><span class="sig-name descname"><span class="pre">make_session_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/id_generator.html#make_session_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.id_generator.make_session_id" title="Permalink to this definition"></a></dt>
+<dd><p>Derive a session ID from a run ID and session number.</p>
+<p>Format: <code class="docutils literal notranslate"><span class="pre">{run_id}_s{session_number}</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>run_id</strong> – The parent run identifier.</p></li>
+<li><p><strong>session_number</strong> – Zero-based or one-based session index.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A deterministic session ID string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.id_generator.make_subsession_id">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.id_generator.</span></span><span class="sig-name descname"><span class="pre">make_subsession_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/id_generator.html#make_subsession_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.id_generator.make_subsession_id" title="Permalink to this definition"></a></dt>
+<dd><p>Derive a subsession ID from a module ID and round number.</p>
+<p>Format: <code class="docutils literal notranslate"><span class="pre">{module_id}_r{round_number}</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>module_id</strong> – The parent module identifier.</p></li>
+<li><p><strong>round_number</strong> – The round number within the module.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A deterministic subsession ID string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.id_generator.make_turn_id">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.id_generator.</span></span><span class="sig-name descname"><span class="pre">make_turn_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">turn_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_instance_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/id_generator.html#make_turn_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.id_generator.make_turn_id" title="Permalink to this definition"></a></dt>
+<dd><p>Derive a turn ID from a group ID, turn number, and agent instance.</p>
+<p>Format: <code class="docutils literal notranslate"><span class="pre">{group_id}_t{turn_number}_{agent_instance_id}</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>group_id</strong> – The parent group identifier.</p></li>
+<li><p><strong>turn_number</strong> – The sequential turn number within the group.</p></li>
+<li><p><strong>agent_instance_id</strong> – The agent instance taking this turn.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A deterministic turn ID string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.compiler.resolver">
+<span id="talkingtomachines-compiler-resolver-module"></span><h2>talkingtomachines.compiler.resolver module<a class="headerlink" href="#module-talkingtomachines.compiler.resolver" title="Permalink to this heading"></a></h2>
+<p>Jinja2 reference resolver for compile-time constant expansion.</p>
+<p>This module performs a partial-evaluation pass over prompt text,
+expanding statically-resolvable Jinja2 references while leaving
+runtime references intact for later substitution during experiment
+execution.</p>
+<p>References handled at compile time:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">C.&lt;module&gt;.&lt;name&gt;</span> <span class="pre">}}</span></code> — Replaced with the corresponding
+value from the Constants sheet.</p></li>
+</ul>
+</div></blockquote>
+<p>References left for runtime resolution:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">&lt;module&gt;.&lt;class&gt;.&lt;name&gt;</span> <span class="pre">}}</span></code> — Field references.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">player.&lt;field&gt;</span> <span class="pre">}}</span></code> — Profile attribute references.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">round_number</span> <span class="pre">}}</span></code>, <code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">group_id</span> <span class="pre">}}</span></code>, etc. — Built-in
+runtime variables.</p></li>
+</ul>
+</div></blockquote>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.resolver.resolve_facilitators">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.resolver.</span></span><span class="sig-name descname"><span class="pre">resolve_facilitators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">facilitators</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">constants</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/resolver.html#resolve_facilitators"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.resolver.resolve_facilitators" title="Permalink to this definition"></a></dt>
+<dd><p>Resolve static constant references in facilitator definitions.</p>
+<p>Iterates over every <code class="docutils literal notranslate"><span class="pre">FacilitatorFunction</span></code> and applies
+<code class="docutils literal notranslate"><span class="pre">resolve_static_refs</span></code> to its <code class="docutils literal notranslate"><span class="pre">definition</span></code> field, producing
+new dataclass instances with the expanded text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>facilitators</strong> – List of <code class="docutils literal notranslate"><span class="pre">FacilitatorFunction</span></code> dataclass
+instances whose <code class="docutils literal notranslate"><span class="pre">definition</span></code> may contain
+<code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">C.&lt;module&gt;.&lt;name&gt;</span> <span class="pre">}}</span></code> references.</p></li>
+<li><p><strong>constants</strong> – Nested mapping of
+<code class="docutils literal notranslate"><span class="pre">{module_name:</span> <span class="pre">{constant_name:</span> <span class="pre">value}}</span></code> from the Constants
+sheet.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new list of <code class="docutils literal notranslate"><span class="pre">FacilitatorFunction</span></code> instances with their
+<code class="docutils literal notranslate"><span class="pre">definition</span></code> fields resolved. The original objects are not
+mutated.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.resolver.resolve_prompts">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.resolver.</span></span><span class="sig-name descname"><span class="pre">resolve_prompts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constants</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/resolver.html#resolve_prompts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.resolver.resolve_prompts" title="Permalink to this definition"></a></dt>
+<dd><p>Resolve static constant references across all prompt definitions.</p>
+<p>Iterates over every <code class="docutils literal notranslate"><span class="pre">PromptDefinition</span></code> in the provided mapping and
+applies <code class="docutils literal notranslate"><span class="pre">resolve_static_refs</span></code> to its <code class="docutils literal notranslate"><span class="pre">llm_text</span></code> field, producing
+new dataclass instances with the expanded text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prompts</strong> – Mapping of module names to lists of <code class="docutils literal notranslate"><span class="pre">PromptDefinition</span></code>
+dataclass instances whose <code class="docutils literal notranslate"><span class="pre">llm_text</span></code> may contain
+<code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">C.&lt;module&gt;.&lt;name&gt;</span> <span class="pre">}}</span></code> references.</p></li>
+<li><p><strong>constants</strong> – Nested mapping of
+<code class="docutils literal notranslate"><span class="pre">{module_name:</span> <span class="pre">{constant_name:</span> <span class="pre">value}}</span></code> from the Constants
+sheet.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new dictionary with the same structure as <em>prompts</em>, where
+each <code class="docutils literal notranslate"><span class="pre">PromptDefinition</span></code> has its <code class="docutils literal notranslate"><span class="pre">llm_text</span></code> field resolved.
+The original objects are not mutated.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.compiler.resolver.resolve_static_refs">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.compiler.resolver.</span></span><span class="sig-name descname"><span class="pre">resolve_static_refs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">constants</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/compiler/resolver.html#resolve_static_refs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.compiler.resolver.resolve_static_refs" title="Permalink to this definition"></a></dt>
+<dd><p>Replace constant references in <em>text</em> with their compile-time values.</p>
+<p>Scans for <code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">C.&lt;module&gt;.&lt;name&gt;</span> <span class="pre">}}</span></code> patterns and substitutes each
+with the string representation of the corresponding constant value.
+References to unknown modules or constant names are left unchanged so
+that downstream validation can report them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> – The prompt text containing Jinja2 constant references.</p></li>
+<li><p><strong>constants</strong> – Nested mapping of
+<code class="docutils literal notranslate"><span class="pre">{module_name:</span> <span class="pre">{constant_name:</span> <span class="pre">value}}</span></code> from the Constants
+sheet.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A copy of <em>text</em> with all resolvable constant references
+replaced by their values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="talkingtomachines.authoring.validators.html" class="btn btn-neutral float-left" title="talkingtomachines.authoring.validators package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="talkingtomachines.core.html" class="btn btn-neutral float-right" title="talkingtomachines.core package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

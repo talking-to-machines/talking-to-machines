@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.authoring.parsers package &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="talkingtomachines.authoring.validators package" href="talkingtomachines.authoring.validators.html" />
+    <link rel="prev" title="talkingtomachines.authoring package" href="talkingtomachines.authoring.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">talkingtomachines</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.agents.html">talkingtomachines.agents package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.analytics.html">talkingtomachines.analytics package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="talkingtomachines.authoring.html">talkingtomachines.authoring package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="talkingtomachines.authoring.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">talkingtomachines.authoring.parsers package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="talkingtomachines.authoring.validators.html">talkingtomachines.authoring.validators package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="talkingtomachines.authoring.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="talkingtomachines.authoring.html#module-talkingtomachines.authoring.template_generator">talkingtomachines.authoring.template_generator module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.compiler.html">talkingtomachines.compiler package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.core.html">talkingtomachines.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.gateway.html">talkingtomachines.gateway package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.generative.html">talkingtomachines.generative package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.interface.html">talkingtomachines.interface package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.management.html">talkingtomachines.management package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.orchestrator.html">talkingtomachines.orchestrator package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.storage.html">talkingtomachines.storage package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">talkingtomachines</a></li>
+          <li class="breadcrumb-item"><a href="talkingtomachines.authoring.html">talkingtomachines.authoring package</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.authoring.parsers package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/talkingtomachines.authoring.parsers.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="talkingtomachines-authoring-parsers-package">
+<h1>talkingtomachines.authoring.parsers package<a class="headerlink" href="#talkingtomachines-authoring-parsers-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-talkingtomachines.authoring.parsers.constants_parser">
+<span id="talkingtomachines-authoring-parsers-constants-parser-module"></span><h2>talkingtomachines.authoring.parsers.constants_parser module<a class="headerlink" href="#module-talkingtomachines.authoring.parsers.constants_parser" title="Permalink to this heading"></a></h2>
+<p>Constants (C) worksheet parser.</p>
+<p>Converts rows of <code class="docutils literal notranslate"><span class="pre">{module,</span> <span class="pre">name,</span> <span class="pre">value,</span> <span class="pre">type}</span></code> into a nested dictionary
+keyed by module and constant name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="n">module</span><span class="p">:</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">typed_value</span><span class="p">}}</span>
+</pre></div>
+</div>
+<p>Jinja access pattern in prompt templates: <code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">C.&lt;module&gt;.&lt;name&gt;</span> <span class="pre">}}</span></code></p>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.parsers.constants_parser.parse_constants">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.parsers.constants_parser.</span></span><span class="sig-name descname"><span class="pre">parse_constants</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/authoring/parsers/constants_parser.html#parse_constants"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.parsers.constants_parser.parse_constants" title="Permalink to this definition"></a></dt>
+<dd><p>Parse the Constants (C) worksheet into a nested dictionary.</p>
+<p>Each row is expected to contain a module name, constant name, raw
+value, and type label. The function groups constants by module and
+applies type coercion. Per-module required constants
+(<code class="docutils literal notranslate"><span class="pre">MAX_NUM_ROUNDS</span></code>, <code class="docutils literal notranslate"><span class="pre">PLAYERS_PER_GROUP</span></code>) are validated by the
+<code class="docutils literal notranslate"><span class="pre">FlowValidator</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>df</strong> – DataFrame for the C worksheet with columns <code class="docutils literal notranslate"><span class="pre">module</span></code>,
+<code class="docutils literal notranslate"><span class="pre">name</span></code>, <code class="docutils literal notranslate"><span class="pre">value</span></code>, and <code class="docutils literal notranslate"><span class="pre">type</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A nested dictionary <code class="docutils literal notranslate"><span class="pre">{module_name:</span> <span class="pre">{constant_name:</span> <span class="pre">typed_value}}</span></code>.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If required columns are missing.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.authoring.parsers.facilitator_parser">
+<span id="talkingtomachines-authoring-parsers-facilitator-parser-module"></span><h2>talkingtomachines.authoring.parsers.facilitator_parser module<a class="headerlink" href="#module-talkingtomachines.authoring.parsers.facilitator_parser" title="Permalink to this heading"></a></h2>
+<p>Facilitator worksheet parser.</p>
+<p>Converts rows of <code class="docutils literal notranslate"><span class="pre">{name,</span> <span class="pre">definition,</span> <span class="pre">kwargs}</span></code> into
+<code class="docutils literal notranslate"><span class="pre">FacilitatorFunction</span></code> dataclasses.</p>
+<p>Built-in functions: <code class="docutils literal notranslate"><span class="pre">assign_groups</span></code>. All other names are treated as
+custom LLM natural-language instruction functions.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.parsers.facilitator_parser.parse_facilitators">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.parsers.facilitator_parser.</span></span><span class="sig-name descname"><span class="pre">parse_facilitators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.FacilitatorFunction" title="talkingtomachines.core.models.FacilitatorFunction"><span class="pre">talkingtomachines.core.models.FacilitatorFunction</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/authoring/parsers/facilitator_parser.html#parse_facilitators"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.parsers.facilitator_parser.parse_facilitators" title="Permalink to this definition"></a></dt>
+<dd><p>Parse the Facilitator worksheet into a list of function definitions.</p>
+<p>Each row becomes a <code class="docutils literal notranslate"><span class="pre">FacilitatorFunction</span></code>. Rows with an empty
+<code class="docutils literal notranslate"><span class="pre">name</span></code> raise a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>. Names not in <code class="docutils literal notranslate"><span class="pre">_BUILTIN_NAMES</span></code>
+are logged as custom LLM instruction functions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>df</strong> – DataFrame for the Facilitator worksheet with at least the
+columns <code class="docutils literal notranslate"><span class="pre">name</span></code> and <code class="docutils literal notranslate"><span class="pre">definition</span></code>. An optional <code class="docutils literal notranslate"><span class="pre">kwargs</span></code>
+column provides per-function keyword arguments.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An ordered list of <code class="docutils literal notranslate"><span class="pre">FacilitatorFunction</span></code> instances.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If any of the required columns are missing from
+    the DataFrame.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.authoring.parsers.fields_parser">
+<span id="talkingtomachines-authoring-parsers-fields-parser-module"></span><h2>talkingtomachines.authoring.parsers.fields_parser module<a class="headerlink" href="#module-talkingtomachines.authoring.parsers.fields_parser" title="Permalink to this heading"></a></h2>
+<p>Fields worksheet parser.</p>
+<p>Converts each row of the Fields worksheet into a <code class="docutils literal notranslate"><span class="pre">FieldDefinition</span></code>
+dataclass and builds an O(1) lookup index keyed by
+<code class="docutils literal notranslate"><span class="pre">(module,</span> <span class="pre">field_class,</span> <span class="pre">name)</span></code>.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.parsers.fields_parser.parse_fields">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.parsers.fields_parser.</span></span><span class="sig-name descname"><span class="pre">parse_fields</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.FieldDefinition" title="talkingtomachines.core.models.FieldDefinition"><span class="pre">talkingtomachines.core.models.FieldDefinition</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/authoring/parsers/fields_parser.html#parse_fields"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.parsers.fields_parser.parse_fields" title="Permalink to this definition"></a></dt>
+<dd><p>Parse the Fields worksheet into definitions and a lookup index.</p>
+<p>Each row is converted into a <code class="docutils literal notranslate"><span class="pre">FieldDefinition</span></code> dataclass. Rows
+missing a <code class="docutils literal notranslate"><span class="pre">class</span></code>, <code class="docutils literal notranslate"><span class="pre">module</span></code>, or <code class="docutils literal notranslate"><span class="pre">name</span></code> value raise a
+<code class="docutils literal notranslate"><span class="pre">ValueError</span></code>. Unknown class or type values are accepted with a
+warning.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>df</strong> – DataFrame for the Fields worksheet with at least the
+columns <code class="docutils literal notranslate"><span class="pre">class</span></code>, <code class="docutils literal notranslate"><span class="pre">module</span></code>, <code class="docutils literal notranslate"><span class="pre">name</span></code>, and <code class="docutils literal notranslate"><span class="pre">type</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>A two-element tuple containing</p>
+<ul class="simple">
+<li><p><strong>fields</strong> – Ordered list of <code class="docutils literal notranslate"><span class="pre">FieldDefinition</span></code> instances.</p></li>
+<li><p><strong>index</strong> – Dictionary keyed by <code class="docutils literal notranslate"><span class="pre">(module,</span> <span class="pre">field_class,</span> <span class="pre">name)</span></code>
+mapping to the corresponding <code class="docutils literal notranslate"><span class="pre">FieldDefinition</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If any of the required columns are missing from
+    the DataFrame.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.authoring.parsers.manual_parser">
+<span id="talkingtomachines-authoring-parsers-manual-parser-module"></span><h2>talkingtomachines.authoring.parsers.manual_parser module<a class="headerlink" href="#module-talkingtomachines.authoring.parsers.manual_parser" title="Permalink to this heading"></a></h2>
+<p>Manual assignment worksheet parser</p>
+<p>Supports two modes for reading manual assignment data from Excel workbooks:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Single-tab</strong>: A sheet named exactly <code class="docutils literal notranslate"><span class="pre">Manual_</span></code>.</p></li>
+<li><p><strong>Multi-tab</strong>: One or more sheets named <code class="docutils literal notranslate"><span class="pre">Manual_*</span></code>
+(e.g. <code class="docutils literal notranslate"><span class="pre">Manual_Treatments</span></code>).</p></li>
+</ul>
+</div></blockquote>
+<p>All <code class="docutils literal notranslate"><span class="pre">Manual_</span></code> sheets are merged into a unified registry keyed by
+<code class="docutils literal notranslate"><span class="pre">(profile_id,</span> <span class="pre">module,</span> <span class="pre">round_number,</span> <span class="pre">class,</span> <span class="pre">name)</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">id</span></code> column corresponds to the <code class="docutils literal notranslate"><span class="pre">ID</span></code> column in the Profiles worksheet.</p>
+<dl class="simple">
+<dt>Accepted <code class="docutils literal notranslate"><span class="pre">class</span></code> values:</dt><dd><p>Session, Module, Subsession, Group, Agent, Player.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.parsers.manual_parser._REQUIRED_COLS">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.parsers.manual_parser.</span></span><span class="sig-name descname"><span class="pre">_REQUIRED_COLS</span></span><a class="headerlink" href="#talkingtomachines.authoring.parsers.manual_parser._REQUIRED_COLS" title="Permalink to this definition"></a></dt>
+<dd><p>Column names that every <code class="docutils literal notranslate"><span class="pre">Manual_</span></code> sheet must
+contain (lower-cased): <code class="docutils literal notranslate"><span class="pre">id</span></code>, <code class="docutils literal notranslate"><span class="pre">module</span></code>, <code class="docutils literal notranslate"><span class="pre">round_number</span></code>, <code class="docutils literal notranslate"><span class="pre">class</span></code>,
+<code class="docutils literal notranslate"><span class="pre">name</span></code>, and <code class="docutils literal notranslate"><span class="pre">value</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)">set</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.parsers.manual_parser._VALID_CLASSES">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.parsers.manual_parser.</span></span><span class="sig-name descname"><span class="pre">_VALID_CLASSES</span></span><a class="headerlink" href="#talkingtomachines.authoring.parsers.manual_parser._VALID_CLASSES" title="Permalink to this definition"></a></dt>
+<dd><p>The set of accepted hierarchy class names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)">set</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.parsers.manual_parser.ManualRegistry">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.parsers.manual_parser.</span></span><span class="sig-name descname"><span class="pre">ManualRegistry</span></span><a class="headerlink" href="#talkingtomachines.authoring.parsers.manual_parser.ManualRegistry" title="Permalink to this definition"></a></dt>
+<dd><p>Type alias <code class="docutils literal notranslate"><span class="pre">dict[tuple[Any,</span> <span class="pre">str,</span> <span class="pre">Any,</span> <span class="pre">str,</span> <span class="pre">str],</span> <span class="pre">Any]</span></code>
+— the return type produced by <a class="reference internal" href="#talkingtomachines.authoring.parsers.manual_parser.parse_manual_sheets" title="talkingtomachines.authoring.parsers.manual_parser.parse_manual_sheets"><code class="xref py py-func docutils literal notranslate"><span class="pre">parse_manual_sheets()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.parsers.manual_parser.parse_manual_sheets">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.parsers.manual_parser.</span></span><span class="sig-name descname"><span class="pre">parse_manual_sheets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sheets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pandas.DataFrame</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)"><span class="pre">set</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/authoring/parsers/manual_parser.html#parse_manual_sheets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.parsers.manual_parser.parse_manual_sheets" title="Permalink to this definition"></a></dt>
+<dd><p>Parse one or more <code class="docutils literal notranslate"><span class="pre">Manual_</span></code> sheets and merge into a unified registry.</p>
+<p>Iterates over all sheets whose names start with <code class="docutils literal notranslate"><span class="pre">Manual_</span></code>, parses
+each with <code class="docutils literal notranslate"><span class="pre">_parse_manual_sheet</span></code>, and combines the results into
+a single <code class="docutils literal notranslate"><span class="pre">ManualRegistry</span></code>. Duplicate keys are overwritten with
+a logged warning.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sheets</strong> – Mapping of <code class="docutils literal notranslate"><span class="pre">sheet_name</span></code> to <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>. The caller
+should pass only sheets whose names start with <code class="docutils literal notranslate"><span class="pre">Manual_</span></code>;
+non-matching names are silently skipped.</p></li>
+<li><p><strong>profile_ids</strong> – Optional set of valid profile IDs from the Profiles
+worksheet. When provided, any <code class="docutils literal notranslate"><span class="pre">id</span></code> value not found in this
+set causes a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A <a class="reference internal" href="#talkingtomachines.authoring.parsers.manual_parser.ManualRegistry" title="talkingtomachines.authoring.parsers.manual_parser.ManualRegistry"><code class="xref py py-data docutils literal notranslate"><span class="pre">ManualRegistry</span></code></a> dict keyed by
+<code class="docutils literal notranslate"><span class="pre">(profile_id,</span> <span class="pre">module,</span> <span class="pre">round_number,</span> <span class="pre">class,</span> <span class="pre">name)</span></code> with the
+corresponding <code class="docutils literal notranslate"><span class="pre">value</span></code> from the worksheet.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">profile_ids</span></code> is supplied and a record references
+    an ID not present in that set.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.authoring.parsers.profiles_parser">
+<span id="talkingtomachines-authoring-parsers-profiles-parser-module"></span><h2>talkingtomachines.authoring.parsers.profiles_parser module<a class="headerlink" href="#module-talkingtomachines.authoring.parsers.profiles_parser" title="Permalink to this heading"></a></h2>
+<p>Parser for the Profiles worksheet in experiment template workbooks.</p>
+<p>This module reads and validates the Profiles sheet, which defines agent
+characteristics used during experiment execution. The sheet follows a
+fixed layout:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Row 0</strong>: Short names used as Jinja2 identifiers
+(e.g. <code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">player.age</span> <span class="pre">}}</span></code>).</p></li>
+<li><p><strong>Row 1</strong>: Full question wording (human-readable labels for QA
+format output).</p></li>
+<li><p><strong>Rows 2+</strong>: One row per agent profile containing attribute values.</p></li>
+</ul>
+</div></blockquote>
+<p>The parser enforces that every short name is a valid Jinja2 identifier,
+that an <code class="docutils literal notranslate"><span class="pre">ID</span></code> column is present with unique values, and that column
+counts are consistent between headers and data rows. A <code class="docutils literal notranslate"><span class="pre">PROFILE_FIELDS</span></code>
+filter controls which columns are included in the parsed output.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.parsers.profiles_parser.parse_profiles">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.parsers.profiles_parser.</span></span><span class="sig-name descname"><span class="pre">parse_profiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_fields</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'ALL'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/authoring/parsers/profiles_parser.html#parse_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.parsers.profiles_parser.parse_profiles" title="Permalink to this definition"></a></dt>
+<dd><p>Parse the Profiles sheet into a structured dictionary.</p>
+<p>Reads header rows for short names and full names, validates column
+consistency and ID uniqueness, applies the <code class="docutils literal notranslate"><span class="pre">PROFILE_FIELDS</span></code> filter,
+and serializes each profile row into a dictionary keyed by short name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – Raw <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> of the Profiles worksheet. Row 0 must
+contain short names, row 1 full names, and rows 2+ the
+profile data.</p></li>
+<li><p><strong>profile_fields</strong> – Comma-separated list of short names to include
+in the output, or <code class="docutils literal notranslate"><span class="pre">&quot;ALL&quot;</span></code> (default) to include every
+column.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>A dictionary with the following keys.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">short_names</span></code> – List of short-name strings from row 0.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">full_names</span></code> – List of full question-wording strings from
+row 1.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rows</span></code> – List of dictionaries (one per agent) mapping
+included short names to their values.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">id_column</span></code> – The short name of the ID column.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">included_columns</span></code> – List of short names retained after
+applying the <code class="docutils literal notranslate"><span class="pre">PROFILE_FIELDS</span></code> filter.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the sheet has fewer than 2 rows, a short name is
+    empty or not a valid Jinja2 identifier, column counts are
+    mismatched, the <code class="docutils literal notranslate"><span class="pre">ID</span></code> column is missing, or IDs are not
+    unique.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.authoring.parsers.prompts_parser">
+<span id="talkingtomachines-authoring-parsers-prompts-parser-module"></span><h2>talkingtomachines.authoring.parsers.prompts_parser module<a class="headerlink" href="#module-talkingtomachines.authoring.parsers.prompts_parser" title="Permalink to this heading"></a></h2>
+<p>Prompts worksheet parser.</p>
+<p>Converts each row of the Prompts worksheet into a
+<code class="docutils literal notranslate"><span class="pre">PromptDefinition</span></code> dataclass, grouped by module and sorted by
+<code class="docutils literal notranslate"><span class="pre">prompt_sequence</span></code>.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.parsers.prompts_parser.parse_prompts">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.parsers.prompts_parser.</span></span><span class="sig-name descname"><span class="pre">parse_prompts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.PromptDefinition" title="talkingtomachines.core.models.PromptDefinition"><span class="pre">talkingtomachines.core.models.PromptDefinition</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/authoring/parsers/prompts_parser.html#parse_prompts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.parsers.prompts_parser.parse_prompts" title="Permalink to this definition"></a></dt>
+<dd><p>Parse the Prompts worksheet into module-grouped prompt definitions.</p>
+<p>Each row is converted into a <code class="docutils literal notranslate"><span class="pre">PromptDefinition</span></code>. Rows missing a
+<code class="docutils literal notranslate"><span class="pre">module</span></code> or <code class="docutils literal notranslate"><span class="pre">llm_text</span></code> value raise a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>. Unknown
+prompt types are accepted with a warning. Results are grouped by
+module and sorted by <code class="docutils literal notranslate"><span class="pre">prompt_sequence</span></code> within each group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>df</strong> – DataFrame for the Prompts worksheet with at least the
+columns <code class="docutils literal notranslate"><span class="pre">module</span></code>, <code class="docutils literal notranslate"><span class="pre">prompt_sequence</span></code>, <code class="docutils literal notranslate"><span class="pre">type</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">llm_text</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary <code class="docutils literal notranslate"><span class="pre">{module_name:</span> <span class="pre">[PromptDefinition,</span> <span class="pre">...]}</span></code> where
+each list is sorted by <code class="docutils literal notranslate"><span class="pre">prompt_sequence</span></code>.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If any of the required columns are missing from
+    the DataFrame.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.authoring.parsers.settings_parser">
+<span id="talkingtomachines-authoring-parsers-settings-parser-module"></span><h2>talkingtomachines.authoring.parsers.settings_parser module<a class="headerlink" href="#module-talkingtomachines.authoring.parsers.settings_parser" title="Permalink to this heading"></a></h2>
+<p>Settings worksheet parser.</p>
+<p>Converts the two-column (name / value) Settings sheet into a
+<code class="docutils literal notranslate"><span class="pre">SettingsConfig</span></code> dataclass. Unknown keys are accepted with a warning
+and type coercion is applied per field.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.parsers.settings_parser.parse_settings">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.parsers.settings_parser.</span></span><span class="sig-name descname"><span class="pre">parse_settings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.SettingsConfig" title="talkingtomachines.core.models.SettingsConfig"><span class="pre">SettingsConfig</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/authoring/parsers/settings_parser.html#parse_settings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.parsers.settings_parser.parse_settings" title="Permalink to this definition"></a></dt>
+<dd><p>Parse a two-column DataFrame into a <code class="docutils literal notranslate"><span class="pre">SettingsConfig</span></code>.</p>
+<p>The first column is treated as the setting name and the second as
+the value, regardless of header labels. Required fields are
+enforced and <code class="docutils literal notranslate"><span class="pre">MODULE_SEQUENCE</span></code> is split into an ordered list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>df</strong> – A DataFrame with at least two columns where column 0
+contains setting names and column 1 contains their values.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A fully populated <code class="docutils literal notranslate"><span class="pre">SettingsConfig</span></code> instance.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the sheet has fewer than two columns, a
+    required field is missing, or <code class="docutils literal notranslate"><span class="pre">CONTEXT_OVERFLOW_POLICY</span></code>
+    contains an invalid value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="talkingtomachines.authoring.html" class="btn btn-neutral float-left" title="talkingtomachines.authoring package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="talkingtomachines.authoring.validators.html" class="btn btn-neutral float-right" title="talkingtomachines.authoring.validators package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

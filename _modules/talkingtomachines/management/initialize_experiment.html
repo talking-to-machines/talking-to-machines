@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.management.initialize_experiment &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.management.initialize_experiment</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.management.initialize_experiment</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Experiment initialisation from prompt template dictionaries.</span>
+
+<span class="sd">.. deprecated::</span>
+<span class="sd">    This module is deprecated.  Use</span>
+<span class="sd">    ``talkingtomachines.compiler.compiler.Compiler`` instead.</span>
+
+<span class="sd">Generates all constant permutations and creates one</span>
+<span class="sd">``AItoAIInterviewExperiment`` instance per permutation.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+    <span class="s2">&quot;talkingtomachines.management.initialize_experiment is deprecated. &quot;</span>
+    <span class="s2">&quot;Use talkingtomachines.compiler.compiler.Compiler instead.&quot;</span><span class="p">,</span>
+    <span class="ne">DeprecationWarning</span><span class="p">,</span>
+    <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.management.experiment</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AItoAIInterviewExperiment</span><span class="p">,</span>
+    <span class="n">Constant</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;generate_permutations&quot;</span><span class="p">,</span> <span class="s2">&quot;initialize_experiment&quot;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="generate_permutations"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.initialize_experiment.generate_permutations">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">generate_permutations</span><span class="p">(</span><span class="n">constants</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate all possible permutations of a dictionary&#39;s values.</span>
+
+<span class="sd">    This function takes a dictionary where the keys are constant names and the values</span>
+<span class="sd">    are iterables of possible values for those constants. It generates all possible</span>
+<span class="sd">    combinations (Cartesian product) of the values and returns a list of `Constant`</span>
+<span class="sd">    objects initialized with each combination.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        constants (dict): A dictionary where keys are strings representing constant names</span>
+<span class="sd">                          and values are iterables of possible values for those constants.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: A list of `Constant` objects, each initialized with a unique combination</span>
+<span class="sd">              of the input dictionary&#39;s values. If the input dictionary is empty, an</span>
+<span class="sd">              empty list is returned.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">constants</span><span class="p">:</span>
+        <span class="n">keys</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">constants</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="n">constant_permutations</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">Constant</span><span class="p">(</span><span class="o">**</span><span class="n">permutation</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">permutation</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">values</span><span class="p">)]</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">constant_permutations</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">Constant</span><span class="p">()]</span></div>
+
+
+<div class="viewcode-block" id="initialize_experiment"><a class="viewcode-back" href="../../../talkingtomachines.management.html#talkingtomachines.management.initialize_experiment.initialize_experiment">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">initialize_experiment</span><span class="p">(</span><span class="n">prompt_template_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="nb">list</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialise AI-to-AI interview experiments from prompt template data.</span>
+
+<span class="sd">    Creates one ``AItoAIInterviewExperiment`` for every constant</span>
+<span class="sd">    permutation derived from the ``&quot;constants&quot;`` key in the template</span>
+<span class="sd">    dictionary.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        prompt_template_dict: A dictionary containing all prompt template</span>
+<span class="sd">            data (settings, treatments, roles, prompts, profiles, and</span>
+<span class="sd">            constants) as extracted from the Excel workbook.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple[list, list]: A two-element tuple containing a list of</span>
+<span class="sd">            initialised ``AItoAIInterviewExperiment`` objects (one per</span>
+<span class="sd">            constant permutation) and a list of ``Constant`` objects</span>
+<span class="sd">            representing each permutation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Define all constant permutations</span>
+    <span class="n">constant_permutations</span> <span class="o">=</span> <span class="n">generate_permutations</span><span class="p">(</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;constants&quot;</span><span class="p">])</span>
+
+    <span class="n">experiments</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">constant_permutation</span> <span class="ow">in</span> <span class="n">constant_permutations</span><span class="p">:</span>
+        <span class="c1"># Initialise experiment based on rendered prompt template</span>
+        <span class="n">experiment</span> <span class="o">=</span> <span class="n">AItoAIInterviewExperiment</span><span class="p">(</span>
+            <span class="n">model_info</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;model_info&quot;</span><span class="p">],</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;temperature&quot;</span><span class="p">],</span>
+            <span class="n">profiles</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;profiles&quot;</span><span class="p">],</span>
+            <span class="n">roles</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;roles&quot;</span><span class="p">],</span>
+            <span class="n">num_subjects_per_group</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;num_subjects_per_group&quot;</span><span class="p">],</span>
+            <span class="n">num_groups</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;num_groups&quot;</span><span class="p">],</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;session_id&quot;</span><span class="p">],</span>
+            <span class="n">hf_inference_endpoint</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;hf_inference_endpoint&quot;</span><span class="p">],</span>
+            <span class="n">max_num_rounds</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;max_num_rounds&quot;</span><span class="p">],</span>
+            <span class="n">treatments</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;treatments&quot;</span><span class="p">],</span>
+            <span class="n">treatment_assignment_strategy</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span>
+                <span class="s2">&quot;treatment_assignment_strategy&quot;</span>
+            <span class="p">],</span>
+            <span class="n">treatment_column</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;treatment_column&quot;</span><span class="p">],</span>
+            <span class="n">group_assignment_strategy</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;group_assignment_strategy&quot;</span><span class="p">],</span>
+            <span class="n">group_column</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;group_column&quot;</span><span class="p">],</span>
+            <span class="n">role_assignment_strategy</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;role_assignment_strategy&quot;</span><span class="p">],</span>
+            <span class="n">role_column</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;role_column&quot;</span><span class="p">],</span>
+            <span class="n">random_seed</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;random_seed&quot;</span><span class="p">],</span>
+            <span class="n">build_profile_qna</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;build_profile_qna&quot;</span><span class="p">],</span>
+            <span class="n">build_profile_backstories</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;build_profile_backstories&quot;</span><span class="p">],</span>
+            <span class="n">prompts</span><span class="o">=</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;prompts&quot;</span><span class="p">],</span>
+            <span class="n">constants</span><span class="o">=</span><span class="n">constant_permutation</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+        <span class="n">experiments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">experiment</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">experiments</span><span class="p">,</span> <span class="n">constant_permutations</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

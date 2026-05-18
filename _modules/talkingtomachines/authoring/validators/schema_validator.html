@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.authoring.validators.schema_validator &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.authoring.validators.schema_validator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.authoring.validators.schema_validator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Schema validator for prompt template workbooks.</span>
+
+<span class="sd">Performs full column, field, and enum validation for every worksheet</span>
+<span class="sd">in a prompt template. Collects all errors and never fails fast, so</span>
+<span class="sd">that users receive a complete diagnostic report in a single pass.</span>
+
+<span class="sd">Error format:</span>
+<span class="sd">    ``ValidationError(sheet, row, col, message)``</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ValidationError"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.validators.html#talkingtomachines.authoring.validators.schema_validator.ValidationError">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ValidationError</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a single validation failure tied to a sheet location.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        sheet: Name of the worksheet where the error occurred.</span>
+<span class="sd">        row: Zero-based row index of the error, or ``None`` for</span>
+<span class="sd">            sheet-level errors.</span>
+<span class="sd">        col: Column name associated with the error, or ``None`` when</span>
+<span class="sd">            not applicable.</span>
+<span class="sd">        message: Human-readable description of the validation failure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">sheet</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">row</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">col</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a bracket-delimited location string followed by the message.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A formatted string such as</span>
+<span class="sd">            ``[sheet=Settings, row=3, col=name] Required setting ...``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">loc</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[sheet=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sheet</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">loc</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;, row=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">row</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">loc</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;, col=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">col</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">loc</span> <span class="o">+=</span> <span class="s2">&quot;]&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">loc</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="SchemaValidator"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.validators.html#talkingtomachines.authoring.validators.schema_validator.SchemaValidator">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">SchemaValidator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates the structure of each worksheet in a prompt template.</span>
+
+<span class="sd">    Checks that every required sheet is present, that each sheet contains</span>
+<span class="sd">    the expected columns, and that cell values conform to their allowed</span>
+<span class="sd">    enumerations (e.g. field types, prompt types, constant types).</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; validator = SchemaValidator(sheets)</span>
+<span class="sd">        &gt;&gt;&gt; errors = validator.validate()</span>
+<span class="sd">        &gt;&gt;&gt; if errors:</span>
+<span class="sd">        ...     for err in errors:</span>
+<span class="sd">        ...         print(err)</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        _SHEET_REQUIRED_COLS: Mapping of sheet names to their required</span>
+<span class="sd">            column names (lower-cased).</span>
+<span class="sd">        _VALID_FIELD_CLASSES: Allowed values for the ``class`` column</span>
+<span class="sd">            in the Fields sheet.</span>
+<span class="sd">        _VALID_FIELD_TYPES: Allowed values for the ``type`` column in</span>
+<span class="sd">            the Fields sheet.</span>
+<span class="sd">        _VALID_PROMPT_TYPES: Allowed values for the ``type`` column in</span>
+<span class="sd">            the Prompts sheet.</span>
+<span class="sd">        _VALID_CONST_TYPES: Allowed values for the ``type`` column in</span>
+<span class="sd">            the C (constants) sheet.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Required columns per sheet (lower-cased)</span>
+    <span class="n">_SHEET_REQUIRED_COLS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;Settings&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">},</span>
+        <span class="s2">&quot;C&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;module&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">},</span>
+        <span class="s2">&quot;Fields&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;class&quot;</span><span class="p">,</span> <span class="s2">&quot;module&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">},</span>
+        <span class="s2">&quot;Facilitator&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;definition&quot;</span><span class="p">},</span>  <span class="c1"># optional sheet</span>
+        <span class="s2">&quot;Prompts&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;module&quot;</span><span class="p">,</span> <span class="s2">&quot;prompt_sequence&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;llm_text&quot;</span><span class="p">},</span>
+        <span class="s2">&quot;Profiles&quot;</span><span class="p">:</span> <span class="nb">set</span><span class="p">(),</span>  <span class="c1"># optional; validated separately (row-0 / row-1 header)</span>
+        <span class="c1"># No Treatments sheet — treatment labels defined in C worksheet</span>
+    <span class="p">}</span>
+
+    <span class="n">_VALID_FIELD_CLASSES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Session&quot;</span><span class="p">,</span> <span class="s2">&quot;Subsession&quot;</span><span class="p">,</span> <span class="s2">&quot;Agent&quot;</span><span class="p">,</span> <span class="s2">&quot;Group&quot;</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">}</span>
+    <span class="n">_VALID_FIELD_TYPES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;integer&quot;</span><span class="p">,</span> <span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;category&quot;</span><span class="p">,</span> <span class="s2">&quot;boolean&quot;</span><span class="p">}</span>
+    <span class="n">_VALID_PROMPT_TYPES</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;CONTEXT&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;DISCUSSION&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;PUBLIC_QUESTION&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;PRIVATE_QUESTION&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;FACILITATOR&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">_VALID_CONST_TYPES</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;integer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;int&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;float&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;str&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;text&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;bool&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;boolean&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sheets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the validator with parsed worksheet data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sheets: Mapping of sheet names to their ``DataFrame``</span>
+<span class="sd">                representations, as returned by the template parser.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span> <span class="o">=</span> <span class="n">sheets</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ValidationError</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="SchemaValidator.validate"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.validators.html#talkingtomachines.authoring.validators.schema_validator.SchemaValidator.validate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ValidationError</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run all structural validations and return accumulated errors.</span>
+
+<span class="sd">        Checks required sheets, required columns, and per-sheet content</span>
+<span class="sd">        rules. Also auto-discovers and validates any ``Manual_*`` sheets.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of ``ValidationError`` instances. An empty list</span>
+<span class="sd">            indicates that the template passed all checks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">sheet_name</span><span class="p">,</span> <span class="n">required_cols</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SHEET_REQUIRED_COLS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">sheet_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                    <span class="n">sheet_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Required sheet &#39;</span><span class="si">{</span><span class="n">sheet_name</span><span class="si">}</span><span class="s2">&#39; is missing.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="p">[</span><span class="n">sheet_name</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_required_columns</span><span class="p">(</span><span class="n">sheet_name</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">required_cols</span><span class="p">)</span>
+
+        <span class="c1"># Per-sheet content checks</span>
+        <span class="k">if</span> <span class="s2">&quot;Settings&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_validate_settings</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="p">[</span><span class="s2">&quot;Settings&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s2">&quot;C&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_validate_constants</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="p">[</span><span class="s2">&quot;C&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s2">&quot;Fields&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_validate_fields</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="p">[</span><span class="s2">&quot;Fields&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s2">&quot;Prompts&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_validate_prompts</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="p">[</span><span class="s2">&quot;Prompts&quot;</span><span class="p">])</span>
+        <span class="c1"># Manual_ sheet auto-discovery and validation</span>
+        <span class="n">manual_sheets</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;Manual_&quot;</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">sheet_name</span><span class="p">,</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">manual_sheets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_validate_manual_sheet</span><span class="p">(</span><span class="n">sheet_name</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span></div>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Per-sheet validators</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate the Settings sheet for required experiment parameters.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            df: DataFrame for the Settings sheet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_cols</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="n">required_settings</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;EXPERIMENT_ID&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;RANDOM_SEED&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;NUM_AGENTS_PER_SESSION&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;MODULE_SEQUENCE&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">present</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()}</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="n">required_settings</span> <span class="o">-</span> <span class="n">present</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span><span class="s2">&quot;Settings&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Required setting &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; not found.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_constants</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate the C (constants) sheet for allowed type values.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            df: DataFrame for the C sheet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_cols</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;type&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">type_val</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">type_val</span> <span class="ow">and</span> <span class="n">type_val</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_VALID_CONST_TYPES</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span><span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Invalid type &#39;</span><span class="si">{</span><span class="n">type_val</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate the Fields sheet for allowed class and type values.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            df: DataFrame for the Fields sheet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_cols</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="bp">cls</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">ftype</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">cls</span> <span class="ow">and</span> <span class="bp">cls</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_VALID_FIELD_CLASSES</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                    <span class="s2">&quot;Fields&quot;</span><span class="p">,</span>
+                    <span class="n">i</span><span class="p">,</span>
+                    <span class="s2">&quot;class&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Invalid class &#39;</span><span class="si">{</span><span class="bp">cls</span><span class="si">}</span><span class="s2">&#39;. Expected: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_VALID_FIELD_CLASSES</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">ftype</span> <span class="ow">and</span> <span class="n">ftype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_VALID_FIELD_TYPES</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                    <span class="s2">&quot;Fields&quot;</span><span class="p">,</span>
+                    <span class="n">i</span><span class="p">,</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Invalid type &#39;</span><span class="si">{</span><span class="n">ftype</span><span class="si">}</span><span class="s2">&#39;. Expected: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_VALID_FIELD_TYPES</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_prompts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate the Prompts sheet for allowed prompt type values.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            df: DataFrame for the Prompts sheet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_cols</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">ptype</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">ptype</span> <span class="ow">and</span> <span class="n">ptype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_VALID_PROMPT_TYPES</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                    <span class="s2">&quot;Prompts&quot;</span><span class="p">,</span>
+                    <span class="n">i</span><span class="p">,</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Invalid type &#39;</span><span class="si">{</span><span class="n">ptype</span><span class="si">}</span><span class="s2">&#39;. Expected: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_VALID_PROMPT_TYPES</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_manual_sheet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sheet_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate a ``Manual_*`` sheet for required columns and class values.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sheet_name: Name of the manual override sheet (e.g.</span>
+<span class="sd">                ``Manual_Round1``).</span>
+<span class="sd">            df: DataFrame for the manual sheet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.authoring.parsers.manual_parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">_VALID_CLASSES</span>
+
+        <span class="c1"># &quot;id&quot; matches the Profiles tab ID column (design doc §5.2)</span>
+        <span class="n">required</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;module&quot;</span><span class="p">,</span> <span class="s2">&quot;round_number&quot;</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_required_columns</span><span class="p">(</span><span class="n">sheet_name</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">required</span><span class="p">)</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_cols</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;class&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="bp">cls</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">cls</span> <span class="ow">and</span> <span class="bp">cls</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_VALID_CLASSES</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                    <span class="n">sheet_name</span><span class="p">,</span>
+                    <span class="n">i</span><span class="p">,</span>
+                    <span class="s2">&quot;class&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Invalid class &#39;</span><span class="si">{</span><span class="bp">cls</span><span class="si">}</span><span class="s2">&#39;. Expected one of </span><span class="si">{</span><span class="n">_VALID_CLASSES</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Helpers</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_required_columns</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">sheet_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">required</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check that a DataFrame contains all required columns.</span>
+
+<span class="sd">        Column comparison is case-insensitive and strips whitespace.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sheet_name: Name of the sheet being checked (for error</span>
+<span class="sd">                reporting).</span>
+<span class="sd">            df: DataFrame whose columns are inspected.</span>
+<span class="sd">            required: Set of required column names (lower-cased).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">actual</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">}</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="n">required</span> <span class="o">-</span> <span class="n">actual</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span><span class="n">sheet_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Required column &#39;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">&#39; is missing.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_normalize_cols</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a copy of the DataFrame with lower-cased, stripped column names.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            df: Input DataFrame.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A shallow copy of *df* with normalised column headers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_err</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">sheet</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">col</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Record a validation error.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sheet: Name of the worksheet where the error was found.</span>
+<span class="sd">            row: Row index, or ``None`` for sheet-level errors.</span>
+<span class="sd">            col: Column name, or ``None`` when not applicable.</span>
+<span class="sd">            message: Human-readable error description.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">ValidationError</span><span class="p">(</span><span class="n">sheet</span><span class="o">=</span><span class="n">sheet</span><span class="p">,</span> <span class="n">row</span><span class="o">=</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>
+        <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

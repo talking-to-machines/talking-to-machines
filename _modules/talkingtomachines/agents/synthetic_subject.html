@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.agents.synthetic_subject &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.agents.synthetic_subject</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.agents.synthetic_subject</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Synthetic subject agent for AI-driven experiment participation.</span>
+
+<span class="sd">Provides the ``ConversationalSyntheticSubject`` class, which wraps an</span>
+<span class="sd">``Agent``/``Player`` pair and orchestrates LLM-based response generation</span>
+<span class="sd">within the experiment hierarchy.</span>
+
+<span class="sd">Key design points:</span>
+<span class="sd">    - Constructor accepts ``Agent`` and ``Player`` model objects rather</span>
+<span class="sd">      than loose parameters.</span>
+<span class="sd">    - Prompt rendering is delegated to ``ContextBuilder.build()``.</span>
+<span class="sd">    - Response storage writes to ``Player.state``, ``Agent.state``,</span>
+<span class="sd">      ``Group.state``, or ``Session.state`` via ``ExperimentState``.</span>
+<span class="sd">    - All LLM calls are routed through ``LLMRouter``, supporting</span>
+<span class="sd">      multiple providers.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Agent</span><span class="p">,</span>
+    <span class="n">Player</span><span class="p">,</span>
+    <span class="n">Group</span><span class="p">,</span>
+    <span class="n">Session</span><span class="p">,</span>
+    <span class="n">PromptDefinition</span><span class="p">,</span>
+    <span class="n">FieldDefinition</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExperimentState</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.agents.context_builder</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextBuilder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.agents.prompt_builder</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">build_profile_prompt</span><span class="p">,</span>
+    <span class="n">build_system_message</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.gateway.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMRouter</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">MAX_VALIDATION_RETRIES</span> <span class="o">=</span> <span class="mi">3</span>
+
+
+<div class="viewcode-block" id="ConversationalSyntheticSubject"><a class="viewcode-back" href="../../../talkingtomachines.agents.html#talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ConversationalSyntheticSubject</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A synthetic (AI) participant in an experiment.</span>
+
+<span class="sd">    Wraps one ``Agent`` / ``Player`` pair and provides system message</span>
+<span class="sd">    construction, visibility-filtered context building, LLM generation</span>
+<span class="sd">    with optional response validation and retry logic, and state</span>
+<span class="sd">    persistence via ``ExperimentState``.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        agent: The ``Agent`` model object representing this participant&#39;s</span>
+<span class="sd">            persistent identity across rounds.</span>
+<span class="sd">        player: The ``Player`` model object representing this participant&#39;s</span>
+<span class="sd">            round-specific state within a group.</span>
+<span class="sd">        group: The ``Group`` this player belongs to in the current session.</span>
+<span class="sd">        session: The ``Session`` this player is participating in.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span>
+        <span class="n">player</span><span class="p">:</span> <span class="n">Player</span><span class="p">,</span>
+        <span class="n">group</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span>
+        <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+        <span class="n">state</span><span class="p">:</span> <span class="n">ExperimentState</span><span class="p">,</span>
+        <span class="n">router</span><span class="p">:</span> <span class="s2">&quot;LLMRouter&quot;</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">profiles_meta</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">build_profile_qa</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">build_profile_backstories</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">constants</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">rng</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">context_guard</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise a synthetic subject.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent: The ``Agent`` model for this participant.</span>
+<span class="sd">            player: The ``Player`` model for this participant.</span>
+<span class="sd">            group: The ``Group`` the player belongs to.</span>
+<span class="sd">            session: The current ``Session``.</span>
+<span class="sd">            state: Shared ``ExperimentState`` for reading/writing field values.</span>
+<span class="sd">            router: ``LLMRouter`` instance for generating LLM responses.</span>
+<span class="sd">            model_name: Identifier of the model to use for generation.</span>
+<span class="sd">            temperature: Sampling temperature for LLM calls.</span>
+<span class="sd">            profiles_meta: Optional dictionary with ``&quot;short_names&quot;`` and</span>
+<span class="sd">                ``&quot;full_names&quot;`` lists used for profile prompt construction.</span>
+<span class="sd">            build_profile_qa: Whether to build a Q&amp;A-format profile prompt.</span>
+<span class="sd">            build_profile_backstories: Whether to generate a backstory via LLM.</span>
+<span class="sd">            constants: Experiment-level constants injected into Jinja context.</span>
+<span class="sd">            rng: Seeded ``random.Random`` instance for reproducibility.</span>
+<span class="sd">            context_guard: Optional context-window guard that truncates or</span>
+<span class="sd">                summarises messages before they are sent to the LLM.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">agent</span> <span class="o">=</span> <span class="n">agent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">player</span> <span class="o">=</span> <span class="n">player</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">group</span> <span class="o">=</span> <span class="n">group</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">session</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_router</span> <span class="o">=</span> <span class="n">router</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">model_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_temperature</span> <span class="o">=</span> <span class="n">temperature</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_constants</span> <span class="o">=</span> <span class="n">constants</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span> <span class="o">=</span> <span class="n">rng</span> <span class="ow">or</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_context_guard</span> <span class="o">=</span> <span class="n">context_guard</span>
+
+        <span class="c1"># Build system message once</span>
+        <span class="n">short_names</span> <span class="o">=</span> <span class="p">(</span><span class="n">profiles_meta</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;short_names&quot;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">full_names</span> <span class="o">=</span> <span class="p">(</span><span class="n">profiles_meta</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;full_names&quot;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">profile_prompt</span> <span class="o">=</span> <span class="n">build_profile_prompt</span><span class="p">(</span>
+            <span class="n">profile_row</span><span class="o">=</span><span class="n">agent</span><span class="o">.</span><span class="n">profile_info</span><span class="p">,</span>
+            <span class="n">short_names</span><span class="o">=</span><span class="n">short_names</span><span class="p">,</span>
+            <span class="n">full_names</span><span class="o">=</span><span class="n">full_names</span><span class="p">,</span>
+            <span class="n">build_profile_qa</span><span class="o">=</span><span class="n">build_profile_qa</span><span class="p">,</span>
+            <span class="n">build_profile_backstories</span><span class="o">=</span><span class="n">build_profile_backstories</span><span class="p">,</span>
+            <span class="n">router</span><span class="o">=</span><span class="n">router</span> <span class="k">if</span> <span class="n">build_profile_backstories</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_system_message</span> <span class="o">=</span> <span class="n">build_system_message</span><span class="p">(</span><span class="n">profile_prompt</span><span class="p">)</span>
+        <span class="c1"># Persist on the Agent so exporters can capture it</span>
+        <span class="n">agent</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;system_message&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_message</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_context_builder</span> <span class="o">=</span> <span class="n">ContextBuilder</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="p">)</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Public API</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="ConversationalSyntheticSubject.respond"><a class="viewcode-back" href="../../../talkingtomachines.agents.html#talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject.respond">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="p">:</span> <span class="n">PromptDefinition</span><span class="p">,</span>
+        <span class="n">field_def</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FieldDefinition</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a response to the given prompt.</span>
+
+<span class="sd">        Builds the full message context, optionally applies a context-window</span>
+<span class="sd">        guard, sends the messages to the LLM, validates the response if</span>
+<span class="sd">        required, and persists the result to the appropriate state scope.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            module: The module identifier (e.g., app name in oTree terms).</span>
+<span class="sd">            round_number: The current round number within the module.</span>
+<span class="sd">            prompt: The ``PromptDefinition`` containing the LLM text template</span>
+<span class="sd">                and prompt metadata.</span>
+<span class="sd">            field_def: Optional ``FieldDefinition`` describing the expected</span>
+<span class="sd">                response format, validation rules, and storage scope.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A tuple of ``(content, rendered_prompt)`` where *content* is the</span>
+<span class="sd">            raw LLM response string and *rendered_prompt* is the final user</span>
+<span class="sd">            message sent to the LLM.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context_builder</span><span class="o">.</span><span class="n">build</span><span class="p">(</span>
+            <span class="n">agent</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="p">,</span>
+            <span class="n">player</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">player</span><span class="p">,</span>
+            <span class="n">group</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="p">,</span>
+            <span class="n">session</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">,</span>
+            <span class="n">module</span><span class="o">=</span><span class="n">module</span><span class="p">,</span>
+            <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+            <span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
+            <span class="n">system_message</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_system_message</span><span class="p">,</span>
+            <span class="n">field_def</span><span class="o">=</span><span class="n">field_def</span><span class="p">,</span>
+            <span class="n">constants</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_constants</span><span class="p">,</span>
+            <span class="n">rng</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Capture the rendered prompt (final user message) for trace logging</span>
+        <span class="n">rendered_prompt</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">messages</span><span class="p">:</span>
+            <span class="n">last_content</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">rendered_prompt</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">last_content</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">last_content</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">last_content</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Apply context window guard before sending to LLM</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context_guard</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">messages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context_guard</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+                <span class="n">messages</span><span class="p">,</span>
+                <span class="n">router</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_router</span><span class="p">,</span>
+                <span class="n">temperature</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_temperature</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">validate</span> <span class="o">=</span> <span class="n">field_def</span><span class="o">.</span><span class="n">validate</span> <span class="k">if</span> <span class="n">field_def</span> <span class="k">else</span> <span class="kc">False</span>
+        <span class="n">response_options</span> <span class="o">=</span> <span class="n">field_def</span><span class="o">.</span><span class="n">response_options</span> <span class="k">if</span> <span class="n">field_def</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="c1"># Generate with optional validation retries</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">MAX_VALIDATION_RETRIES</span> <span class="k">if</span> <span class="n">validate</span> <span class="k">else</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">llm_response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_router</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+                <span class="n">message_history</span><span class="o">=</span><span class="n">messages</span><span class="p">,</span>
+                <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span>
+                <span class="n">temperature</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_temperature</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">llm_response</span><span class="o">.</span><span class="n">content</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">content</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Agent </span><span class="si">%s</span><span class="s2"> received empty LLM response (llm_fallback) for prompt type &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                    <span class="n">prompt</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">validate</span> <span class="ow">and</span> <span class="n">response_options</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_response</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="n">response_options</span><span class="p">,</span> <span class="n">field_def</span><span class="p">):</span>
+                    <span class="k">break</span>
+                <span class="k">if</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">MAX_VALIDATION_RETRIES</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s2">&quot;Agent </span><span class="si">%s</span><span class="s2"> response validation failed (attempt </span><span class="si">%d</span><span class="s2">/</span><span class="si">%d</span><span class="s2">). Retrying.&quot;</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                        <span class="n">attempt</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                        <span class="n">MAX_VALIDATION_RETRIES</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="c1"># Store response in Player.state</span>
+        <span class="k">if</span> <span class="n">field_def</span> <span class="ow">and</span> <span class="n">field_def</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="n">parsed</span><span class="p">,</span> <span class="n">speculation_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_json_response</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="n">field_def</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_player</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">player_id</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">field_def</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">parsed</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">speculation_score</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_player</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">player_id</span><span class="p">,</span>
+                    <span class="n">module</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field_def</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_speculation_score&quot;</span><span class="p">,</span>
+                    <span class="n">speculation_score</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">field_def</span><span class="o">.</span><span class="n">field_class</span> <span class="o">==</span> <span class="s2">&quot;Agent&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_agent</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                    <span class="n">module</span><span class="p">,</span>
+                    <span class="n">field_def</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">parsed</span><span class="p">,</span>
+                    <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">field_def</span><span class="o">.</span><span class="n">field_class</span> <span class="o">==</span> <span class="s2">&quot;Group&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">prompt</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;PRIVATE_QUESTION&quot;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">accumulate_group</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                        <span class="n">module</span><span class="p">,</span>
+                        <span class="n">field_def</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">player_id</span><span class="p">,</span>
+                        <span class="n">parsed</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_group</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">field_def</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">parsed</span>
+                    <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">field_def</span><span class="o">.</span><span class="n">field_class</span> <span class="o">==</span> <span class="s2">&quot;Session&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">prompt</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;PRIVATE_QUESTION&quot;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">accumulate_session</span><span class="p">(</span>
+                        <span class="n">module</span><span class="p">,</span>
+                        <span class="n">field_def</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">player</span><span class="o">.</span><span class="n">player_id</span><span class="p">,</span>
+                        <span class="n">parsed</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_session</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">field_def</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">parsed</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">content</span><span class="p">,</span> <span class="n">rendered_prompt</span></div>
+
+<div class="viewcode-block" id="ConversationalSyntheticSubject.get_system_message"><a class="viewcode-back" href="../../../talkingtomachines.agents.html#talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject.get_system_message">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_system_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the pre-built system message for this subject.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The system message string containing the profile prompt.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_system_message</span></div>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Private helpers</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_response</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">response_options</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">field_def</span><span class="p">:</span> <span class="n">FieldDefinition</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the response matches expected options or type.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            content: The raw LLM response string.</span>
+<span class="sd">            response_options: A list of valid response values, or another</span>
+<span class="sd">                constraint descriptor.</span>
+<span class="sd">            field_def: The ``FieldDefinition`` used for JSON parsing rules.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if the response is valid, False otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">response_options</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response_options</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="c1"># Try JSON parse first</span>
+            <span class="n">parsed</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_json_response</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="n">field_def</span><span class="p">)</span>
+            <span class="n">valid</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">parsed</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">opt</span><span class="p">)</span> <span class="k">for</span> <span class="n">opt</span> <span class="ow">in</span> <span class="n">response_options</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">valid</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Agent </span><span class="si">%s</span><span class="s2">: response &#39;</span><span class="si">%s</span><span class="s2">&#39; for field &#39;</span><span class="si">%s</span><span class="s2">&#39; not in expected options </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                    <span class="n">parsed</span><span class="p">,</span>
+                    <span class="n">field_def</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">response_options</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">valid</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_json_response</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">field_def</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FieldDefinition</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract a structured value and optional speculation score from a JSON response.</span>
+
+<span class="sd">        Handles markdown code-fence stripping and JSON parsing. If the</span>
+<span class="sd">        parsed result is a dict and ``field_def.name`` is set, the value</span>
+<span class="sd">        for that key is returned. A ``speculation_score`` key, if present,</span>
+<span class="sd">        is extracted separately.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            content: The raw LLM response string.</span>
+<span class="sd">            field_def: Optional ``FieldDefinition`` whose ``format_response``</span>
+<span class="sd">                flag and ``name`` control parsing behaviour.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A tuple of ``(parsed_value, speculation_score)``. The score is</span>
+<span class="sd">            ``None`` if not present or if JSON parsing fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">field_def</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">field_def</span><span class="o">.</span><span class="n">format_response</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">):</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;json&quot;</span><span class="p">):</span>
+                    <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="mi">4</span><span class="p">:]</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <span class="n">speculation_score</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">speculation_score</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;speculation_score&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">field_def</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field_def</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">content</span><span class="p">),</span> <span class="n">speculation_score</span>
+            <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="n">speculation_score</span>
+        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Agent </span><span class="si">%s</span><span class="s2">: JSON parse failed for field &#39;</span><span class="si">%s</span><span class="s2">&#39; — storing raw text.&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                <span class="n">field_def</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">field_def</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="kc">None</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

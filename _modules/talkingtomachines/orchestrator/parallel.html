@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.orchestrator.parallel &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.orchestrator.parallel</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.orchestrator.parallel</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Three-tier parallelism model for experiment execution.</span>
+
+<span class="sd">Provides concurrent execution at three levels of the experiment hierarchy:</span>
+
+<span class="sd">- **Session-level**: ``ProcessPoolExecutor`` runs multiple sessions as</span>
+<span class="sd">  separate processes so that global state cannot interfere across sessions.</span>
+<span class="sd">- **Group-level**: ``ThreadPoolExecutor`` runs groups within a subsession</span>
+<span class="sd">  concurrently, suitable for I/O-bound LLM calls.</span>
+<span class="sd">- **Player-level**: ``ThreadPoolExecutor`` runs PRIVATE_QUESTION prompts</span>
+<span class="sd">  concurrently within a single group.</span>
+
+<span class="sd">Session-level usage::</span>
+
+<span class="sd">    from talkingtomachines.orchestrator.parallel import run_sessions_parallel</span>
+<span class="sd">    results = run_sessions_parallel(</span>
+<span class="sd">        cep_path=&quot;run_dir/compiled_experiment.json&quot;,</span>
+<span class="sd">        output_base=&quot;experiment_results&quot;,</span>
+<span class="sd">        session_numbers=[1, 2, 3],</span>
+<span class="sd">        budget_cap_usd=5.0,</span>
+<span class="sd">        test_mode=False,</span>
+<span class="sd">        max_workers=3,</span>
+<span class="sd">    )</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessPoolExecutor</span><span class="p">,</span> <span class="n">ThreadPoolExecutor</span><span class="p">,</span> <span class="n">as_completed</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">TypeVar</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">)</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Module-level worker — must be a top-level function to be picklable</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="SessionResult"><a class="viewcode-back" href="../../../talkingtomachines.orchestrator.html#talkingtomachines.orchestrator.parallel.SessionResult">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SessionResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Outcome of a single session execution in a parallel run.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        session_number: Numeric index of the session.</span>
+<span class="sd">        session_id: Unique identifier assigned to the session.</span>
+<span class="sd">        total_cost_usd: Cumulative LLM API cost for the session in USD.</span>
+<span class="sd">        output_dir: Filesystem path where session artifacts were written.</span>
+<span class="sd">        success: Whether the session completed without errors.</span>
+<span class="sd">        error: Error message if the session failed; empty string on success.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">session_number</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">total_cost_usd</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">success</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">error</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_session_worker</span><span class="p">(</span>
+    <span class="n">cep_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">output_base</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">session_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">budget_cap_usd</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">test_mode</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SessionResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Execute a single experiment session inside a subprocess.</span>
+
+<span class="sd">    This is a module-level function (required for pickling by</span>
+<span class="sd">    ``ProcessPoolExecutor``). It loads the compiled experiment from disk,</span>
+<span class="sd">    constructs a fresh ``ExperimentRuntime``, and runs the session. All</span>
+<span class="sd">    objects are created within the subprocess to avoid shared-state issues.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cep_path: Absolute path to the ``compiled_experiment.json`` file.</span>
+<span class="sd">        output_base: Root output directory; session artifacts are written</span>
+<span class="sd">            to a subdirectory derived from experiment/run/session identifiers.</span>
+<span class="sd">        session_number: Numeric index of the session to execute.</span>
+<span class="sd">        budget_cap_usd: Maximum spend in USD for this session (0 = unlimited).</span>
+<span class="sd">        test_mode: If True, only one group per module is executed.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A ``SessionResult`` with success/failure status and metadata.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.compiler.cep_schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">CompiledExperiment</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.orchestrator.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExperimentRuntime</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.storage.artifact_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArtifactManager</span>
+
+    <span class="n">cep</span> <span class="o">=</span> <span class="n">CompiledExperiment</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">cep_path</span><span class="p">)</span>
+    <span class="n">run_dir</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+        <span class="n">Path</span><span class="p">(</span><span class="n">output_base</span><span class="p">)</span>
+        <span class="o">/</span> <span class="n">cep</span><span class="o">.</span><span class="n">experiment_id</span>
+        <span class="o">/</span> <span class="n">cep</span><span class="o">.</span><span class="n">run_id</span>
+        <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;session_</span><span class="si">{</span><span class="n">session_number</span><span class="si">:</span><span class="s2">03d</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">runtime</span> <span class="o">=</span> <span class="n">ExperimentRuntime</span><span class="p">(</span>
+            <span class="n">cep</span><span class="o">=</span><span class="n">cep</span><span class="p">,</span>
+            <span class="n">output_dir</span><span class="o">=</span><span class="n">run_dir</span><span class="p">,</span>
+            <span class="n">budget_cap_usd</span><span class="o">=</span><span class="n">budget_cap_usd</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">session</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">session_number</span><span class="o">=</span><span class="n">session_number</span><span class="p">,</span> <span class="n">test_mode</span><span class="o">=</span><span class="n">test_mode</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">SessionResult</span><span class="p">(</span>
+            <span class="n">session_number</span><span class="o">=</span><span class="n">session_number</span><span class="p">,</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">total_cost_usd</span><span class="o">=</span><span class="n">runtime</span><span class="o">.</span><span class="n">total_cost_usd</span><span class="p">,</span>
+            <span class="n">output_dir</span><span class="o">=</span><span class="n">run_dir</span><span class="p">,</span>
+            <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">SessionResult</span><span class="p">(</span>
+            <span class="n">session_number</span><span class="o">=</span><span class="n">session_number</span><span class="p">,</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">total_cost_usd</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+            <span class="n">output_dir</span><span class="o">=</span><span class="n">run_dir</span><span class="p">,</span>
+            <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">error</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span>
+        <span class="p">)</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Session-level parallelism (ProcessPoolExecutor)</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="run_sessions_parallel"><a class="viewcode-back" href="../../../talkingtomachines.orchestrator.html#talkingtomachines.orchestrator.parallel.run_sessions_parallel">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">run_sessions_parallel</span><span class="p">(</span>
+    <span class="n">cep_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">output_base</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">session_numbers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">budget_cap_usd</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">test_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">max_workers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SessionResult</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run multiple experiment sessions in parallel using ``ProcessPoolExecutor``.</span>
+
+<span class="sd">    Each session runs in an isolated subprocess so that concurrent LLM calls</span>
+<span class="sd">    and shared global state cannot interfere with each other.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cep_path:         Path to the ``compiled_experiment.json`` file on disk.</span>
+<span class="sd">        output_base:      Root output directory — each session writes to a sub-folder.</span>
+<span class="sd">        session_numbers:  Ordered list of session indices to execute (e.g. [1, 2, 3]).</span>
+<span class="sd">        budget_cap_usd:   Per-session budget cap (0 = unlimited).</span>
+<span class="sd">        test_mode:        Pass ``test_mode=True`` to each session.</span>
+<span class="sd">        max_workers:      Maximum number of concurrent processes.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of ``SessionResult`` objects in the same order as *session_numbers*.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cep_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">cep_path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
+    <span class="n">output_base</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">output_base</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
+
+    <span class="n">results</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">SessionResult</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">with</span> <span class="n">ProcessPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+        <span class="n">future_to_idx</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span>
+                <span class="n">_session_worker</span><span class="p">,</span>
+                <span class="n">cep_path</span><span class="p">,</span>
+                <span class="n">output_base</span><span class="p">,</span>
+                <span class="n">sn</span><span class="p">,</span>
+                <span class="n">budget_cap_usd</span><span class="p">,</span>
+                <span class="n">test_mode</span><span class="p">,</span>
+            <span class="p">):</span> <span class="n">i</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">sn</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">session_numbers</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="n">as_completed</span><span class="p">(</span><span class="n">future_to_idx</span><span class="p">):</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">future_to_idx</span><span class="p">[</span><span class="n">future</span><span class="p">]</span>
+            <span class="n">sn</span> <span class="o">=</span> <span class="n">session_numbers</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Session </span><span class="si">%d</span><span class="s2"> raised an unexpected error: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">sn</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">SessionResult</span><span class="p">(</span>
+                    <span class="n">session_number</span><span class="o">=</span><span class="n">sn</span><span class="p">,</span>
+                    <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="n">total_cost_usd</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">error</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span>
+                <span class="p">)</span>
+
+    <span class="n">ordered</span> <span class="o">=</span> <span class="p">[</span><span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session_numbers</span><span class="p">))]</span>
+    <span class="n">failures</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">ordered</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">r</span><span class="o">.</span><span class="n">success</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">failures</span><span class="p">:</span>
+        <span class="n">msgs</span> <span class="o">=</span> <span class="s2">&quot;; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;session </span><span class="si">{</span><span class="n">r</span><span class="o">.</span><span class="n">session_number</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">r</span><span class="o">.</span><span class="n">error</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">failures</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Session execution failures: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">msgs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ordered</span></div>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Group-level parallelism (ThreadPoolExecutor)</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="run_groups_parallel"><a class="viewcode-back" href="../../../talkingtomachines.orchestrator.html#talkingtomachines.orchestrator.parallel.run_groups_parallel">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">run_groups_parallel</span><span class="p">(</span>
+    <span class="n">group_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">T</span><span class="p">],</span>
+    <span class="n">group_args_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">],</span>
+    <span class="n">max_workers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a callable concurrently for each group using a thread pool.</span>
+
+<span class="sd">    Submits ``group_fn(*args)`` for every ``args`` tuple in</span>
+<span class="sd">    *group_args_list* and collects results preserving input order.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        group_fn: Callable to invoke for each group. Receives unpacked</span>
+<span class="sd">            positional arguments from each tuple in *group_args_list*.</span>
+<span class="sd">        group_args_list: List of argument tuples, one per group.</span>
+<span class="sd">        max_workers: Maximum number of concurrent threads.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of results in the same order as *group_args_list*.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        RuntimeError: If one or more group tasks fail. The error message</span>
+<span class="sd">            aggregates all failure descriptions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">results</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">errors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="ne">Exception</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+        <span class="n">future_to_idx</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">group_fn</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span> <span class="n">i</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">args</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">group_args_list</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="n">as_completed</span><span class="p">(</span><span class="n">future_to_idx</span><span class="p">):</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">future_to_idx</span><span class="p">[</span><span class="n">future</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Group task </span><span class="si">%d</span><span class="s2"> failed: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+                <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
+        <span class="c1"># Python 3.10-compatible error aggregation (ExceptionGroup requires 3.11+)</span>
+        <span class="n">error_messages</span> <span class="o">=</span> <span class="s2">&quot;; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">errors</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Group execution errors (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span><span class="si">}</span><span class="s2"> failure(s)): </span><span class="si">{</span><span class="n">error_messages</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">errors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">group_args_list</span><span class="p">))]</span></div>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Player-level parallelism (ThreadPoolExecutor)</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="run_private_questions_parallel"><a class="viewcode-back" href="../../../talkingtomachines.orchestrator.html#talkingtomachines.orchestrator.parallel.run_private_questions_parallel">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">run_private_questions_parallel</span><span class="p">(</span>
+    <span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">T</span><span class="p">],</span>
+    <span class="n">player_args_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">],</span>
+    <span class="n">max_workers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run PRIVATE_QUESTION responses concurrently for players within a group.</span>
+
+<span class="sd">    Delegates to ``run_groups_parallel`` with a higher default worker count</span>
+<span class="sd">    since private questions are independent and benefit from more parallelism.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        fn: Callable that produces a private response for a single player.</span>
+<span class="sd">        player_args_list: List of argument tuples, one per player.</span>
+<span class="sd">        max_workers: Maximum number of concurrent threads.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of results in the same order as *player_args_list*.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        RuntimeError: If one or more player tasks fail.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">run_groups_parallel</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">player_args_list</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

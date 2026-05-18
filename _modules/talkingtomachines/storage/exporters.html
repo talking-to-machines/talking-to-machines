@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.storage.exporters &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.storage.exporters</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.storage.exporters</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Multi-table CSV exporter</span>
+
+<span class="sd">Produces research-ready export tables from a completed Session object.</span>
+
+<span class="sd">Tables:</span>
+<span class="sd">  session_table.csv   — one row per session</span>
+<span class="sd">  agent_table.csv     — one row per agent per session</span>
+<span class="sd">  group_table.csv     — one row per group per subsession</span>
+<span class="sd">  player.csv          — one row per player per subsession</span>
+<span class="sd">  assignments.csv     — one row per manual assignment or group assignment</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">csv</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Session</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.compiler.cep_schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">CompiledExperiment</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExperimentState</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_run_time_sec</span><span class="p">(</span>
+    <span class="n">start_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">end_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse ISO timestamps and return elapsed seconds, or ``None`` on failure.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        start_time: ISO-format start timestamp string.</span>
+<span class="sd">        end_time: ISO-format end timestamp string.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Elapsed seconds rounded to two decimals, or ``None`` if either</span>
+<span class="sd">        timestamp is missing or unparseable.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">start_time</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">end_time</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">t0</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">start_time</span><span class="p">)</span>
+        <span class="n">t1</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">end_time</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">round</span><span class="p">((</span><span class="n">t1</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">(),</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="export_all"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.exporters.export_all">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">export_all</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+    <span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">,</span>
+    <span class="n">state</span><span class="p">:</span> <span class="n">ExperimentState</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">start_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">end_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">total_cost_usd</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">stop_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export all research-ready CSV tables to the specified directory.</span>
+
+<span class="sd">    Produces ``session_table.csv``, ``agent_table.csv``, ``group_table.csv``,</span>
+<span class="sd">    ``responses.csv``, ``assignments.csv``, ``metrics.csv``, and optionally</span>
+<span class="sd">    ``events.csv`` (if ``traces.jsonl`` exists).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: The completed session object containing experiment data.</span>
+<span class="sd">        cep: The compiled experiment package with field and module definitions.</span>
+<span class="sd">        state: The experiment state holding all recorded field values.</span>
+<span class="sd">        output_dir: Directory where CSV files will be written.</span>
+<span class="sd">        start_time: ISO-format timestamp for when the run started.</span>
+<span class="sd">        end_time: ISO-format timestamp for when the run ended.</span>
+<span class="sd">        total_cost_usd: Cumulative LLM API cost in USD for the run.</span>
+<span class="sd">        stop_reason: Reason the run terminated (e.g. ``&quot;completed&quot;``).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary mapping table name (e.g. ``&quot;session_table&quot;``) to its</span>
+<span class="sd">        file path.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">paths</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">paths</span><span class="p">[</span><span class="s2">&quot;session_table&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_export_session_table</span><span class="p">(</span>
+        <span class="n">session</span><span class="p">,</span> <span class="n">cep</span><span class="p">,</span> <span class="n">out</span><span class="p">,</span> <span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span><span class="p">,</span> <span class="n">total_cost_usd</span><span class="p">,</span> <span class="n">stop_reason</span>
+    <span class="p">)</span>
+    <span class="n">paths</span><span class="p">[</span><span class="s2">&quot;agent_table&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_export_agent_table</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">cep</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+    <span class="n">paths</span><span class="p">[</span><span class="s2">&quot;group_table&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_export_group_table</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">cep</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+    <span class="n">paths</span><span class="p">[</span><span class="s2">&quot;player&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_export_player_table</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">cep</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+    <span class="n">paths</span><span class="p">[</span><span class="s2">&quot;assignments&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_export_assignments</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">cep</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+    <span class="n">paths</span><span class="p">[</span><span class="s2">&quot;metrics&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_export_metrics</span><span class="p">(</span>
+        <span class="n">session</span><span class="p">,</span> <span class="n">cep</span><span class="p">,</span> <span class="n">out</span><span class="p">,</span> <span class="n">total_cost_usd</span><span class="p">,</span> <span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span>
+    <span class="p">)</span>
+
+    <span class="c1"># traces.jsonl is written live by EventLogger during the run;</span>
+    <span class="c1"># include its path in the returned map if it exists.</span>
+    <span class="n">traces_path</span> <span class="o">=</span> <span class="n">out</span> <span class="o">/</span> <span class="s2">&quot;traces.jsonl&quot;</span>
+    <span class="k">if</span> <span class="n">traces_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">paths</span><span class="p">[</span><span class="s2">&quot;traces&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">traces_path</span><span class="p">)</span>
+        <span class="c1"># events.csv — filtered view of traces covering retries, errors, tool calls,</span>
+        <span class="c1"># stop reasons (all non llm_call event types per design doc)</span>
+        <span class="n">paths</span><span class="p">[</span><span class="s2">&quot;events&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_export_events_csv</span><span class="p">(</span><span class="n">traces_path</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">paths</span></div>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Table exporters</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_export_session_table</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+    <span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">,</span>
+    <span class="n">out</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">start_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">end_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">total_cost_usd</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">stop_reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export session-level metadata to ``session_table.csv``.</span>
+
+<span class="sd">    Produces one row per session with run identifiers, timing, cost, and</span>
+<span class="sd">    stop reason.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: The session object.</span>
+<span class="sd">        cep: The compiled experiment package.</span>
+<span class="sd">        out: Output directory path.</span>
+<span class="sd">        start_time: ISO-format run start timestamp.</span>
+<span class="sd">        end_time: ISO-format run end timestamp.</span>
+<span class="sd">        total_cost_usd: Total API cost in USD.</span>
+<span class="sd">        stop_reason: Reason the run terminated.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The file path of the exported CSV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">out</span> <span class="o">/</span> <span class="s2">&quot;session_table.csv&quot;</span><span class="p">)</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;run_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="s2">&quot;experiment_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span>
+            <span class="s2">&quot;config_hash&quot;</span><span class="p">:</span> <span class="n">cep</span><span class="o">.</span><span class="n">config_hash</span><span class="p">,</span>
+            <span class="s2">&quot;cep_hash&quot;</span><span class="p">:</span> <span class="n">cep</span><span class="o">.</span><span class="n">cep_hash</span><span class="p">,</span>
+            <span class="s2">&quot;start_time&quot;</span><span class="p">:</span> <span class="n">start_time</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;end_time&quot;</span><span class="p">:</span> <span class="n">end_time</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;total_cost_usd&quot;</span><span class="p">:</span> <span class="n">total_cost_usd</span><span class="p">,</span>
+            <span class="s2">&quot;run_time_sec&quot;</span><span class="p">:</span> <span class="n">_compute_run_time_sec</span><span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;stop_reason&quot;</span><span class="p">:</span> <span class="n">stop_reason</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+    <span class="n">_write_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rows</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_export_agent_table</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+    <span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">,</span>
+    <span class="n">state</span><span class="p">:</span> <span class="n">ExperimentState</span><span class="p">,</span>
+    <span class="n">out</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export agent-level data to ``agent_table.csv``.</span>
+
+<span class="sd">    Produces one row per agent per session, including profile fields and</span>
+<span class="sd">    agent-scoped field values for each module.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: The session object.</span>
+<span class="sd">        cep: The compiled experiment package.</span>
+<span class="sd">        state: The experiment state with recorded field values.</span>
+<span class="sd">        out: Output directory path.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The file path of the exported CSV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">out</span> <span class="o">/</span> <span class="s2">&quot;agent_table.csv&quot;</span><span class="p">)</span>
+    <span class="n">rows</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">agent</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">agents</span><span class="p">:</span>
+        <span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+            <span class="s2">&quot;agent_instance_id&quot;</span><span class="p">:</span> <span class="n">agent</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="c1"># Profile fields</span>
+        <span class="n">row</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">profile_info</span><span class="p">)</span>
+
+        <span class="c1"># Agent-scoped field values for each module (round-indexed)</span>
+        <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">cep</span><span class="o">.</span><span class="n">module_sequence</span><span class="p">:</span>
+            <span class="n">rounds_data</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get_agent_module</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">module</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">rnd</span><span class="p">,</span> <span class="n">fields</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">rounds_data</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">row</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">rnd</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+        <span class="c1"># System message and message history for debugging</span>
+        <span class="n">row</span><span class="p">[</span><span class="s2">&quot;system_message&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;system_message&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">row</span><span class="p">[</span><span class="s2">&quot;message_history&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+            <span class="n">agent</span><span class="o">.</span><span class="n">message_history</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span>
+        <span class="p">)</span>
+
+        <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+    <span class="n">_write_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rows</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_export_group_table</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+    <span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">,</span>
+    <span class="n">state</span><span class="p">:</span> <span class="n">ExperimentState</span><span class="p">,</span>
+    <span class="n">out</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export group-level data to ``group_table.csv``.</span>
+
+<span class="sd">    Produces one row per group per subsession, including group-scoped</span>
+<span class="sd">    field values.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: The session object.</span>
+<span class="sd">        cep: The compiled experiment package.</span>
+<span class="sd">        state: The experiment state with recorded field values.</span>
+<span class="sd">        out: Output directory path.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The file path of the exported CSV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">out</span> <span class="o">/</span> <span class="s2">&quot;group_table.csv&quot;</span><span class="p">)</span>
+    <span class="n">rows</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">subsession</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="n">subsessions</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">subsession</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+                <span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+                    <span class="s2">&quot;module_id&quot;</span><span class="p">:</span> <span class="n">module</span><span class="o">.</span><span class="n">module_id</span><span class="p">,</span>
+                    <span class="s2">&quot;subsession_id&quot;</span><span class="p">:</span> <span class="n">subsession</span><span class="o">.</span><span class="n">subsession_id</span><span class="p">,</span>
+                    <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                    <span class="s2">&quot;round_number&quot;</span><span class="p">:</span> <span class="n">subsession</span><span class="o">.</span><span class="n">round_number</span><span class="p">,</span>
+                    <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module</span><span class="o">.</span><span class="n">module_name</span><span class="p">,</span>
+                    <span class="s2">&quot;num_players&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">),</span>
+                <span class="p">}</span>
+                <span class="c1"># Group-scoped field values</span>
+                <span class="n">group_fields</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get_group_module</span><span class="p">(</span>
+                    <span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span> <span class="n">module</span><span class="o">.</span><span class="n">module_name</span>
+                <span class="p">)</span>
+                <span class="n">row</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">group_fields</span><span class="p">)</span>
+                <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+    <span class="n">_write_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rows</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_export_player_table</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+    <span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">,</span>
+    <span class="n">state</span><span class="p">:</span> <span class="n">ExperimentState</span><span class="p">,</span>
+    <span class="n">out</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export player-level responses to ``player.csv``.</span>
+
+<span class="sd">    Produces one row per player per subsession, including player-scoped</span>
+<span class="sd">    field values.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: The session object.</span>
+<span class="sd">        cep: The compiled experiment package.</span>
+<span class="sd">        state: The experiment state with recorded field values.</span>
+<span class="sd">        out: Output directory path.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The file path of the exported CSV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">out</span> <span class="o">/</span> <span class="s2">&quot;player.csv&quot;</span><span class="p">)</span>
+    <span class="n">rows</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">subsession</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="n">subsessions</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">subsession</span><span class="o">.</span><span class="n">groups</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">player</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">:</span>
+                    <span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+                        <span class="s2">&quot;player_id&quot;</span><span class="p">:</span> <span class="n">player</span><span class="o">.</span><span class="n">player_id</span><span class="p">,</span>
+                        <span class="s2">&quot;agent_instance_id&quot;</span><span class="p">:</span> <span class="n">player</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">,</span>
+                        <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="n">player</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                        <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                        <span class="s2">&quot;subsession_id&quot;</span><span class="p">:</span> <span class="n">subsession</span><span class="o">.</span><span class="n">subsession_id</span><span class="p">,</span>
+                        <span class="s2">&quot;round_number&quot;</span><span class="p">:</span> <span class="n">subsession</span><span class="o">.</span><span class="n">round_number</span><span class="p">,</span>
+                        <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module</span><span class="o">.</span><span class="n">module_name</span><span class="p">,</span>
+                    <span class="p">}</span>
+                    <span class="c1"># Player-scoped field values</span>
+                    <span class="n">player_fields</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get_player_module</span><span class="p">(</span>
+                        <span class="n">player</span><span class="o">.</span><span class="n">player_id</span><span class="p">,</span> <span class="n">module</span><span class="o">.</span><span class="n">module_name</span>
+                    <span class="p">)</span>
+                    <span class="n">row</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">player_fields</span><span class="p">)</span>
+                    <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+    <span class="n">_write_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rows</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_export_assignments</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+    <span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">,</span>
+    <span class="n">out</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export all manual assignments and group assignments to ``assignments.csv``.</span>
+
+<span class="sd">    Produces one row per ``Manual_`` entry plus one row per group assignment,</span>
+<span class="sd">    mirroring the ``Manual_`` sheet format for easy auditing.</span>
+
+<span class="sd">    Columns: session_id, profile_id, agent_id, agent_instance_id,</span>
+<span class="sd">    module, round_number, class, name, value.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: The session object.</span>
+<span class="sd">        cep: The compiled experiment package with assignment plan.</span>
+<span class="sd">        out: Output directory path.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The file path of the exported CSV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">out</span> <span class="o">/</span> <span class="s2">&quot;assignments.csv&quot;</span><span class="p">)</span>
+    <span class="n">plan</span> <span class="o">=</span> <span class="n">cep</span><span class="o">.</span><span class="n">assignment_plan</span>
+    <span class="n">rows</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Build agent lookup: agent_id → agent</span>
+    <span class="n">agent_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">a</span><span class="o">.</span><span class="n">agent_id</span><span class="p">:</span> <span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">agents</span><span class="p">}</span>
+
+    <span class="c1"># Export all manual variables</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">plan</span><span class="o">.</span><span class="n">manual_variables</span><span class="p">:</span>
+        <span class="n">pid</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;profile_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">agent</span> <span class="o">=</span> <span class="n">agent_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">pid</span><span class="p">))</span>
+        <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+                <span class="s2">&quot;profile_id&quot;</span><span class="p">:</span> <span class="n">pid</span><span class="p">,</span>
+                <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span> <span class="k">if</span> <span class="n">agent</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">pid</span><span class="p">),</span>
+                <span class="s2">&quot;agent_instance_id&quot;</span><span class="p">:</span> <span class="n">agent</span><span class="o">.</span><span class="n">agent_instance_id</span> <span class="k">if</span> <span class="n">agent</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;module&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;round_number&quot;</span><span class="p">:</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;round_number&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Export group assignments</span>
+    <span class="k">for</span> <span class="n">module</span><span class="p">,</span> <span class="n">module_groups</span> <span class="ow">in</span> <span class="n">plan</span><span class="o">.</span><span class="n">group_assignments</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">round_num</span><span class="p">,</span> <span class="n">groups</span> <span class="ow">in</span> <span class="n">module_groups</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">gid</span><span class="p">,</span> <span class="n">member_ids</span> <span class="ow">in</span> <span class="n">groups</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">agent_id</span> <span class="ow">in</span> <span class="n">member_ids</span><span class="p">:</span>
+                    <span class="n">agent</span> <span class="o">=</span> <span class="n">agent_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span>
+                    <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+                            <span class="s2">&quot;profile_id&quot;</span><span class="p">:</span> <span class="n">agent_id</span><span class="p">,</span>
+                            <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="n">agent_id</span><span class="p">,</span>
+                            <span class="s2">&quot;agent_instance_id&quot;</span><span class="p">:</span> <span class="p">(</span>
+                                <span class="n">agent</span><span class="o">.</span><span class="n">agent_instance_id</span> <span class="k">if</span> <span class="n">agent</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+                            <span class="p">),</span>
+                            <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module</span><span class="p">,</span>
+                            <span class="s2">&quot;round_number&quot;</span><span class="p">:</span> <span class="n">round_num</span><span class="p">,</span>
+                            <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;Group&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;group_id&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">gid</span><span class="p">,</span>
+                        <span class="p">}</span>
+                    <span class="p">)</span>
+
+    <span class="n">_write_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rows</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_export_metrics</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+    <span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">,</span>
+    <span class="n">out</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">total_cost_usd</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">start_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">end_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export aggregate metrics to ``metrics.csv``.</span>
+
+<span class="sd">    Produces one row per session with experiment-level statistics</span>
+<span class="sd">    including agent counts, module counts, total rounds, groups, players,</span>
+<span class="sd">    messages, cumulative API cost, and timing information.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session: The session object containing experiment hierarchy data.</span>
+<span class="sd">        cep: The compiled experiment package with module definitions.</span>
+<span class="sd">        out: Output directory path.</span>
+<span class="sd">        total_cost_usd: Cumulative LLM API cost in USD for the run.</span>
+<span class="sd">        start_time: ISO-format timestamp for when the run started.</span>
+<span class="sd">        end_time: ISO-format timestamp for when the run ended.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The file path of the exported CSV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">out</span> <span class="o">/</span> <span class="s2">&quot;metrics.csv&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Count totals</span>
+    <span class="n">total_groups</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">sub</span><span class="o">.</span><span class="n">groups</span><span class="p">)</span> <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">modules</span> <span class="k">for</span> <span class="n">sub</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="n">subsessions</span>
+    <span class="p">)</span>
+    <span class="n">total_players</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">modules</span>
+        <span class="k">for</span> <span class="n">sub</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="n">subsessions</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">sub</span><span class="o">.</span><span class="n">groups</span>
+    <span class="p">)</span>
+    <span class="n">total_messages</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">message_history</span><span class="p">)</span> <span class="k">for</span> <span class="n">agent</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">agents</span><span class="p">)</span>
+    <span class="n">total_rounds</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">subsessions</span><span class="p">)</span> <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">modules</span><span class="p">)</span>
+
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="s2">&quot;run_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+            <span class="s2">&quot;experiment_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span>
+            <span class="s2">&quot;num_agents&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">agents</span><span class="p">),</span>
+            <span class="s2">&quot;num_modules&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">cep</span><span class="o">.</span><span class="n">module_sequence</span><span class="p">),</span>
+            <span class="s2">&quot;num_rounds_total&quot;</span><span class="p">:</span> <span class="n">total_rounds</span><span class="p">,</span>
+            <span class="s2">&quot;num_groups_total&quot;</span><span class="p">:</span> <span class="n">total_groups</span><span class="p">,</span>
+            <span class="s2">&quot;num_players_total&quot;</span><span class="p">:</span> <span class="n">total_players</span><span class="p">,</span>
+            <span class="s2">&quot;num_messages_total&quot;</span><span class="p">:</span> <span class="n">total_messages</span><span class="p">,</span>
+            <span class="s2">&quot;total_cost_usd&quot;</span><span class="p">:</span> <span class="n">total_cost_usd</span><span class="p">,</span>
+            <span class="s2">&quot;run_time_sec&quot;</span><span class="p">:</span> <span class="n">_compute_run_time_sec</span><span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;start_time&quot;</span><span class="p">:</span> <span class="n">start_time</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;end_time&quot;</span><span class="p">:</span> <span class="n">end_time</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+    <span class="n">_write_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rows</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_export_events_csv</span><span class="p">(</span><span class="n">traces_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract non-LLM-call events from ``traces.jsonl`` into ``events.csv``.</span>
+
+<span class="sd">    Includes retries, errors, tool calls, stop-rule evaluations, facilitator</span>
+<span class="sd">    calls, validation outcomes, checkpoint saves/loads, and budget checks</span>
+<span class="sd">    (all event types except ``llm_call``, ``session_start``, and</span>
+<span class="sd">    ``session_end``).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        traces_path: Path to the ``traces.jsonl`` file written by</span>
+<span class="sd">            :class:`EventLogger` during the run.</span>
+<span class="sd">        out: Output directory path.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The file path of the exported ``events.csv``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">out</span> <span class="o">/</span> <span class="s2">&quot;events.csv&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Event types to include in events.csv (non-routine LLM call events)</span>
+    <span class="n">_INCLUDE_TYPES</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;llm_retry&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;llm_fallback&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;facilitator_call&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;facilitator_llm_call&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;validation_pass&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;validation_fail&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;stop_rule_evaluated&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;budget_check&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;tool_call&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;rag_call&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;checkpoint_saved&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;checkpoint_loaded&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;randomisation&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;group_assignment&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;treatment_assignment&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="c1"># Structural keys written by EventLogger for every record; everything else</span>
+    <span class="c1"># is event-specific payload merged in via record.update(data).</span>
+    <span class="n">_STRUCT_KEYS</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;timestamp&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;event_type&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;run_id&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;session_id&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;group_id&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;agent_instance_id&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="n">rows</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">traces_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">record</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">event_type</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;event_type&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">event_type</span> <span class="ow">in</span> <span class="n">_INCLUDE_TYPES</span><span class="p">:</span>
+                    <span class="c1"># EventLogger.log() merges data keys into the top-level record</span>
+                    <span class="c1"># via record.update(data), so reconstruct the payload by</span>
+                    <span class="c1"># excluding the known structural keys.</span>
+                    <span class="n">data_payload</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_STRUCT_KEYS</span>
+                    <span class="p">}</span>
+                    <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;timestamp&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                            <span class="s2">&quot;event_type&quot;</span><span class="p">:</span> <span class="n">event_type</span><span class="p">,</span>
+                            <span class="s2">&quot;run_id&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;run_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                            <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;group_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                            <span class="s2">&quot;agent_instance_id&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;agent_instance_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                            <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data_payload</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+                        <span class="p">}</span>
+                    <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="n">_write_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">rows</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Helper</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_write_csv</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">rows</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write a list of row dictionaries to a CSV file.</span>
+
+<span class="sd">    Field names are inferred from the keys of the first row. Additional</span>
+<span class="sd">    keys found in subsequent rows are appended to the column list. If</span>
+<span class="sd">    ``rows`` is empty, an empty file is created.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path: Destination file path.</span>
+<span class="sd">        rows: List of dictionaries where each dictionary represents one</span>
+<span class="sd">            CSV row.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">rows</span><span class="p">:</span>
+        <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="n">fieldnames</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="c1"># Collect any extra keys from later rows</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">fieldnames</span><span class="p">:</span>
+                <span class="n">fieldnames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictWriter</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">fieldnames</span><span class="o">=</span><span class="n">fieldnames</span><span class="p">,</span> <span class="n">extrasaction</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">writeheader</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">fieldnames</span><span class="p">})</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

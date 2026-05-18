@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.core.visibility &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.core.visibility</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.core.visibility</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Visibility policies for per-message access control.</span>
+
+<span class="sd">This module provides per-message visibility control that determines which</span>
+<span class="sd">messages each agent can see during an experiment session. Visibility is</span>
+<span class="sd">enforced by tagging every message with a scope and then filtering the</span>
+<span class="sd">shared history before it is fed into an agent&#39;s context window.</span>
+
+<span class="sd">Visibility scopes:</span>
+<span class="sd">    all_players: Every player in the session can see the message.</span>
+<span class="sd">    group_only: Only players in the same group this round can see it.</span>
+<span class="sd">    private: Only the sending player can see it.</span>
+<span class="sd">    treatment_group: Only players sharing the same treatment condition can see it.</span>
+<span class="sd">    facilitator: Only visible to the facilitator, invisible to all players.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+
+<span class="n">VISIBILITY_ALL_PLAYERS</span> <span class="o">=</span> <span class="s2">&quot;all_players&quot;</span>
+<span class="n">VISIBILITY_GROUP_ONLY</span> <span class="o">=</span> <span class="s2">&quot;group_only&quot;</span>
+<span class="n">VISIBILITY_PRIVATE</span> <span class="o">=</span> <span class="s2">&quot;private&quot;</span>
+<span class="n">VISIBILITY_TREATMENT_GROUP</span> <span class="o">=</span> <span class="s2">&quot;treatment_group&quot;</span>
+<span class="n">VISIBILITY_FACILITATOR</span> <span class="o">=</span> <span class="s2">&quot;facilitator&quot;</span>
+
+<span class="n">_VALID_VISIBILITIES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">VISIBILITY_ALL_PLAYERS</span><span class="p">,</span>
+    <span class="n">VISIBILITY_GROUP_ONLY</span><span class="p">,</span>
+    <span class="n">VISIBILITY_PRIVATE</span><span class="p">,</span>
+    <span class="n">VISIBILITY_TREATMENT_GROUP</span><span class="p">,</span>
+    <span class="n">VISIBILITY_FACILITATOR</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="filter_message_history"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.visibility.filter_message_history">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">filter_message_history</span><span class="p">(</span>
+    <span class="n">shared_history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+    <span class="n">requesting_agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">requesting_group_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">requesting_treatment_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Filter shared message history based on visibility rules.</span>
+
+<span class="sd">    Applies visibility rules to ``shared_history`` and returns the subset</span>
+<span class="sd">    of messages that the requesting agent is entitled to see. Messages</span>
+<span class="sd">    with an unrecognized visibility scope default to ``group_only``</span>
+<span class="sd">    behaviour.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        shared_history: Full list of message dicts from the session.</span>
+<span class="sd">            Each dict may contain keys ``visibility``,</span>
+<span class="sd">            ``sender_agent_id``, ``group_id``, and</span>
+<span class="sd">            ``treatment_label``.</span>
+<span class="sd">        requesting_agent_id: Agent ID of the agent whose visible</span>
+<span class="sd">            history is being assembled.</span>
+<span class="sd">        requesting_group_id: Group ID the requesting agent belongs to</span>
+<span class="sd">            in the current round.</span>
+<span class="sd">        requesting_treatment_label: Treatment condition label assigned</span>
+<span class="sd">            to the requesting agent.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A new list containing only the messages visible to the</span>
+<span class="sd">        requesting agent.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">visible</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">shared_history</span><span class="p">:</span>
+        <span class="n">vis</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;visibility&quot;</span><span class="p">,</span> <span class="n">VISIBILITY_GROUP_ONLY</span><span class="p">)</span>
+        <span class="n">sender</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sender_agent_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">msg_group</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;group_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">msg_treatment</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;treatment_label&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">vis</span> <span class="o">==</span> <span class="n">VISIBILITY_FACILITATOR</span><span class="p">:</span>
+            <span class="c1"># Facilitator-only messages are never visible to players</span>
+            <span class="k">continue</span>
+        <span class="k">elif</span> <span class="n">vis</span> <span class="o">==</span> <span class="n">VISIBILITY_ALL_PLAYERS</span><span class="p">:</span>
+            <span class="n">visible</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">vis</span> <span class="o">==</span> <span class="n">VISIBILITY_GROUP_ONLY</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">msg_group</span> <span class="o">==</span> <span class="n">requesting_group_id</span><span class="p">:</span>
+                <span class="n">visible</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">vis</span> <span class="o">==</span> <span class="n">VISIBILITY_PRIVATE</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">sender</span> <span class="o">==</span> <span class="n">requesting_agent_id</span><span class="p">:</span>
+                <span class="n">visible</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">vis</span> <span class="o">==</span> <span class="n">VISIBILITY_TREATMENT_GROUP</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">msg_treatment</span> <span class="o">==</span> <span class="n">requesting_treatment_label</span><span class="p">:</span>
+                <span class="n">visible</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Unknown visibility defaults to group_only</span>
+            <span class="k">if</span> <span class="n">msg_group</span> <span class="o">==</span> <span class="n">requesting_group_id</span><span class="p">:</span>
+                <span class="n">visible</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">visible</span></div>
+
+
+<div class="viewcode-block" id="make_message"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.visibility.make_message">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">make_message</span><span class="p">(</span>
+    <span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">sender_agent_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">group_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">treatment_label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">visibility</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">VISIBILITY_GROUP_ONLY</span><span class="p">,</span>
+    <span class="n">module</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">extra</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a standardised message dict with visibility metadata.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        role: Message role, typically ``&quot;user&quot;`` or ``&quot;assistant&quot;``.</span>
+<span class="sd">        content: The textual content of the message.</span>
+<span class="sd">        sender_agent_id: Agent ID of the agent that produced this</span>
+<span class="sd">            message. Defaults to ``&quot;&quot;``.</span>
+<span class="sd">        group_id: Group the sender belongs to in the current round.</span>
+<span class="sd">            Defaults to ``&quot;&quot;``.</span>
+<span class="sd">        treatment_label: Treatment condition of the sender. Defaults</span>
+<span class="sd">            to ``&quot;&quot;``.</span>
+<span class="sd">        visibility: One of the four visibility scope constants.</span>
+<span class="sd">            Defaults to ``VISIBILITY_GROUP_ONLY``.</span>
+<span class="sd">        module: Module name that produced this message.</span>
+<span class="sd">            Defaults to ``&quot;&quot;``.</span>
+<span class="sd">        round_number: Round number within the module. Defaults to ``0``.</span>
+<span class="sd">        extra: Optional additional key-value pairs to merge into the</span>
+<span class="sd">            message dict.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dict containing all standard message fields plus any extras.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="n">role</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">content</span><span class="p">,</span>
+        <span class="s2">&quot;visibility&quot;</span><span class="p">:</span> <span class="n">visibility</span><span class="p">,</span>
+        <span class="s2">&quot;sender_agent_id&quot;</span><span class="p">:</span> <span class="n">sender_agent_id</span><span class="p">,</span>
+        <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="n">group_id</span><span class="p">,</span>
+        <span class="s2">&quot;treatment_label&quot;</span><span class="p">:</span> <span class="n">treatment_label</span><span class="p">,</span>
+        <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module</span><span class="p">,</span>
+        <span class="s2">&quot;round_number&quot;</span><span class="p">:</span> <span class="n">round_number</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">extra</span><span class="p">:</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">extra</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">msg</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

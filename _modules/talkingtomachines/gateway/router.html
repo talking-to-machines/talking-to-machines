@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.gateway.router &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.gateway.router</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.gateway.router</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;LLM gateway router.</span>
+
+<span class="sd">Selects the correct :class:`LLMProvider` based on the model name,</span>
+<span class="sd">constructs it with credentials from :class:`~talkingtomachines.config.Config`,</span>
+<span class="sd">and delegates the ``generate`` call.</span>
+
+<span class="sd">Key responsibilities:</span>
+<span class="sd">    - **Provider detection**: Maps a model-name string to a provider key</span>
+<span class="sd">      using prefix-matching rules (see :func:`_detect_provider`).</span>
+<span class="sd">    - **Lazy provider construction**: Provider instances are built on first</span>
+<span class="sd">      use and cached for the lifetime of the :class:`LLMRouter`.</span>
+<span class="sd">    - **Retry logic**: Failed API calls are retried with exponential</span>
+<span class="sd">      back-off up to :attr:`LLMRouter.MAX_RETRIES` attempts.</span>
+<span class="sd">    - **Budget enforcement**: Each successful call is recorded via</span>
+<span class="sd">      :class:`~talkingtomachines.gateway.cost_tracker.CostTracker`;</span>
+<span class="sd">      a :class:`BudgetExhaustedError` halts further generation.</span>
+
+<span class="sd">Attributes:</span>
+<span class="sd">    _OPENAI_PREFIXES (tuple[str, ...]): Model-name prefixes routed to</span>
+<span class="sd">        OpenAI.</span>
+<span class="sd">    _ANTHROPIC_PREFIXES (tuple[str, ...]): Model-name prefixes routed to</span>
+<span class="sd">        Anthropic.</span>
+<span class="sd">    _GOOGLE_PREFIXES (tuple[str, ...]): Model-name prefixes routed to</span>
+<span class="sd">        Google.</span>
+<span class="sd">    _MISTRAL_PREFIXES (tuple[str, ...]): Model-name prefixes routed to</span>
+<span class="sd">        Mistral AI.</span>
+<span class="sd">    _GROK_PREFIXES (tuple[str, ...]): Model-name prefixes routed to</span>
+<span class="sd">        xAI Grok.</span>
+<span class="sd">    _DEEPSEEK_PREFIXES (tuple[str, ...]): Model-name prefixes routed to</span>
+<span class="sd">        DeepSeek.</span>
+<span class="sd">    _OPENROUTER_PREFIXES (tuple[str, ...]): Model-name prefixes routed to</span>
+<span class="sd">        OpenRouter.</span>
+<span class="sd">    _PROVIDER_KEY_MAP (dict[str, str]): Maps provider keys to the</span>
+<span class="sd">        corresponding :class:`~talkingtomachines.config.Config` attribute</span>
+<span class="sd">        name that stores the API key.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMProvider</span><span class="p">,</span> <span class="n">LLMResponse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.cost_tracker</span><span class="w"> </span><span class="kn">import</span> <span class="n">BudgetExhaustedError</span><span class="p">,</span> <span class="n">CostTracker</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Model → provider routing table</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="n">_OPENAI_PREFIXES</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;gpt-&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o3&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o4&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o5&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;chatgpt-&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">_ANTHROPIC_PREFIXES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;claude-&quot;</span><span class="p">,)</span>
+
+<span class="n">_GOOGLE_PREFIXES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;gemini-&quot;</span><span class="p">,</span> <span class="s2">&quot;models/gemini&quot;</span><span class="p">)</span>
+
+<span class="n">_MISTRAL_PREFIXES</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;mistral-&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;open-mistral-&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;open-mixtral-&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;codestral-&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">_GROK_PREFIXES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;grok-&quot;</span><span class="p">,)</span>
+
+<span class="n">_DEEPSEEK_PREFIXES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;deepseek-&quot;</span><span class="p">,)</span>
+
+<span class="n">_OPENROUTER_PREFIXES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;openrouter/&quot;</span><span class="p">,)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_detect_provider</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Detect the provider key for a given model name.</span>
+
+<span class="sd">    Matching is case-insensitive. OpenRouter is checked first because its</span>
+<span class="sd">    model strings may embed other provider names</span>
+<span class="sd">    (e.g. ``&quot;openrouter/anthropic/claude-3&quot;``). Unrecognised models</span>
+<span class="sd">    default to ``&quot;openrouter&quot;``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model: The model identifier string</span>
+<span class="sd">            (e.g. ``&quot;gpt-4o&quot;``, ``&quot;claude-sonnet-4-20250514&quot;``).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A lowercase provider key such as ``&quot;openai&quot;``, ``&quot;anthropic&quot;``,</span>
+<span class="sd">        ``&quot;google&quot;``, ``&quot;mistral&quot;``, ``&quot;grok&quot;``, ``&quot;deepseek&quot;``,</span>
+<span class="sd">        ``&quot;huggingface&quot;``, or ``&quot;openrouter&quot;``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="c1"># OpenRouter must be checked before provider-specific prefixes because</span>
+    <span class="c1"># OpenRouter model strings look like &quot;openrouter/anthropic/claude-3&quot;.</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_OPENROUTER_PREFIXES</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;openrouter&quot;</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_OPENAI_PREFIXES</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;openai&quot;</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_ANTHROPIC_PREFIXES</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;anthropic&quot;</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_GOOGLE_PREFIXES</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;google&quot;</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_MISTRAL_PREFIXES</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;mistral&quot;</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_GROK_PREFIXES</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;grok&quot;</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_DEEPSEEK_PREFIXES</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;deepseek&quot;</span>
+    <span class="k">if</span> <span class="n">m</span> <span class="o">==</span> <span class="s2">&quot;tgi&quot;</span> <span class="ow">or</span> <span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;hf-&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;huggingface&quot;</span>
+    <span class="c1"># Default to OpenRouter for unknown model names</span>
+    <span class="k">return</span> <span class="s2">&quot;openrouter&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_provider</span><span class="p">(</span>
+    <span class="n">provider</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">hf_inference_endpoint</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LLMProvider</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Construct an :class:`LLMProvider` instance for the given provider key.</span>
+
+<span class="sd">    Imports the concrete provider class lazily to avoid pulling in</span>
+<span class="sd">    unnecessary SDK dependencies at module load time. API keys are read</span>
+<span class="sd">    from :class:`~talkingtomachines.config.Config`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        provider: A provider key returned by :func:`_detect_provider`</span>
+<span class="sd">            (e.g. ``&quot;openai&quot;``, ``&quot;anthropic&quot;``).</span>
+<span class="sd">        hf_inference_endpoint: URL of a Hugging Face inference endpoint.</span>
+<span class="sd">            Only used when *provider* is ``&quot;huggingface&quot;``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A fully initialised :class:`LLMProvider` ready for</span>
+<span class="sd">        :meth:`~LLMProvider.generate` calls.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">provider</span> <span class="o">==</span> <span class="s2">&quot;anthropic&quot;</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.anthropic_provider</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnthropicProvider</span>
+
+        <span class="k">return</span> <span class="n">AnthropicProvider</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">ANTHROPIC_API_KEY</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">provider</span> <span class="o">==</span> <span class="s2">&quot;google&quot;</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.google_provider</span><span class="w"> </span><span class="kn">import</span> <span class="n">GoogleProvider</span>
+
+        <span class="k">return</span> <span class="n">GoogleProvider</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">GOOGLE_API_KEY</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">provider</span> <span class="o">==</span> <span class="s2">&quot;mistral&quot;</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.mistral_provider</span><span class="w"> </span><span class="kn">import</span> <span class="n">MistralProvider</span>
+
+        <span class="k">return</span> <span class="n">MistralProvider</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">MISTRAL_API_KEY</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">provider</span> <span class="o">==</span> <span class="s2">&quot;grok&quot;</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.grok_provider</span><span class="w"> </span><span class="kn">import</span> <span class="n">GrokProvider</span>
+
+        <span class="k">return</span> <span class="n">GrokProvider</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">XAI_API_KEY</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">provider</span> <span class="o">==</span> <span class="s2">&quot;deepseek&quot;</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.deepseek_provider</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeepSeekProvider</span>
+
+        <span class="k">return</span> <span class="n">DeepSeekProvider</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">DEEPSEEK_API_KEY</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">provider</span> <span class="o">==</span> <span class="s2">&quot;huggingface&quot;</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.huggingface_provider</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceProvider</span>
+
+        <span class="k">return</span> <span class="n">HuggingFaceProvider</span><span class="p">(</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">HF_API_KEY</span><span class="p">,</span>
+            <span class="n">inference_endpoint</span><span class="o">=</span><span class="n">hf_inference_endpoint</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">provider</span> <span class="o">==</span> <span class="s2">&quot;openrouter&quot;</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.openrouter_provider</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenRouterProvider</span>
+
+        <span class="k">return</span> <span class="n">OpenRouterProvider</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">OPENROUTER_API_KEY</span><span class="p">)</span>
+    <span class="c1"># Default: OpenAI</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.openai_provider</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIProvider</span>
+
+    <span class="k">return</span> <span class="n">OpenAIProvider</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">OPENAI_API_KEY</span><span class="p">)</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># API key validation</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="n">_PROVIDER_KEY_MAP</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;openai&quot;</span><span class="p">:</span> <span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;anthropic&quot;</span><span class="p">:</span> <span class="s2">&quot;ANTHROPIC_API_KEY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;google&quot;</span><span class="p">:</span> <span class="s2">&quot;GOOGLE_API_KEY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mistral&quot;</span><span class="p">:</span> <span class="s2">&quot;MISTRAL_API_KEY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;grok&quot;</span><span class="p">:</span> <span class="s2">&quot;XAI_API_KEY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;deepseek&quot;</span><span class="p">:</span> <span class="s2">&quot;DEEPSEEK_API_KEY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;huggingface&quot;</span><span class="p">:</span> <span class="s2">&quot;HF_API_KEY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;openrouter&quot;</span><span class="p">:</span> <span class="s2">&quot;OPENROUTER_API_KEY&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="check_provider_api_key"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.router.check_provider_api_key">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">check_provider_api_key</span><span class="p">(</span><span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether the API key for the detected provider is configured.</span>
+
+<span class="sd">    Detects the provider from *model_name*, looks up the expected</span>
+<span class="sd">    environment-variable name in :data:`_PROVIDER_KEY_MAP`, and verifies</span>
+<span class="sd">    that it is set in :class:`~talkingtomachines.config.Config`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model_name: The model identifier to check</span>
+<span class="sd">            (e.g. ``&quot;gpt-5&quot;``, ``&quot;claude-sonnet-4-20250514&quot;``).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A two-element tuple ``(is_valid, error_message)``. When the key</span>
+<span class="sd">        is present or the provider has no key requirement, *is_valid* is</span>
+<span class="sd">        ``True`` and *error_message* is an empty string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">provider</span> <span class="o">=</span> <span class="n">_detect_provider</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
+    <span class="n">env_var</span> <span class="o">=</span> <span class="n">_PROVIDER_KEY_MAP</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">env_var</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">env_var</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Model &#39;</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&#39; requires </span><span class="si">{</span><span class="n">env_var</span><span class="si">}</span><span class="s2"> but it is not set. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Set it as an environment variable or in a .env file.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Public interface</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="LLMRouter"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.router.LLMRouter">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LLMRouter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Route ``generate()`` calls to the appropriate LLM provider.</span>
+
+<span class="sd">    Handles provider selection, retry with exponential back-off, and</span>
+<span class="sd">    cost tracking against a configurable budget cap.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cost_tracker: Optional :class:`CostTracker` instance. A default</span>
+<span class="sd">            tracker with no budget limit is created when ``None``.</span>
+<span class="sd">        hf_inference_endpoint: URL passed through to the Hugging Face</span>
+<span class="sd">            provider when that backend is selected.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        MAX_RETRIES (int): Maximum number of attempts per ``generate``</span>
+<span class="sd">            call (default ``5``).</span>
+<span class="sd">        RETRY_DELAY_S (float): Base delay in seconds between retries</span>
+<span class="sd">            (default ``5.0``). Actual delay grows as</span>
+<span class="sd">            ``RETRY_DELAY_S * 2 ** attempt``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">MAX_RETRIES</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">RETRY_DELAY_S</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">cost_tracker</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CostTracker</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">hf_inference_endpoint</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the router with optional cost tracking and HF endpoint.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cost_tracker</span> <span class="o">=</span> <span class="n">cost_tracker</span> <span class="ow">or</span> <span class="n">CostTracker</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hf_endpoint</span> <span class="o">=</span> <span class="n">hf_inference_endpoint</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_provider_cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">LLMProvider</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="LLMRouter.generate"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.router.LLMRouter.generate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">message_history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+        <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LLMResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Route to the correct provider and return a normalised response.</span>
+
+<span class="sd">        Detects the provider, delegates to</span>
+<span class="sd">        :meth:`~LLMProvider.generate`, records the cost, and retries on</span>
+<span class="sd">        transient failures with exponential back-off. If all retries are</span>
+<span class="sd">        exhausted an empty :class:`LLMResponse` is returned.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            message_history: Conversation messages in OpenAI-compatible</span>
+<span class="sd">                format (list of dicts with ``role`` and ``content``).</span>
+<span class="sd">            model: Model identifier used for provider detection and</span>
+<span class="sd">                passed to the underlying SDK.</span>
+<span class="sd">            temperature: Sampling temperature (default ``0.0``).</span>
+<span class="sd">            **kwargs: Additional keyword arguments forwarded to the</span>
+<span class="sd">                provider&#39;s ``generate`` method.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An :class:`LLMResponse` containing the generated text,</span>
+<span class="sd">            token counts, cost, and latency.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            BudgetExhaustedError: If the cumulative cost exceeds the</span>
+<span class="sd">                budget cap configured on the :class:`CostTracker`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">provider_name</span> <span class="o">=</span> <span class="n">_detect_provider</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="n">provider</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_provider</span><span class="p">(</span><span class="n">provider_name</span><span class="p">)</span>
+
+        <span class="n">last_exc</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="ne">Exception</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MAX_RETRIES</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">provider</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+                    <span class="n">message_history</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">temperature</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+                <span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_cost_tracker</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">cost_usd</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">BudgetExhaustedError</span><span class="p">:</span>
+                    <span class="k">raise</span>
+                <span class="k">return</span> <span class="n">response</span>
+            <span class="k">except</span> <span class="n">BudgetExhaustedError</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">last_exc</span> <span class="o">=</span> <span class="n">exc</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;LLM call failed (attempt </span><span class="si">%d</span><span class="s2">/</span><span class="si">%d</span><span class="s2">, model=</span><span class="si">%s</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">attempt</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">MAX_RETRIES</span><span class="p">,</span>
+                    <span class="n">model</span><span class="p">,</span>
+                    <span class="n">exc</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">MAX_RETRIES</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">RETRY_DELAY_S</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">attempt</span><span class="p">))</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;All </span><span class="si">%d</span><span class="s2"> retries exhausted for model </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">MAX_RETRIES</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+        <span class="c1"># Return empty fallback</span>
+        <span class="k">return</span> <span class="n">LLMResponse</span><span class="p">(</span>
+            <span class="n">content</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">prompt_tokens</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">completion_tokens</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">total_tokens</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">provider</span><span class="o">=</span><span class="n">provider_name</span><span class="p">,</span>
+            <span class="n">latency_ms</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+            <span class="n">cost_usd</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+            <span class="n">raw_response</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_provider</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">provider_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LLMProvider</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a cached provider instance, building it on first access.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            provider_name: A provider key returned by</span>
+<span class="sd">                :func:`_detect_provider`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The :class:`LLMProvider` for *provider_name*.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">provider_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provider_cache</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_provider_cache</span><span class="p">[</span><span class="n">provider_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_build_provider</span><span class="p">(</span>
+                <span class="n">provider_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hf_endpoint</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provider_cache</span><span class="p">[</span><span class="n">provider_name</span><span class="p">]</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

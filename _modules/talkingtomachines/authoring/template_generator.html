@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.authoring.template_generator &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.authoring.template_generator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.authoring.template_generator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Template generator for blank experiment workbooks.</span>
+
+<span class="sd">Creates a blank ``prompt_template.xlsx`` workbook with seven worksheets</span>
+<span class="sd">(Settings, C, Fields, Facilitator, Prompts, Profiles, ``Manual_``) containing</span>
+<span class="sd">bold headers and example rows for use with ``talkingtomachines init``.</span>
+
+<span class="sd">Supports two output formats:</span>
+
+<span class="sd">    - **xlsx** (default): A single Excel workbook with one tab per sheet.</span>
+<span class="sd">    - **csv**: Individual CSV files, one per sheet, written into a project</span>
+<span class="sd">      subdirectory.</span>
+
+<span class="sd">Attributes:</span>
+<span class="sd">    _SHEETS (dict[str, dict]): Registry of sheet definitions. Each entry</span>
+<span class="sd">        maps a sheet name to a dict with ``columns`` (list of header</span>
+<span class="sd">        strings), ``rows`` (list of example data rows), and optional</span>
+<span class="sd">        Profiles-specific keys (``header_row0``, ``header_row1``).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Sheet definitions  — (headers, example_rows)</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="n">_SHEETS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;Settings&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;columns&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;rows&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;EXPERIMENT_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;simple_pgg&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">,</span> <span class="s2">&quot;gpt-4.1-mini&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;HF_INFERENCE_ENDPOINT&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;TEMPERATURE&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;RANDOM_SEED&quot;</span><span class="p">,</span> <span class="mi">42</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;PROFILE_FIELDS&quot;</span><span class="p">,</span> <span class="s2">&quot;ALL&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;BUILD_PROFILE_QA&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;BUILD_PROFILE_BACKSTORIES&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;NUM_AGENTS_PER_SESSION&quot;</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;CONTEXT_OVERFLOW_POLICY&quot;</span><span class="p">,</span> <span class="s2">&quot;terminate&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;MODULE_SEQUENCE&quot;</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">],</span>
+        <span class="p">],</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;C&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;columns&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;module&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;rows&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="s2">&quot;MAX_NUM_ROUNDS&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;integer&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="s2">&quot;PLAYERS_PER_GROUP&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;integer&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="s2">&quot;MAX_ENDOWMENT&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;integer&quot;</span><span class="p">],</span>
+        <span class="p">],</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;Fields&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;columns&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;module&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;class&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;response_options&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;response_options_intro&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;randomise_options_order&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;validate&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;generate_speculation_score&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;format_response&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;rows&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;task1&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Player&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;decision&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;integer&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Please choose one of the following:&quot;</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="kc">True</span><span class="p">,</span>
+                <span class="kc">True</span><span class="p">,</span>
+                <span class="kc">True</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;task1&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Group&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;total_contribution&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;integer&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="kc">True</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;task1&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Player&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;public_account_earnings&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;integer&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="kc">True</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;task1&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Player&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;private_account_remaining&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;integer&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="kc">True</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;task1&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Player&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;total_earnings&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;integer&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="kc">True</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">],</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;Facilitator&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;columns&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;definition&quot;</span><span class="p">,</span> <span class="s2">&quot;kwargs&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;rows&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;assign_groups&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;calculate_total_contribution&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Calculate the total number of tokens contributed to the public account in this round using the following formula:</span>
+<span class="sd">Player 1&#39;s contribution to public account in this round + Player 2&#39;s contribution to public account in this round</span>
+<span class="sd">Respond with only the resulting nunber without providing any explanations.&quot;&quot;&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;calculate_public_account_earnings&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Calculate Player ID {{ player.agent_id }}&#39;s earnings from the public account this round using the following formula:</span>
+<span class="sd">({{ group.total_contribution }} × 2) ÷ {{ group.num_players }}</span>
+<span class="sd">Respond with only the resulting number without providing any explanations.&quot;&quot;&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;calculate_private_account_remaining&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Calculate Player ID {{ player.agent_id }}&#39;s remaining private tokens this round using the following formula:</span>
+<span class="sd">{{ C.task1.MAX_ENDOWMENT }} − {{ player.decision }}</span>
+<span class="sd">Respond with only the resulting number without any explanations.&quot;&quot;&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;calculate_total_earnings&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Calculate Player ID {{ player.agent_id }}&#39;s total earnings this round using the following formula:</span>
+<span class="sd">{{ player.public_account_earnings }} + {{ player.private_account_remaining }}</span>
+<span class="sd">Respond with only the resulting number without any explanations.&quot;&quot;&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">],</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;Prompts&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;columns&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;module&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;prompt_sequence&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;is_displayed&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;is_adapted&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;human_text&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;llm_text&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;kwargs&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;field_class&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;field_name&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;rows&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;task1&quot;</span><span class="p">,</span>
+                <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;CONTEXT&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;round_number == 1&quot;</span><span class="p">,</span>
+                <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;Introduction context.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;You are participating in a decision-making experiment. Your endowment is {{ C.task1.MAX_ENDOWMENT }} tokens.&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;task1&quot;</span><span class="p">,</span>
+                <span class="mi">1</span><span class="p">,</span>
+                <span class="s2">&quot;PRIVATE_QUESTION&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;How much will you contribute?&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;How many tokens would you contribute to the group fund? Tokens in the public account will be multiplied by a factor of 2 and distributed equally among all players. Tokens kept in your private account will not be shared and remain yours. Choose a value between 0 and {{ C.task1.MAX_ENDOWMENT }}.&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;Player&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;decision&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;task1&quot;</span><span class="p">,</span>
+                <span class="mi">2</span><span class="p">,</span>
+                <span class="s2">&quot;FACILITATOR&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;calculate_total_contribution&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;Group&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;total_contribution&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;task1&quot;</span><span class="p">,</span>
+                <span class="mi">3</span><span class="p">,</span>
+                <span class="s2">&quot;FACILITATOR&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;calculate_public_account_earnings&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;Player&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;public_account_earnings&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;task1&quot;</span><span class="p">,</span>
+                <span class="mi">4</span><span class="p">,</span>
+                <span class="s2">&quot;FACILITATOR&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;calculate_private_account_remaining&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;Player&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;private_account_remaining&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;task1&quot;</span><span class="p">,</span>
+                <span class="mi">5</span><span class="p">,</span>
+                <span class="s2">&quot;FACILITATOR&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;calculate_total_earnings&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;Player&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;total_earnings&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;task1&quot;</span><span class="p">,</span>
+                <span class="mi">6</span><span class="p">,</span>
+                <span class="s2">&quot;CONTEXT&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;The total contribution for this round is {{ group.total_contribution }} tokens. Your total earnings for this round is {{ player.total_earnings }} tokens.&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">],</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;Profiles&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;columns&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;ID&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;age&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;gender&quot;</span><span class="p">,</span>
+        <span class="p">],</span>  <span class="c1"># Special: row-0 = short names, row-1 = full names, rows 2+ = data</span>
+        <span class="s2">&quot;rows&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s2">&quot;ID&quot;</span><span class="p">,</span> <span class="s2">&quot;What is your age?&quot;</span><span class="p">,</span> <span class="s2">&quot;What is your gender?&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="s2">&quot;Male&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="s2">&quot;Female&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="s2">&quot;Male&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">41</span><span class="p">,</span> <span class="s2">&quot;Female&quot;</span><span class="p">],</span>
+        <span class="p">],</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;Manual_&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;columns&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;ID&quot;</span><span class="p">,</span> <span class="s2">&quot;module&quot;</span><span class="p">,</span> <span class="s2">&quot;round_number&quot;</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;rows&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="c1"># Treatment assignments (just another variable)</span>
+            <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment&quot;</span><span class="p">,</span> <span class="s2">&quot;control&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment&quot;</span><span class="p">,</span> <span class="s2">&quot;control&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment&quot;</span><span class="p">,</span> <span class="s2">&quot;control&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment_A&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment_A&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment_A&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment&quot;</span><span class="p">,</span> <span class="s2">&quot;control&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment&quot;</span><span class="p">,</span> <span class="s2">&quot;control&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment&quot;</span><span class="p">,</span> <span class="s2">&quot;control&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment_A&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment_A&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment_A&quot;</span><span class="p">],</span>
+            <span class="c1"># Manual group assignments</span>
+            <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Group&quot;</span><span class="p">,</span> <span class="s2">&quot;id_in_subsession&quot;</span><span class="p">,</span> <span class="s2">&quot;group1&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Group&quot;</span><span class="p">,</span> <span class="s2">&quot;id_in_subsession&quot;</span><span class="p">,</span> <span class="s2">&quot;group2&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Group&quot;</span><span class="p">,</span> <span class="s2">&quot;id_in_subsession&quot;</span><span class="p">,</span> <span class="s2">&quot;group1&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;task1&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Group&quot;</span><span class="p">,</span> <span class="s2">&quot;id_in_subsession&quot;</span><span class="p">,</span> <span class="s2">&quot;group2&quot;</span><span class="p">],</span>
+        <span class="p">],</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="generate_template"><a class="viewcode-back" href="../../../talkingtomachines.authoring.html#talkingtomachines.authoring.template_generator.generate_template">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">generate_template</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span>
+    <span class="n">project_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;simple_pgg&quot;</span><span class="p">,</span>
+    <span class="n">fmt</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;xlsx&quot;</span><span class="p">,</span> <span class="s2">&quot;csv&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;xlsx&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create template files in a project subdirectory.</span>
+
+<span class="sd">    Generates a blank experiment template with seven worksheets</span>
+<span class="sd">    (Settings, C, Fields, Facilitator, Prompts, Profiles, ``Manual_``)</span>
+<span class="sd">    containing example rows and bold headers.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        output_dir: Parent directory where the project folder is created.</span>
+<span class="sd">        project_name: Name of the project subfolder and template file prefix.</span>
+<span class="sd">        fmt: Output format — ``&quot;xlsx&quot;`` for a single Excel workbook or</span>
+<span class="sd">            ``&quot;csv&quot;`` for individual CSV files per sheet.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of file paths that were created.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span> <span class="o">/</span> <span class="n">project_name</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">created</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s2">&quot;csv&quot;</span><span class="p">:</span>
+        <span class="n">created</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_write_csvs</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">project_name</span><span class="o">=</span><span class="n">project_name</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">created</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_write_xlsx</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">project_name</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">created</span></div>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Internal helpers</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_make_df</span><span class="p">(</span><span class="n">sheet_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">project_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;simple_pgg&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a DataFrame for a single sheet definition.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sheet_name: Key into ``_SHEETS`` identifying the sheet to build.</span>
+<span class="sd">        project_name: Project name used to set the default ``EXPERIMENT_ID``</span>
+<span class="sd">            in the Settings sheet.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A DataFrame with the columns and example rows defined in ``_SHEETS``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">_SHEETS</span><span class="p">[</span><span class="n">sheet_name</span><span class="p">]</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">]</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">]]</span>
+    <span class="k">if</span> <span class="n">sheet_name</span> <span class="o">==</span> <span class="s2">&quot;Settings&quot;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;EXPERIMENT_ID&quot;</span><span class="p">:</span>
+                <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">project_name</span>
+                <span class="k">break</span>
+    <span class="k">if</span> <span class="n">rows</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">cols</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">cols</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_write_xlsx</span><span class="p">(</span><span class="n">out</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">project_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write all sheets to a single Excel workbook with bold headers.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        out: Project directory to write the file into.</span>
+<span class="sd">        project_name: Used as the filename prefix (``&lt;project_name&gt;_template.xlsx``).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The absolute path to the created Excel file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">file_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">out</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">project_name</span><span class="si">}</span><span class="s2">_template.xlsx&quot;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pd</span><span class="o">.</span><span class="n">ExcelWriter</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;openpyxl&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">writer</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">sheet_name</span> <span class="ow">in</span> <span class="n">_SHEETS</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">_make_df</span><span class="p">(</span><span class="n">sheet_name</span><span class="p">,</span> <span class="n">project_name</span><span class="o">=</span><span class="n">project_name</span><span class="p">)</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">to_excel</span><span class="p">(</span><span class="n">writer</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="c1"># Bold the header row</span>
+            <span class="n">ws</span> <span class="o">=</span> <span class="n">writer</span><span class="o">.</span><span class="n">sheets</span><span class="p">[</span><span class="n">sheet_name</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">openpyxl.styles</span><span class="w"> </span><span class="kn">import</span> <span class="n">Font</span>
+
+                <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">ws</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">cell</span><span class="o">.</span><span class="n">font</span> <span class="o">=</span> <span class="n">Font</span><span class="p">(</span><span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+    <span class="k">return</span> <span class="n">file_path</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_write_csvs</span><span class="p">(</span><span class="n">out</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">project_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;simple_pgg&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write each sheet as an individual CSV file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        out: Project directory to write the CSV files into.</span>
+<span class="sd">        project_name: Project name used to set the default ``EXPERIMENT_ID``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of file paths for the created CSV files.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">created</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">sheet_name</span> <span class="ow">in</span> <span class="n">_SHEETS</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">_make_df</span><span class="p">(</span><span class="n">sheet_name</span><span class="p">,</span> <span class="n">project_name</span><span class="o">=</span><span class="n">project_name</span><span class="p">)</span>
+        <span class="n">safe_name</span> <span class="o">=</span> <span class="n">sheet_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">out</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">safe_name</span><span class="si">}</span><span class="s2">.csv&quot;</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">created</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">created</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

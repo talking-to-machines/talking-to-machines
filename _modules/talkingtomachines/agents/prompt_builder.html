@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.agents.prompt_builder &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.agents.prompt_builder</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.agents.prompt_builder</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Prompt builder for synthetic subject profile construction.</span>
+
+<span class="sd">Generates profile prompts and system messages for synthetic subjects by</span>
+<span class="sd">transforming tabular profile data into textual representations suitable</span>
+<span class="sd">for LLM system messages.</span>
+
+<span class="sd">Strategies:</span>
+<span class="sd">    QA strategy:</span>
+<span class="sd">        Interview Q&amp;A format using full question names (row-1 headers).</span>
+<span class="sd">    Backstory strategy:</span>
+<span class="sd">        LLM-generated first-person narrative paragraph (requires QA as base).</span>
+<span class="sd">    Neither:</span>
+<span class="sd">        No profile information provided (warning logged).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.gateway.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMRouter</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="build_profile_prompt"><a class="viewcode-back" href="../../../talkingtomachines.agents.html#talkingtomachines.agents.prompt_builder.build_profile_prompt">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">build_profile_prompt</span><span class="p">(</span>
+    <span class="n">profile_row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">short_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">full_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">build_profile_qa</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">build_profile_backstories</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">router</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;LLMRouter&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a profile prompt string for injection into the system message.</span>
+
+<span class="sd">    Constructs a textual representation of an agent&#39;s profile data. The</span>
+<span class="sd">    output format depends on which strategy flags are enabled.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        profile_row: Dictionary mapping short column names to values for</span>
+<span class="sd">            one profile row (e.g., ``{&quot;age&quot;: 30, &quot;gender&quot;: &quot;F&quot;}``).</span>
+<span class="sd">        short_names: Ordered list of short (column-header) field names.</span>
+<span class="sd">        full_names: Ordered list of full question wordings, aligned with</span>
+<span class="sd">            ``short_names`` by index.</span>
+<span class="sd">        build_profile_qa: If True, produce an interview Q&amp;A-format prompt.</span>
+<span class="sd">        build_profile_backstories: If True, use an LLM to generate a</span>
+<span class="sd">            first-person narrative backstory appended to the Q&amp;A prompt.</span>
+<span class="sd">        router: LLM router instance used for backstory generation. Required</span>
+<span class="sd">            when ``build_profile_backstories`` is True.</span>
+<span class="sd">        model_name: Model identifier passed to the router for backstory</span>
+<span class="sd">            generation.</span>
+<span class="sd">        temperature: Sampling temperature for the backstory LLM call.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A string containing the formatted profile prompt, or an empty</span>
+<span class="sd">        string if both strategy flags are False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">build_profile_qa</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">build_profile_backstories</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;Both BUILD_PROFILE_QA and BUILD_PROFILE_BACKSTORIES are False. &quot;</span>
+            <span class="s2">&quot;Agent will not receive profile information.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="c1"># Build base prompt (Q&amp;A format)</span>
+    <span class="n">base_prompt</span> <span class="o">=</span> <span class="n">_build_qa_prompt</span><span class="p">(</span><span class="n">profile_row</span><span class="p">,</span> <span class="n">short_names</span><span class="p">,</span> <span class="n">full_names</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">build_profile_backstories</span> <span class="ow">and</span> <span class="n">router</span> <span class="ow">and</span> <span class="n">model_name</span><span class="p">:</span>
+        <span class="n">backstory</span> <span class="o">=</span> <span class="n">_generate_backstory</span><span class="p">(</span><span class="n">base_prompt</span><span class="p">,</span> <span class="n">router</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">temperature</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">backstory</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_prompt</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">Backstory:</span><span class="se">\n</span><span class="si">{</span><span class="n">backstory</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">return</span> <span class="n">base_prompt</span></div>
+
+
+<div class="viewcode-block" id="build_system_message"><a class="viewcode-back" href="../../../talkingtomachines.agents.html#talkingtomachines.agents.prompt_builder.build_system_message">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">build_system_message</span><span class="p">(</span><span class="n">profile_prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the system message from the profile prompt.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        profile_prompt: Pre-rendered profile text (Q&amp;A and/or backstory).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The system message string to prepend to the LLM conversation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">profile_prompt</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">intro</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;Before participating in this study, you were asked to share some &quot;</span>
+        <span class="s2">&quot;personal information. Your responses are provided below:&quot;</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">intro</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">profile_prompt</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Private helpers</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_qa_prompt</span><span class="p">(</span>
+    <span class="n">profile_row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">short_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">full_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build an interview Q&amp;A-format prompt from a profile row.</span>
+
+<span class="sd">    Each non-null, non-ID field is rendered as a two-line exchange with</span>
+<span class="sd">    the full question wording as the interviewer line and the value as</span>
+<span class="sd">    the respondent line.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        profile_row: Dictionary mapping short column names to profile values.</span>
+<span class="sd">        short_names: Ordered list of short (column-header) field names.</span>
+<span class="sd">        full_names: Ordered list of full question wordings corresponding</span>
+<span class="sd">            to ``short_names``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A multi-line string formatted as an interview Q&amp;A transcript.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">name_to_full</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">short_names</span><span class="p">,</span> <span class="n">full_names</span><span class="p">))</span>
+    <span class="n">lines</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Profile (Q&amp;A format):&quot;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">short</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">profile_row</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">short</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;ID&quot;</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">full</span> <span class="o">=</span> <span class="n">name_to_full</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">short</span><span class="p">,</span> <span class="n">short</span><span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Interviewer: </span><span class="si">{</span><span class="n">full</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Me: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_generate_backstory</span><span class="p">(</span>
+    <span class="n">system_prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">router</span><span class="p">:</span> <span class="s2">&quot;LLMRouter&quot;</span><span class="p">,</span>
+    <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Use an LLM to generate a first-person backstory narrative.</span>
+
+<span class="sd">    Sends the Q&amp;A system prompt to the router and asks the model to</span>
+<span class="sd">    produce a brief first-person backstory (2-4 sentences).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        system_prompt: The Q&amp;A profile prompt used as context for</span>
+<span class="sd">            backstory generation.</span>
+<span class="sd">        router: LLM router instance for generation.</span>
+<span class="sd">        model_name: Model identifier to use for the generation call.</span>
+<span class="sd">        temperature: Sampling temperature for the LLM call.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The generated backstory string, or an empty string if</span>
+<span class="sd">        generation fails.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">system_prompt</span><span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">&quot;Based on the profile information above, write a brief first-person backstory &quot;</span>
+                <span class="s2">&quot;(2-4 sentences) that brings this person to life. Write in first person.&quot;</span>
+            <span class="p">),</span>
+        <span class="p">},</span>
+    <span class="p">]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">router</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+            <span class="n">message_history</span><span class="o">=</span><span class="n">messages</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Backstory generation failed: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

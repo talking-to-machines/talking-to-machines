@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.authoring.parsers.profiles_parser &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.authoring.parsers.profiles_parser</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.authoring.parsers.profiles_parser</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Parser for the Profiles worksheet in experiment template workbooks.</span>
+
+<span class="sd">This module reads and validates the Profiles sheet, which defines agent</span>
+<span class="sd">characteristics used during experiment execution. The sheet follows a</span>
+<span class="sd">fixed layout:</span>
+
+<span class="sd">    - **Row 0**: Short names used as Jinja2 identifiers</span>
+<span class="sd">      (e.g. ``{{ player.age }}``).</span>
+<span class="sd">    - **Row 1**: Full question wording (human-readable labels for QA</span>
+<span class="sd">      format output).</span>
+<span class="sd">    - **Rows 2+**: One row per agent profile containing attribute values.</span>
+
+<span class="sd">The parser enforces that every short name is a valid Jinja2 identifier,</span>
+<span class="sd">that an ``ID`` column is present with unique values, and that column</span>
+<span class="sd">counts are consistent between headers and data rows. A ``PROFILE_FIELDS``</span>
+<span class="sd">filter controls which columns are included in the parsed output.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">_JINJA_IDENTIFIER_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^[a-zA-Z][a-zA-Z0-9_]*$&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="parse_profiles"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.parsers.html#talkingtomachines.authoring.parsers.profiles_parser.parse_profiles">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">parse_profiles</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">profile_fields</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ALL&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse the Profiles sheet into a structured dictionary.</span>
+
+<span class="sd">    Reads header rows for short names and full names, validates column</span>
+<span class="sd">    consistency and ID uniqueness, applies the ``PROFILE_FIELDS`` filter,</span>
+<span class="sd">    and serializes each profile row into a dictionary keyed by short name.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        df: Raw ``DataFrame`` of the Profiles worksheet. Row 0 must</span>
+<span class="sd">            contain short names, row 1 full names, and rows 2+ the</span>
+<span class="sd">            profile data.</span>
+<span class="sd">        profile_fields: Comma-separated list of short names to include</span>
+<span class="sd">            in the output, or ``&quot;ALL&quot;`` (default) to include every</span>
+<span class="sd">            column.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: A dictionary with the following keys.</span>
+
+<span class="sd">        - ``short_names`` – List of short-name strings from row 0.</span>
+<span class="sd">        - ``full_names`` – List of full question-wording strings from</span>
+<span class="sd">          row 1.</span>
+<span class="sd">        - ``rows`` – List of dictionaries (one per agent) mapping</span>
+<span class="sd">          included short names to their values.</span>
+<span class="sd">        - ``id_column`` – The short name of the ID column.</span>
+<span class="sd">        - ``included_columns`` – List of short names retained after</span>
+<span class="sd">          applying the ``PROFILE_FIELDS`` filter.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the sheet has fewer than 2 rows, a short name is</span>
+<span class="sd">            empty or not a valid Jinja2 identifier, column counts are</span>
+<span class="sd">            mismatched, the ``ID`` column is missing, or IDs are not</span>
+<span class="sd">            unique.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Profiles sheet must have at least 2 header rows (short names + full names).&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">short_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()]</span>
+    <span class="n">full_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()]</span>
+
+    <span class="c1"># Validate short_name format for Jinja2 dot notation compatibility</span>
+    <span class="k">for</span> <span class="n">sn</span> <span class="ow">in</span> <span class="n">short_names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">sn</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Profiles sheet: short_name (row 0) must not be empty.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_JINJA_IDENTIFIER_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">sn</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Profile short_name &#39;</span><span class="si">{</span><span class="n">sn</span><span class="si">}</span><span class="s2">&#39; is not a valid Jinja2 identifier. &quot;</span>
+                <span class="s2">&quot;Use only letters, digits, and underscores. Must start with a letter.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="c1"># Remaining rows are profile data</span>
+    <span class="n">data_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">data_df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">short_names</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Profiles sheet: </span><span class="si">{</span><span class="n">data_df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> data columns but &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">short_names</span><span class="p">)</span><span class="si">}</span><span class="s2"> short names in header row. &quot;</span>
+            <span class="s2">&quot;Ensure every column has a non-blank header.&quot;</span>
+        <span class="p">)</span>
+    <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">short_names</span>  <span class="c1"># use short names as column headers</span>
+
+    <span class="c1"># Identify ID column</span>
+    <span class="n">id_col</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">short_names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;ID&quot;</span><span class="p">:</span>
+            <span class="n">id_col</span> <span class="o">=</span> <span class="n">col</span>
+            <span class="k">break</span>
+
+    <span class="k">if</span> <span class="n">id_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Profiles sheet is missing an &#39;ID&#39; column in the short-name header row.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Validate ID uniqueness</span>
+    <span class="n">ids</span> <span class="o">=</span> <span class="n">data_df</span><span class="p">[</span><span class="n">id_col</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Profiles sheet: ID column contains duplicate values.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Apply PROFILE_FIELDS filter</span>
+    <span class="k">if</span> <span class="n">profile_fields</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;ALL&quot;</span><span class="p">:</span>
+        <span class="n">included_cols</span> <span class="o">=</span> <span class="n">short_names</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">requested</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">profile_fields</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+        <span class="n">included_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">short_names</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">requested</span> <span class="ow">or</span> <span class="n">c</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;ID&quot;</span><span class="p">]</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">requested</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">short_names</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Profiles: PROFILE_FIELDS requested unknown columns: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">missing</span>
+            <span class="p">)</span>
+
+    <span class="c1"># Serialize rows</span>
+    <span class="n">rows</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">row_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">included_cols</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">row_dict</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row_dict</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;short_names&quot;</span><span class="p">:</span> <span class="n">short_names</span><span class="p">,</span>
+        <span class="s2">&quot;full_names&quot;</span><span class="p">:</span> <span class="n">full_names</span><span class="p">,</span>
+        <span class="s2">&quot;rows&quot;</span><span class="p">:</span> <span class="n">rows</span><span class="p">,</span>
+        <span class="s2">&quot;id_column&quot;</span><span class="p">:</span> <span class="n">id_col</span><span class="p">,</span>
+        <span class="s2">&quot;included_columns&quot;</span><span class="p">:</span> <span class="n">included_cols</span><span class="p">,</span>
+    <span class="p">}</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

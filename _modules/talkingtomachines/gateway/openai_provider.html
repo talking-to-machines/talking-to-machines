@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.gateway.openai_provider &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.gateway.openai_provider</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.gateway.openai_provider</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;OpenAI gateway provider.</span>
+
+<span class="sd">Implements :class:`OpenAIProvider`, the gateway for OpenAI models. Uses</span>
+<span class="sd">the Responses API for native OpenAI calls and the Chat Completions API</span>
+<span class="sd">for OpenAI-compatible endpoints. Subclasses (Grok, DeepSeek,</span>
+<span class="sd">OpenRouter, HuggingFace) set ``_use_chat_completions = True`` to route</span>
+<span class="sd">through the Chat Completions path.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMProvider</span><span class="p">,</span> <span class="n">LLMResponse</span>
+
+<span class="c1"># Models that do not accept a temperature parameter.</span>
+<span class="c1"># This set is seeded with known models and grows dynamically at runtime</span>
+<span class="c1"># when the API rejects temperature for an unrecognised model.</span>
+<span class="n">NO_TEMPERATURE_MODELS</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;o1&quot;</span><span class="p">,</span> <span class="s2">&quot;o1-pro&quot;</span><span class="p">,</span> <span class="s2">&quot;o3-pro&quot;</span><span class="p">,</span> <span class="s2">&quot;o3&quot;</span><span class="p">,</span> <span class="s2">&quot;o4-mini&quot;</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_temperature_error</span><span class="p">(</span><span class="n">exc</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return ``True`` if *exc* indicates the temperature parameter is unsupported.</span>
+
+<span class="sd">    Checks whether the exception is an ``openai.BadRequestError`` whose</span>
+<span class="sd">    message mentions ``&quot;temperature&quot;``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">BadRequestError</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">BadRequestError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="s2">&quot;temperature&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+
+<span class="c1"># Cost estimates per 1K tokens (input / output) USD — approximate, update as needed</span>
+<span class="n">_COST_TABLE</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;gpt-4.1&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.002</span><span class="p">,</span> <span class="mf">0.008</span><span class="p">),</span>
+    <span class="s2">&quot;gpt-4.1-mini&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.0004</span><span class="p">,</span> <span class="mf">0.0016</span><span class="p">),</span>
+    <span class="s2">&quot;gpt-4.1-nano&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="mf">0.0004</span><span class="p">),</span>
+    <span class="s2">&quot;gpt-4o&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.005</span><span class="p">,</span> <span class="mf">0.015</span><span class="p">),</span>
+    <span class="s2">&quot;gpt-4o-mini&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.00015</span><span class="p">,</span> <span class="mf">0.0006</span><span class="p">),</span>
+    <span class="s2">&quot;gpt-5&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.010</span><span class="p">,</span> <span class="mf">0.030</span><span class="p">),</span>
+    <span class="s2">&quot;gpt-5-mini&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.002</span><span class="p">,</span> <span class="mf">0.008</span><span class="p">),</span>
+    <span class="s2">&quot;o1&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.015</span><span class="p">,</span> <span class="mf">0.060</span><span class="p">),</span>
+    <span class="s2">&quot;o3&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.010</span><span class="p">,</span> <span class="mf">0.040</span><span class="p">),</span>
+    <span class="s2">&quot;o3-pro&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.020</span><span class="p">,</span> <span class="mf">0.080</span><span class="p">),</span>
+    <span class="s2">&quot;o4-mini&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.003</span><span class="p">,</span> <span class="mf">0.012</span><span class="p">),</span>
+<span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_estimate_cost</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prompt_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">completion_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Estimate the USD cost of an OpenAI API call.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model: The model identifier (date suffixes are stripped for lookup).</span>
+<span class="sd">        prompt_tokens: Number of input tokens.</span>
+<span class="sd">        completion_tokens: Number of output tokens.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The estimated cost in US dollars.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-202&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># strip date suffixes</span>
+    <span class="n">rates</span> <span class="o">=</span> <span class="n">_COST_TABLE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">prompt_tokens</span> <span class="o">*</span> <span class="n">rates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">completion_tokens</span> <span class="o">*</span> <span class="n">rates</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mf">1000.0</span>
+
+
+<div class="viewcode-block" id="OpenAIProvider"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.openai_provider.OpenAIProvider">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">OpenAIProvider</span><span class="p">(</span><span class="n">LLMProvider</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gateway for OpenAI models and OpenAI-compatible endpoints.</span>
+
+<span class="sd">    Native OpenAI uses the Responses API. OpenAI-compatible endpoints</span>
+<span class="sd">    (Grok/xAI, DeepSeek, HuggingFace TGI, OpenRouter) use the Chat</span>
+<span class="sd">    Completions API -- those subclasses set ``_use_chat_completions = True``.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        provider_name: ``&quot;openai&quot;`` for the base class; overridden by</span>
+<span class="sd">            subclasses.</span>
+<span class="sd">        _use_chat_completions: When ``True``, use the Chat Completions</span>
+<span class="sd">            API instead of the Responses API. Defaults to ``False``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        api_key: The OpenAI (or compatible) API key.</span>
+<span class="sd">        base_url: Optional base URL for OpenAI-compatible endpoints.</span>
+<span class="sd">            When ``None``, the default OpenAI API URL is used.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ImportError: If the ``openai`` package is not installed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">provider_name</span> <span class="o">=</span> <span class="s2">&quot;openai&quot;</span>
+
+    <span class="c1"># Subclasses that point at OpenAI-compatible (non-Responses) endpoints</span>
+    <span class="c1"># must set this to True so the correct API and token field names are used.</span>
+    <span class="n">_use_chat_completions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="OpenAIProvider.supports_vision"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.openai_provider.OpenAIProvider.supports_vision">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">supports_vision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return ``True`` -- OpenAI models support image inputs.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="OpenAIProvider.supports_structured_output"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.openai_provider.OpenAIProvider.supports_structured_output">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">supports_structured_output</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return ``True`` -- OpenAI supports JSON schema enforcement.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">base_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the OpenAI client with the given API key and optional base URL.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAI</span>
+        <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+                <span class="s2">&quot;openai package is required: pip install openai&gt;=1.60&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">OpenAI</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span> <span class="n">base_url</span><span class="o">=</span><span class="n">base_url</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">base_url</span>
+            <span class="k">else</span> <span class="n">OpenAI</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Public interface</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="OpenAIProvider.generate"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.openai_provider.OpenAIProvider.generate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">message_history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+        <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LLMResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Send messages to an OpenAI model and return a normalised response.</span>
+
+<span class="sd">        Routes to the Responses API or the Chat Completions API based on</span>
+<span class="sd">        :attr:`_use_chat_completions`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            message_history: Conversation messages in OpenAI-compatible</span>
+<span class="sd">                format.</span>
+<span class="sd">            model: The model identifier string.</span>
+<span class="sd">            temperature: Sampling temperature. Defaults to ``0.0``.</span>
+<span class="sd">            **kwargs: Additional keyword arguments forwarded to the API.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An :class:`LLMResponse` with generated text, token counts,</span>
+<span class="sd">            cost, and latency.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">input_messages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_messages</span><span class="p">(</span><span class="n">message_history</span><span class="p">)</span>
+        <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_chat_completions</span><span class="p">:</span>
+            <span class="n">raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_api_chat</span><span class="p">(</span><span class="n">input_messages</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">temperature</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_content_chat</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+            <span class="n">usage</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="s2">&quot;usage&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">prompt_tokens</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">usage</span><span class="p">,</span> <span class="s2">&quot;prompt_tokens&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">usage</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">completion_tokens</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">usage</span><span class="p">,</span> <span class="s2">&quot;completion_tokens&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">usage</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_api</span><span class="p">(</span><span class="n">input_messages</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">temperature</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_content</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+            <span class="n">usage</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="s2">&quot;usage&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">prompt_tokens</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">usage</span><span class="p">,</span> <span class="s2">&quot;input_tokens&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">usage</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">completion_tokens</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">usage</span><span class="p">,</span> <span class="s2">&quot;output_tokens&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">usage</span> <span class="k">else</span> <span class="mi">0</span>
+
+        <span class="n">latency_ms</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+        <span class="n">total_tokens</span> <span class="o">=</span> <span class="n">prompt_tokens</span> <span class="o">+</span> <span class="n">completion_tokens</span>
+
+        <span class="k">return</span> <span class="n">LLMResponse</span><span class="p">(</span>
+            <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">,</span>
+            <span class="n">prompt_tokens</span><span class="o">=</span><span class="n">prompt_tokens</span><span class="p">,</span>
+            <span class="n">completion_tokens</span><span class="o">=</span><span class="n">completion_tokens</span><span class="p">,</span>
+            <span class="n">total_tokens</span><span class="o">=</span><span class="n">total_tokens</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">provider</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">provider_name</span><span class="p">,</span>
+            <span class="n">latency_ms</span><span class="o">=</span><span class="n">latency_ms</span><span class="p">,</span>
+            <span class="n">cost_usd</span><span class="o">=</span><span class="n">_estimate_cost</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">prompt_tokens</span><span class="p">,</span> <span class="n">completion_tokens</span><span class="p">),</span>
+            <span class="n">raw_response</span><span class="o">=</span><span class="n">raw</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Internal helpers — Responses API (native OpenAI only)</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_format_messages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message_history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Normalise message dicts to standard role/content pairs.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            message_history: Raw message dicts that may contain</span>
+<span class="sd">                non-standard roles.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A filtered list containing only messages with ``system``,</span>
+<span class="sd">            ``user``, or ``assistant`` roles.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">formatted</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">message_history</span><span class="p">:</span>
+            <span class="n">role</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;role&quot;</span><span class="p">,</span> <span class="s2">&quot;user&quot;</span><span class="p">)</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">role</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;assistant&quot;</span><span class="p">):</span>
+                <span class="n">formatted</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="n">role</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">content</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">formatted</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_call_api</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Call the OpenAI Responses API (native OpenAI endpoint only).</span>
+
+<span class="sd">        If the API rejects the ``temperature`` parameter (e.g. for newer</span>
+<span class="sd">        reasoning models), the call is automatically retried without it</span>
+<span class="sd">        and the model is added to :data:`NO_TEMPERATURE_MODELS` so that</span>
+<span class="sd">        future calls skip the parameter upfront.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            messages: Formatted message list.</span>
+<span class="sd">            model: Model identifier.</span>
+<span class="sd">            temperature: Sampling temperature.</span>
+<span class="sd">            **kwargs: Extra parameters forwarded to the API.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The raw Responses API response object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">system_content</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">conversation</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">messages</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">msg</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;system&quot;</span><span class="p">:</span>
+                <span class="n">system_content</span> <span class="o">=</span> <span class="n">msg</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">conversation</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">model</span><span class="p">,</span> <span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="n">conversation</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">system_content</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">&quot;instructions&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">system_content</span>
+        <span class="k">if</span> <span class="n">model</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">NO_TEMPERATURE_MODELS</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">&quot;temperature&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">temperature</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">responses</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">_is_temperature_error</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;temperature&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Model &#39;</span><span class="si">%s</span><span class="s2">&#39; rejected temperature parameter; &quot;</span>
+                    <span class="s2">&quot;retrying without it.&quot;</span><span class="p">,</span>
+                    <span class="n">model</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">NO_TEMPERATURE_MODELS</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+                <span class="n">params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;temperature&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">responses</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_content</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract text from an OpenAI Responses API response.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            raw: The raw response object from the Responses API.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The generated text string. Falls back to ``str(raw)`` if</span>
+<span class="sd">            the expected attributes are absent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">raw</span><span class="o">.</span><span class="n">output_text</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">raw</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Internal helpers — Chat Completions API (OpenAI-compatible endpoints)</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_call_api_chat</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Call the Chat Completions API (all OpenAI-compatible endpoints).</span>
+
+<span class="sd">        If the API rejects the ``temperature`` parameter, the call is</span>
+<span class="sd">        automatically retried without it and the model is added to</span>
+<span class="sd">        :data:`NO_TEMPERATURE_MODELS`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            messages: Formatted message list.</span>
+<span class="sd">            model: Model identifier.</span>
+<span class="sd">            temperature: Sampling temperature.</span>
+<span class="sd">            **kwargs: Extra parameters forwarded to the API.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The raw Chat Completions response object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">model</span><span class="p">,</span> <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="n">messages</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">model</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">NO_TEMPERATURE_MODELS</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">&quot;temperature&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">temperature</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">_is_temperature_error</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;temperature&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Model &#39;</span><span class="si">%s</span><span class="s2">&#39; rejected temperature parameter; &quot;</span>
+                    <span class="s2">&quot;retrying without it.&quot;</span><span class="p">,</span>
+                    <span class="n">model</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">NO_TEMPERATURE_MODELS</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+                <span class="n">params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;temperature&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_content_chat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract text from a Chat Completions API response.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            raw: The raw response object from the Chat Completions API.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The generated text string. Falls back to ``str(raw)`` if</span>
+<span class="sd">            the expected attributes are absent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">raw</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

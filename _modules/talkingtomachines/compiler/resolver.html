@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.compiler.resolver &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.compiler.resolver</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.compiler.resolver</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Jinja2 reference resolver for compile-time constant expansion.</span>
+
+<span class="sd">This module performs a partial-evaluation pass over prompt text,</span>
+<span class="sd">expanding statically-resolvable Jinja2 references while leaving</span>
+<span class="sd">runtime references intact for later substitution during experiment</span>
+<span class="sd">execution.</span>
+
+<span class="sd">References handled at compile time:</span>
+
+<span class="sd">    - ``{{ C.&lt;module&gt;.&lt;name&gt; }}`` — Replaced with the corresponding</span>
+<span class="sd">      value from the Constants sheet.</span>
+
+<span class="sd">References left for runtime resolution:</span>
+
+<span class="sd">    - ``{{ &lt;module&gt;.&lt;class&gt;.&lt;name&gt; }}`` — Field references.</span>
+<span class="sd">    - ``{{ player.&lt;field&gt; }}`` — Profile attribute references.</span>
+<span class="sd">    - ``{{ round_number }}``, ``{{ group_id }}``, etc. — Built-in</span>
+<span class="sd">      runtime variables.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">_CONSTANT_REF</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\{\{\s*C\.(\w+)\.(\w+)\s*\}\}&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="resolve_static_refs"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.resolver.resolve_static_refs">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">resolve_static_refs</span><span class="p">(</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">constants</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Replace constant references in *text* with their compile-time values.</span>
+
+<span class="sd">    Scans for ``{{ C.&lt;module&gt;.&lt;name&gt; }}`` patterns and substitutes each</span>
+<span class="sd">    with the string representation of the corresponding constant value.</span>
+<span class="sd">    References to unknown modules or constant names are left unchanged so</span>
+<span class="sd">    that downstream validation can report them.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        text: The prompt text containing Jinja2 constant references.</span>
+<span class="sd">        constants: Nested mapping of</span>
+<span class="sd">            ``{module_name: {constant_name: value}}`` from the Constants</span>
+<span class="sd">            sheet.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A copy of *text* with all resolvable constant references</span>
+<span class="sd">        replaced by their values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_replace</span><span class="p">(</span><span class="n">match</span><span class="p">:</span> <span class="n">re</span><span class="o">.</span><span class="n">Match</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Substitute a single constant reference match with its value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            match: A regex match object capturing the module name (group 1)</span>
+<span class="sd">                and constant name (group 2) from a ``{{ C.&lt;module&gt;.&lt;name&gt; }}``</span>
+<span class="sd">                pattern.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The string representation of the constant value, or the</span>
+<span class="sd">            original matched text if the module or constant name is not</span>
+<span class="sd">            found in *constants*.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">module</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">module_consts</span> <span class="o">=</span> <span class="n">constants</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">module_consts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s2">&quot;Resolver: unknown module &#39;</span><span class="si">%s</span><span class="s2">&#39; in constant ref — leaving as-is.&quot;</span><span class="p">,</span> <span class="n">module</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">module_consts</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s2">&quot;Resolver: unknown constant &#39;</span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2">&#39; — leaving as-is.&quot;</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">name</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">module_consts</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">_CONSTANT_REF</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">_replace</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="resolve_prompts"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.resolver.resolve_prompts">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">resolve_prompts</span><span class="p">(</span>
+    <span class="n">prompts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
+    <span class="n">constants</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve static constant references across all prompt definitions.</span>
+
+<span class="sd">    Iterates over every ``PromptDefinition`` in the provided mapping and</span>
+<span class="sd">    applies ``resolve_static_refs`` to its ``llm_text`` field, producing</span>
+<span class="sd">    new dataclass instances with the expanded text.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        prompts: Mapping of module names to lists of ``PromptDefinition``</span>
+<span class="sd">            dataclass instances whose ``llm_text`` may contain</span>
+<span class="sd">            ``{{ C.&lt;module&gt;.&lt;name&gt; }}`` references.</span>
+<span class="sd">        constants: Nested mapping of</span>
+<span class="sd">            ``{module_name: {constant_name: value}}`` from the Constants</span>
+<span class="sd">            sheet.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A new dictionary with the same structure as *prompts*, where</span>
+<span class="sd">        each ``PromptDefinition`` has its ``llm_text`` field resolved.</span>
+<span class="sd">        The original objects are not mutated.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
+
+    <span class="n">resolved</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">module</span><span class="p">,</span> <span class="n">prompt_list</span> <span class="ow">in</span> <span class="n">prompts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompt_list</span><span class="p">:</span>
+            <span class="n">updated_text</span> <span class="o">=</span> <span class="n">resolve_static_refs</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">llm_text</span><span class="p">,</span> <span class="n">constants</span><span class="p">)</span>
+            <span class="n">new_prompt</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">llm_text</span><span class="o">=</span><span class="n">updated_text</span><span class="p">)</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_prompt</span><span class="p">)</span>
+        <span class="n">resolved</span><span class="p">[</span><span class="n">module</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_list</span>
+    <span class="k">return</span> <span class="n">resolved</span></div>
+
+
+<div class="viewcode-block" id="resolve_facilitators"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.resolver.resolve_facilitators">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">resolve_facilitators</span><span class="p">(</span>
+    <span class="n">facilitators</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+    <span class="n">constants</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve static constant references in facilitator definitions.</span>
+
+<span class="sd">    Iterates over every ``FacilitatorFunction`` and applies</span>
+<span class="sd">    ``resolve_static_refs`` to its ``definition`` field, producing</span>
+<span class="sd">    new dataclass instances with the expanded text.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        facilitators: List of ``FacilitatorFunction`` dataclass</span>
+<span class="sd">            instances whose ``definition`` may contain</span>
+<span class="sd">            ``{{ C.&lt;module&gt;.&lt;name&gt; }}`` references.</span>
+<span class="sd">        constants: Nested mapping of</span>
+<span class="sd">            ``{module_name: {constant_name: value}}`` from the Constants</span>
+<span class="sd">            sheet.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A new list of ``FacilitatorFunction`` instances with their</span>
+<span class="sd">        ``definition`` fields resolved. The original objects are not</span>
+<span class="sd">        mutated.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
+
+    <span class="n">resolved</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">facilitators</span><span class="p">:</span>
+        <span class="n">updated_def</span> <span class="o">=</span> <span class="n">resolve_static_refs</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">definition</span><span class="p">,</span> <span class="n">constants</span><span class="p">)</span>
+        <span class="n">resolved</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">definition</span><span class="o">=</span><span class="n">updated_def</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">resolved</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.authoring.parsers.manual_parser &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.authoring.parsers.manual_parser</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.authoring.parsers.manual_parser</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Manual assignment worksheet parser</span>
+
+<span class="sd">Supports two modes for reading manual assignment data from Excel workbooks:</span>
+
+<span class="sd">    - **Single-tab**: A sheet named exactly ``Manual_``.</span>
+<span class="sd">    - **Multi-tab**: One or more sheets named ``Manual_*``</span>
+<span class="sd">      (e.g. ``Manual_Treatments``).</span>
+
+<span class="sd">All ``Manual_`` sheets are merged into a unified registry keyed by</span>
+<span class="sd">``(profile_id, module, round_number, class, name)``.</span>
+
+<span class="sd">The ``id`` column corresponds to the ``ID`` column in the Profiles worksheet.</span>
+
+<span class="sd">Accepted ``class`` values:</span>
+<span class="sd">    Session, Module, Subsession, Group, Agent, Player.</span>
+
+<span class="sd">Attributes:</span>
+<span class="sd">    _REQUIRED_COLS (set[str]): Column names that every ``Manual_`` sheet must</span>
+<span class="sd">        contain (lower-cased): ``id``, ``module``, ``round_number``, ``class``,</span>
+<span class="sd">        ``name``, and ``value``.</span>
+<span class="sd">    _VALID_CLASSES (set[str]): The set of accepted hierarchy class names.</span>
+<span class="sd">    ManualRegistry: Type alias ``dict[tuple[Any, str, Any, str, str], Any]``</span>
+<span class="sd">        — the return type produced by :func:`parse_manual_sheets`.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">_REQUIRED_COLS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;module&quot;</span><span class="p">,</span> <span class="s2">&quot;round_number&quot;</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">}</span>
+<span class="n">_VALID_CLASSES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Session&quot;</span><span class="p">,</span> <span class="s2">&quot;Module&quot;</span><span class="p">,</span> <span class="s2">&quot;Subsession&quot;</span><span class="p">,</span> <span class="s2">&quot;Group&quot;</span><span class="p">,</span> <span class="s2">&quot;Agent&quot;</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">}</span>
+
+<span class="n">ManualRegistry</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_manual_sheet</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">sheet_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Manual_&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a single ``Manual_`` sheet into a list of record dicts.</span>
+
+<span class="sd">    Normalises column names to lower-case, validates that all required</span>
+<span class="sd">    columns are present, and raises a ``ValueError`` if ``id`` or</span>
+<span class="sd">    ``name`` is missing. At least one of ``module`` or ``class`` must</span>
+<span class="sd">    also be provided; if both are missing, a ``ValueError`` is raised.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        df: Raw DataFrame read from one ``Manual_`` Excel tab.</span>
+<span class="sd">        sheet_name: Name of the sheet (used for error messages).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of record dicts, each containing keys ``profile_id``,</span>
+<span class="sd">        ``module``, ``round_number``, ``class``, ``name``, ``value``,</span>
+<span class="sd">        and ``_sheet``.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If any of the required columns are missing from</span>
+<span class="sd">            the sheet.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cols_lower</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">}</span>
+    <span class="n">missing</span> <span class="o">=</span> <span class="n">_REQUIRED_COLS</span> <span class="o">-</span> <span class="n">cols_lower</span>
+    <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Manual sheet &#39;</span><span class="si">{</span><span class="n">sheet_name</span><span class="si">}</span><span class="s2">&#39; is missing required columns: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+
+    <span class="n">records</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">row_num</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">profile_id</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;module&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">round_number</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;round_number&quot;</span><span class="p">)</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">)</span>
+
+        <span class="n">missing_parts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">profile_id</span><span class="p">):</span>
+            <span class="n">missing_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+            <span class="n">missing_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">missing_parts</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Manual sheet &#39;</span><span class="si">{</span><span class="n">sheet_name</span><span class="si">}</span><span class="s2">&#39; row </span><span class="si">{</span><span class="n">row_num</span><span class="si">}</span><span class="s2">: missing required value(s): &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing_parts</span><span class="p">)</span><span class="si">}</span><span class="s2">. Every row must have an id and name.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">module</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">cls</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Manual sheet &#39;</span><span class="si">{</span><span class="n">sheet_name</span><span class="si">}</span><span class="s2">&#39; row </span><span class="si">{</span><span class="n">row_num</span><span class="si">}</span><span class="s2">: both &#39;module&#39; and &#39;class&#39; are empty. &quot;</span>
+                <span class="s2">&quot;At least one of &#39;module&#39; or &#39;class&#39; must be provided.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">cls</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_VALID_CLASSES</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Manual sheet &#39;</span><span class="si">%s</span><span class="s2">&#39; row </span><span class="si">%s</span><span class="s2">: invalid class &#39;</span><span class="si">%s</span><span class="s2">&#39;. Expected one of </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="n">sheet_name</span><span class="p">,</span>
+                <span class="n">row_num</span><span class="p">,</span>
+                <span class="bp">cls</span><span class="p">,</span>
+                <span class="n">_VALID_CLASSES</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;profile_id&quot;</span><span class="p">:</span> <span class="n">profile_id</span><span class="p">,</span>
+                <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module</span><span class="p">,</span>
+                <span class="s2">&quot;round_number&quot;</span><span class="p">:</span> <span class="n">round_number</span><span class="p">,</span>
+                <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="bp">cls</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+                <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                <span class="s2">&quot;_sheet&quot;</span><span class="p">:</span> <span class="n">sheet_name</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">records</span>
+
+
+<div class="viewcode-block" id="parse_manual_sheets"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.parsers.html#talkingtomachines.authoring.parsers.manual_parser.parse_manual_sheets">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">parse_manual_sheets</span><span class="p">(</span>
+    <span class="n">sheets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+    <span class="n">profile_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ManualRegistry</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse one or more ``Manual_`` sheets and merge into a unified registry.</span>
+
+<span class="sd">    Iterates over all sheets whose names start with ``Manual_``, parses</span>
+<span class="sd">    each with ``_parse_manual_sheet``, and combines the results into</span>
+<span class="sd">    a single ``ManualRegistry``. Duplicate keys are overwritten with</span>
+<span class="sd">    a logged warning.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sheets: Mapping of ``sheet_name`` to ``DataFrame``. The caller</span>
+<span class="sd">            should pass only sheets whose names start with ``Manual_``;</span>
+<span class="sd">            non-matching names are silently skipped.</span>
+<span class="sd">        profile_ids: Optional set of valid profile IDs from the Profiles</span>
+<span class="sd">            worksheet. When provided, any ``id`` value not found in this</span>
+<span class="sd">            set causes a ``ValueError``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A :data:`ManualRegistry` dict keyed by</span>
+<span class="sd">        ``(profile_id, module, round_number, class, name)`` with the</span>
+<span class="sd">        corresponding ``value`` from the worksheet.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If ``profile_ids`` is supplied and a record references</span>
+<span class="sd">            an ID not present in that set.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">ManualRegistry</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">sheet_name</span><span class="p">,</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">sheets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">sheet_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;Manual_&quot;</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">records</span> <span class="o">=</span> <span class="n">_parse_manual_sheet</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
+            <span class="c1"># Cross-validate profile IDs if provided</span>
+            <span class="k">if</span> <span class="n">profile_ids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">pid</span> <span class="o">=</span> <span class="n">rec</span><span class="p">[</span><span class="s2">&quot;profile_id&quot;</span><span class="p">]</span>
+                <span class="c1"># Compare as strings for consistency</span>
+                <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">profile_ids</span><span class="p">}:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Manual sheet &#39;</span><span class="si">{</span><span class="n">sheet_name</span><span class="si">}</span><span class="s2">&#39;: ID &#39;</span><span class="si">{</span><span class="n">pid</span><span class="si">}</span><span class="s2">&#39; not found in Profiles worksheet.&quot;</span>
+                    <span class="p">)</span>
+
+            <span class="n">key</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">rec</span><span class="p">[</span><span class="s2">&quot;profile_id&quot;</span><span class="p">],</span>
+                <span class="n">rec</span><span class="p">[</span><span class="s2">&quot;module&quot;</span><span class="p">],</span>
+                <span class="n">rec</span><span class="p">[</span><span class="s2">&quot;round_number&quot;</span><span class="p">],</span>
+                <span class="n">rec</span><span class="p">[</span><span class="s2">&quot;class&quot;</span><span class="p">],</span>
+                <span class="n">rec</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">registry</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Manual registry: duplicate key </span><span class="si">%s</span><span class="s2"> — overwriting with value from &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+                    <span class="n">key</span><span class="p">,</span>
+                    <span class="n">sheet_name</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">registry</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">rec</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">registry</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

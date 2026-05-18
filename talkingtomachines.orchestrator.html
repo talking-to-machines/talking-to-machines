@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.orchestrator package &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="talkingtomachines.storage package" href="talkingtomachines.storage.html" />
+    <link rel="prev" title="talkingtomachines.management package" href="talkingtomachines.management.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">talkingtomachines</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.agents.html">talkingtomachines.agents package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.analytics.html">talkingtomachines.analytics package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.html">talkingtomachines.authoring package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.compiler.html">talkingtomachines.compiler package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.core.html">talkingtomachines.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.gateway.html">talkingtomachines.gateway package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.generative.html">talkingtomachines.generative package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.interface.html">talkingtomachines.interface package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.management.html">talkingtomachines.management package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">talkingtomachines.orchestrator package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.orchestrator.checkpointing">talkingtomachines.orchestrator.checkpointing module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.orchestrator.guardrails">talkingtomachines.orchestrator.guardrails module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.orchestrator.parallel">talkingtomachines.orchestrator.parallel module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.orchestrator.runtime">talkingtomachines.orchestrator.runtime module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.storage.html">talkingtomachines.storage package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">talkingtomachines</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.orchestrator package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/talkingtomachines.orchestrator.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="talkingtomachines-orchestrator-package">
+<h1>talkingtomachines.orchestrator package<a class="headerlink" href="#talkingtomachines-orchestrator-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-talkingtomachines.orchestrator.checkpointing">
+<span id="talkingtomachines-orchestrator-checkpointing-module"></span><h2>talkingtomachines.orchestrator.checkpointing module<a class="headerlink" href="#module-talkingtomachines.orchestrator.checkpointing" title="Permalink to this heading"></a></h2>
+<p>Session checkpointing for fault-tolerant experiment execution.</p>
+<p>Saves and loads session state as JSON files at subsession boundaries,
+enabling experiment resumption after interruptions or failures.</p>
+<p>Checkpoint path convention:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">run_folder</span><span class="o">&gt;/</span><span class="n">checkpoints</span><span class="o">/&lt;</span><span class="n">session_id</span><span class="o">&gt;.</span><span class="n">json</span>
+<span class="o">&lt;</span><span class="n">run_folder</span><span class="o">&gt;/</span><span class="n">checkpoints</span><span class="o">/&lt;</span><span class="n">session_id</span><span class="o">&gt;</span><span class="n">_state</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.checkpointing.Checkpointer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.orchestrator.checkpointing.</span></span><span class="sig-name descname"><span class="pre">Checkpointer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_folder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">pathlib.Path</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/orchestrator/checkpointing.html#Checkpointer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.orchestrator.checkpointing.Checkpointer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Manages checkpoint save/load for experiment sessions.</p>
+<p>Persists <code class="docutils literal notranslate"><span class="pre">Session</span></code> objects as JSON files in a <code class="docutils literal notranslate"><span class="pre">checkpoints/</span></code>
+subdirectory within the run folder. Supports saving, loading, and
+existence checks by session ID.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.checkpointing.Checkpointer._checkpoint_dir">
+<span class="sig-name descname"><span class="pre">_checkpoint_dir</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.checkpointing.Checkpointer._checkpoint_dir" title="Permalink to this definition"></a></dt>
+<dd><p>Path to the <code class="docutils literal notranslate"><span class="pre">checkpoints/</span></code> directory.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.checkpointing.Checkpointer.exists">
+<span class="sig-name descname"><span class="pre">exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/orchestrator/checkpointing.html#Checkpointer.exists"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.orchestrator.checkpointing.Checkpointer.exists" title="Permalink to this definition"></a></dt>
+<dd><p>Check whether a checkpoint file exists for the given session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>session_id</strong> – The unique session identifier to look up.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if a checkpoint file exists on disk, False otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.checkpointing.Checkpointer.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Session" title="talkingtomachines.core.models.Session"><span class="pre">talkingtomachines.core.models.Session</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState" title="talkingtomachines.core.fields.ExperimentState"><span class="pre">talkingtomachines.core.fields.ExperimentState</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/orchestrator/checkpointing.html#Checkpointer.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.orchestrator.checkpointing.Checkpointer.load" title="Permalink to this definition"></a></dt>
+<dd><p>Load a session checkpoint and experiment state from disk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>session_id</strong> – The unique session identifier to look up.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tuple of <code class="docutils literal notranslate"><span class="pre">(Session,</span> <span class="pre">ExperimentState)</span></code>. Either element
+may be <code class="docutils literal notranslate"><span class="pre">None</span></code> — the session is <code class="docutils literal notranslate"><span class="pre">None</span></code> when no checkpoint
+file exists, and the state is <code class="docutils literal notranslate"><span class="pre">None</span></code> when no state file
+exists (backward compatibility with older checkpoints).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.checkpointing.Checkpointer.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Session" title="talkingtomachines.core.models.Session"><span class="pre">Session</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState" title="talkingtomachines.core.fields.ExperimentState"><span class="pre">ExperimentState</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/orchestrator/checkpointing.html#Checkpointer.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.orchestrator.checkpointing.Checkpointer.save" title="Permalink to this definition"></a></dt>
+<dd><p>Save session and experiment state to JSON checkpoint files.</p>
+<p>Serializes the session via <code class="docutils literal notranslate"><span class="pre">session.to_dict()</span></code> and writes it
+as pretty-printed JSON. If an <code class="docutils literal notranslate"><span class="pre">ExperimentState</span></code> is provided,
+it is saved alongside as <code class="docutils literal notranslate"><span class="pre">&lt;session_id&gt;_state.json</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>session</strong> – The session object to persist.</p></li>
+<li><p><strong>state</strong> – Optional experiment state to persist alongside the
+session checkpoint.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Absolute filesystem path to the saved session checkpoint file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.orchestrator.guardrails">
+<span id="talkingtomachines-orchestrator-guardrails-module"></span><h2>talkingtomachines.orchestrator.guardrails module<a class="headerlink" href="#module-talkingtomachines.orchestrator.guardrails" title="Permalink to this heading"></a></h2>
+<p>Runtime guardrails for safety checks and anomaly detection.</p>
+<p>Provides monitoring for suspicious LLM response patterns such as
+repeated identical outputs and suspiciously fast completions. Anomalies
+are recorded as <code class="docutils literal notranslate"><span class="pre">AnomalyFlag</span></code> instances for post-hoc analysis.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.guardrails.AnomalyFlag">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.orchestrator.guardrails.</span></span><span class="sig-name descname"><span class="pre">AnomalyFlag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">turn_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">flag_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/orchestrator/guardrails.html#AnomalyFlag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.orchestrator.guardrails.AnomalyFlag" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Record of a single detected anomaly during experiment execution.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.guardrails.AnomalyFlag.turn_id">
+<span class="sig-name descname"><span class="pre">turn_id</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.guardrails.AnomalyFlag.turn_id" title="Permalink to this definition"></a></dt>
+<dd><p>Identifier of the turn where the anomaly was detected.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.guardrails.AnomalyFlag.flag_type">
+<span class="sig-name descname"><span class="pre">flag_type</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.guardrails.AnomalyFlag.flag_type" title="Permalink to this definition"></a></dt>
+<dd><p>Category of anomaly (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;suspiciously_fast&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;repeated_response&quot;</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.guardrails.AnomalyFlag.details">
+<span class="sig-name descname"><span class="pre">details</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.guardrails.AnomalyFlag.details" title="Permalink to this definition"></a></dt>
+<dd><p>Human-readable description of the anomaly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">details</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#id0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">flag_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#id1" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">turn_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#id2" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.guardrails.Guardrails">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.orchestrator.guardrails.</span></span><span class="sig-name descname"><span class="pre">Guardrails</span></span><a class="reference internal" href="_modules/talkingtomachines/orchestrator/guardrails.html#Guardrails"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.orchestrator.guardrails.Guardrails" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Monitors LLM responses for anomalies and enforces safety limits.</p>
+<p>Performs two runtime checks on every response:</p>
+<ol class="arabic simple">
+<li><p><strong>Fast completion</strong>: Flags responses with latency below
+<code class="docutils literal notranslate"><span class="pre">MIN_LATENCY_MS</span></code> as suspicious (may indicate caching or errors).</p></li>
+<li><p><strong>Repeated response</strong>: Flags when the last <code class="docutils literal notranslate"><span class="pre">REPEAT_WINDOW</span></code>
+consecutive responses from the same agent are identical.</p></li>
+</ol>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.guardrails.Guardrails.MIN_LATENCY_MS">
+<span class="sig-name descname"><span class="pre">MIN_LATENCY_MS</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.guardrails.Guardrails.MIN_LATENCY_MS" title="Permalink to this definition"></a></dt>
+<dd><p>Minimum expected latency in milliseconds. Responses
+faster than this threshold are flagged.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.guardrails.Guardrails.REPEAT_WINDOW">
+<span class="sig-name descname"><span class="pre">REPEAT_WINDOW</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.guardrails.Guardrails.REPEAT_WINDOW" title="Permalink to this definition"></a></dt>
+<dd><p>Number of consecutive identical responses that
+trigger a repeated-response anomaly flag.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.guardrails.Guardrails.anomaly_flags">
+<span class="sig-name descname"><span class="pre">anomaly_flags</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.guardrails.Guardrails.anomaly_flags" title="Permalink to this definition"></a></dt>
+<dd><p>Accumulated list of all detected anomaly records.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id3">
+<span class="sig-name descname"><span class="pre">MIN_LATENCY_MS</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">50.0</span></em><a class="headerlink" href="#id3" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id4">
+<span class="sig-name descname"><span class="pre">REPEAT_WINDOW</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#id4" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.guardrails.Guardrails.check_response">
+<span class="sig-name descname"><span class="pre">check_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">turn_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_instance_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">content</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">latency_ms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/orchestrator/guardrails.html#Guardrails.check_response"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.orchestrator.guardrails.Guardrails.check_response" title="Permalink to this definition"></a></dt>
+<dd><p>Check a single LLM response for anomalies.</p>
+<p>Runs all configured anomaly detectors against the response and
+records any flags to <code class="docutils literal notranslate"><span class="pre">self.anomaly_flags</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>turn_id</strong> – Unique identifier for this turn, used in log messages
+and anomaly records.</p></li>
+<li><p><strong>agent_instance_id</strong> – Identifier of the agent that produced the
+response.</p></li>
+<li><p><strong>content</strong> – The text content of the LLM response.</p></li>
+<li><p><strong>latency_ms</strong> – Wall-clock time in milliseconds that the LLM call
+took to complete.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of flag type strings detected (e.g.,
+<code class="docutils literal notranslate"><span class="pre">[&quot;suspiciously_fast&quot;]</span></code>). Empty if no anomalies found.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.guardrails.SchemaFailureLimitError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.orchestrator.guardrails.</span></span><span class="sig-name descname"><span class="pre">SchemaFailureLimitError</span></span><a class="reference internal" href="_modules/talkingtomachines/orchestrator/guardrails.html#SchemaFailureLimitError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.orchestrator.guardrails.SchemaFailureLimitError" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></a></p>
+<p>Raised when consecutive schema validation failures exceed the retry limit.</p>
+<p>This exception signals that the LLM has failed to produce a valid
+response conforming to the expected schema after the maximum number
+of retry attempts.</p>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.orchestrator.parallel">
+<span id="talkingtomachines-orchestrator-parallel-module"></span><h2>talkingtomachines.orchestrator.parallel module<a class="headerlink" href="#module-talkingtomachines.orchestrator.parallel" title="Permalink to this heading"></a></h2>
+<p>Three-tier parallelism model for experiment execution.</p>
+<p>Provides concurrent execution at three levels of the experiment hierarchy:</p>
+<ul class="simple">
+<li><p><strong>Session-level</strong>: <code class="docutils literal notranslate"><span class="pre">ProcessPoolExecutor</span></code> runs multiple sessions as
+separate processes so that global state cannot interfere across sessions.</p></li>
+<li><p><strong>Group-level</strong>: <code class="docutils literal notranslate"><span class="pre">ThreadPoolExecutor</span></code> runs groups within a subsession
+concurrently, suitable for I/O-bound LLM calls.</p></li>
+<li><p><strong>Player-level</strong>: <code class="docutils literal notranslate"><span class="pre">ThreadPoolExecutor</span></code> runs PRIVATE_QUESTION prompts
+concurrently within a single group.</p></li>
+</ul>
+<p>Session-level usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.orchestrator.parallel</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_sessions_parallel</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">run_sessions_parallel</span><span class="p">(</span>
+    <span class="n">cep_path</span><span class="o">=</span><span class="s2">&quot;run_dir/compiled_experiment.json&quot;</span><span class="p">,</span>
+    <span class="n">output_base</span><span class="o">=</span><span class="s2">&quot;experiment_results&quot;</span><span class="p">,</span>
+    <span class="n">session_numbers</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+    <span class="n">budget_cap_usd</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span>
+    <span class="n">test_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">max_workers</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.parallel.SessionResult">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.orchestrator.parallel.</span></span><span class="sig-name descname"><span class="pre">SessionResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_cost_usd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">success</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/orchestrator/parallel.html#SessionResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.orchestrator.parallel.SessionResult" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Outcome of a single session execution in a parallel run.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.parallel.SessionResult.session_number">
+<span class="sig-name descname"><span class="pre">session_number</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.parallel.SessionResult.session_number" title="Permalink to this definition"></a></dt>
+<dd><p>Numeric index of the session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.parallel.SessionResult.session_id">
+<span class="sig-name descname"><span class="pre">session_id</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.parallel.SessionResult.session_id" title="Permalink to this definition"></a></dt>
+<dd><p>Unique identifier assigned to the session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.parallel.SessionResult.total_cost_usd">
+<span class="sig-name descname"><span class="pre">total_cost_usd</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.parallel.SessionResult.total_cost_usd" title="Permalink to this definition"></a></dt>
+<dd><p>Cumulative LLM API cost for the session in USD.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.parallel.SessionResult.output_dir">
+<span class="sig-name descname"><span class="pre">output_dir</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.parallel.SessionResult.output_dir" title="Permalink to this definition"></a></dt>
+<dd><p>Filesystem path where session artifacts were written.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.parallel.SessionResult.success">
+<span class="sig-name descname"><span class="pre">success</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.parallel.SessionResult.success" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the session completed without errors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.parallel.SessionResult.error">
+<span class="sig-name descname"><span class="pre">error</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.parallel.SessionResult.error" title="Permalink to this definition"></a></dt>
+<dd><p>Error message if the session failed; empty string on success.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id5">
+<span class="sig-name descname"><span class="pre">error</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#id5" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id6">
+<span class="sig-name descname"><span class="pre">output_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#id6" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id7">
+<span class="sig-name descname"><span class="pre">session_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#id7" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id8">
+<span class="sig-name descname"><span class="pre">session_number</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#id8" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id9">
+<span class="sig-name descname"><span class="pre">success</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#id9" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id10">
+<span class="sig-name descname"><span class="pre">total_cost_usd</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#id10" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.parallel.run_groups_parallel">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.orchestrator.parallel.</span></span><span class="sig-name descname"><span class="pre">run_groups_parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_args_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_workers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/orchestrator/parallel.html#run_groups_parallel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.orchestrator.parallel.run_groups_parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Run a callable concurrently for each group using a thread pool.</p>
+<p>Submits <code class="docutils literal notranslate"><span class="pre">group_fn(*args)</span></code> for every <code class="docutils literal notranslate"><span class="pre">args</span></code> tuple in
+<em>group_args_list</em> and collects results preserving input order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>group_fn</strong> – Callable to invoke for each group. Receives unpacked
+positional arguments from each tuple in <em>group_args_list</em>.</p></li>
+<li><p><strong>group_args_list</strong> – List of argument tuples, one per group.</p></li>
+<li><p><strong>max_workers</strong> – Maximum number of concurrent threads.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of results in the same order as <em>group_args_list</em>.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.14)"><strong>RuntimeError</strong></a> – If one or more group tasks fail. The error message
+    aggregates all failure descriptions.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.parallel.run_private_questions_parallel">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.orchestrator.parallel.</span></span><span class="sig-name descname"><span class="pre">run_private_questions_parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">player_args_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_workers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/orchestrator/parallel.html#run_private_questions_parallel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.orchestrator.parallel.run_private_questions_parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Run PRIVATE_QUESTION responses concurrently for players within a group.</p>
+<p>Delegates to <code class="docutils literal notranslate"><span class="pre">run_groups_parallel</span></code> with a higher default worker count
+since private questions are independent and benefit from more parallelism.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fn</strong> – Callable that produces a private response for a single player.</p></li>
+<li><p><strong>player_args_list</strong> – List of argument tuples, one per player.</p></li>
+<li><p><strong>max_workers</strong> – Maximum number of concurrent threads.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of results in the same order as <em>player_args_list</em>.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.14)"><strong>RuntimeError</strong></a> – If one or more player tasks fail.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.parallel.run_sessions_parallel">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.orchestrator.parallel.</span></span><span class="sig-name descname"><span class="pre">run_sessions_parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cep_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_numbers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">budget_cap_usd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_workers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#talkingtomachines.orchestrator.parallel.SessionResult" title="talkingtomachines.orchestrator.parallel.SessionResult"><span class="pre">talkingtomachines.orchestrator.parallel.SessionResult</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/orchestrator/parallel.html#run_sessions_parallel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.orchestrator.parallel.run_sessions_parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Run multiple experiment sessions in parallel using <code class="docutils literal notranslate"><span class="pre">ProcessPoolExecutor</span></code>.</p>
+<p>Each session runs in an isolated subprocess so that concurrent LLM calls
+and shared global state cannot interfere with each other.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cep_path</strong> – Path to the <code class="docutils literal notranslate"><span class="pre">compiled_experiment.json</span></code> file on disk.</p></li>
+<li><p><strong>output_base</strong> – Root output directory — each session writes to a sub-folder.</p></li>
+<li><p><strong>session_numbers</strong> – Ordered list of session indices to execute (e.g. [1, 2, 3]).</p></li>
+<li><p><strong>budget_cap_usd</strong> – Per-session budget cap (0 = unlimited).</p></li>
+<li><p><strong>test_mode</strong> – Pass <code class="docutils literal notranslate"><span class="pre">test_mode=True</span></code> to each session.</p></li>
+<li><p><strong>max_workers</strong> – Maximum number of concurrent processes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of <code class="docutils literal notranslate"><span class="pre">SessionResult</span></code> objects in the same order as <em>session_numbers</em>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.orchestrator.runtime">
+<span id="talkingtomachines-orchestrator-runtime-module"></span><h2>talkingtomachines.orchestrator.runtime module<a class="headerlink" href="#module-talkingtomachines.orchestrator.runtime" title="Permalink to this heading"></a></h2>
+<p>Experiment runtime engine for executing compiled experiments.</p>
+<p>Replaces the monolithic <code class="docutils literal notranslate"><span class="pre">run_session()</span></code> with a modular, hierarchical
+execution engine that supports parallel group execution, checkpointing,
+guardrails, and multiple prompt types (facilitator, context, discussion,
+public questions, private questions).</p>
+<p>Runtime loop:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ExperimentRuntime</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">cep</span><span class="p">):</span>
+  <span class="n">initialize_session</span><span class="p">()</span>
+  <span class="k">for</span> <span class="n">each</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">session</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">each</span> <span class="n">subsession</span> <span class="ow">in</span> <span class="n">module</span><span class="p">:</span>
+      <span class="n">form_groups</span><span class="p">()</span>
+      <span class="k">for</span> <span class="n">each</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">subsession</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">each</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">module</span> <span class="p">(</span><span class="n">filtered</span> <span class="n">by</span> <span class="n">is_displayed</span><span class="p">):</span>
+          <span class="k">if</span> <span class="n">FACILITATOR</span>      <span class="o">-&gt;</span> <span class="n">execute_facilitator</span><span class="p">()</span>
+          <span class="k">if</span> <span class="n">CONTEXT</span>          <span class="o">-&gt;</span> <span class="n">broadcast_context</span><span class="p">()</span>
+          <span class="k">if</span> <span class="n">DISCUSSION</span>       <span class="o">-&gt;</span> <span class="n">run_discussion_turn</span><span class="p">()</span>
+          <span class="k">if</span> <span class="n">PUBLIC_QUESTION</span>  <span class="o">-&gt;</span> <span class="n">run_question_turn</span><span class="p">(</span><span class="n">visibility</span><span class="o">=</span><span class="n">group_only</span><span class="p">)</span>
+          <span class="k">if</span> <span class="n">PRIVATE_QUESTION</span> <span class="o">-&gt;</span> <span class="n">run_question_turn</span><span class="p">(</span><span class="n">visibility</span><span class="o">=</span><span class="n">private</span><span class="p">)</span>
+        <span class="n">evaluate_stop_condition</span><span class="p">()</span>
+      <span class="c1"># end_round/continue scoped to group; only end_session propagates</span>
+      <span class="k">if</span> <span class="n">stop</span> <span class="o">==</span> <span class="s2">&quot;end_session&quot;</span> <span class="o">-&gt;</span> <span class="k">break</span>
+  <span class="n">finalize_session</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.orchestrator.runtime.</span></span><span class="sig-name descname"><span class="pre">ExperimentRuntime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.CompiledExperiment" title="talkingtomachines.compiler.cep_schema.CompiledExperiment"><span class="pre">CompiledExperiment</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">pathlib.Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">budget_cap_usd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/orchestrator/runtime.html#ExperimentRuntime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Executes a compiled experiment for a single session.</p>
+<p>Orchestrates the full lifecycle of an experiment session, including
+agent construction, module/subsession iteration, group formation,
+prompt dispatch, checkpointing, and finalization.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime._cep">
+<span class="sig-name descname"><span class="pre">_cep</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime._cep" title="Permalink to this definition"></a></dt>
+<dd><p>The compiled experiment protocol containing all configuration.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime._output_dir">
+<span class="sig-name descname"><span class="pre">_output_dir</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime._output_dir" title="Permalink to this definition"></a></dt>
+<dd><p>Directory where session artifacts are written.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime._cost_tracker">
+<span class="sig-name descname"><span class="pre">_cost_tracker</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime._cost_tracker" title="Permalink to this definition"></a></dt>
+<dd><p>Tracks cumulative LLM API costs.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime._router">
+<span class="sig-name descname"><span class="pre">_router</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime._router" title="Permalink to this definition"></a></dt>
+<dd><p>Routes LLM calls to the configured provider.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime._context_guard">
+<span class="sig-name descname"><span class="pre">_context_guard</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime._context_guard" title="Permalink to this definition"></a></dt>
+<dd><p>Enforces context window limits per model.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime._rng_engine">
+<span class="sig-name descname"><span class="pre">_rng_engine</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime._rng_engine" title="Permalink to this definition"></a></dt>
+<dd><p>Seeded randomisation engine for reproducibility.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime._state">
+<span class="sig-name descname"><span class="pre">_state</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime._state" title="Permalink to this definition"></a></dt>
+<dd><p>Mutable experiment state shared across the session.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime._flow">
+<span class="sig-name descname"><span class="pre">_flow</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime._flow" title="Permalink to this definition"></a></dt>
+<dd><p>Evaluator for flow-control expressions (is_displayed, stop conditions).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime._guardrails">
+<span class="sig-name descname"><span class="pre">_guardrails</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime._guardrails" title="Permalink to this definition"></a></dt>
+<dd><p>Anomaly detection and safety checks.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime._checkpointer">
+<span class="sig-name descname"><span class="pre">_checkpointer</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime._checkpointer" title="Permalink to this definition"></a></dt>
+<dd><p>Saves/loads session state at subsession boundaries.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime._event_logger">
+<span class="sig-name descname"><span class="pre">_event_logger</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime._event_logger" title="Permalink to this definition"></a></dt>
+<dd><p>Writes structured trace events to a JSONL file.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime._turn_counter">
+<span class="sig-name descname"><span class="pre">_turn_counter</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime._turn_counter" title="Permalink to this definition"></a></dt>
+<dd><p>Global turn counter within the session.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime._turn_counter_lock">
+<span class="sig-name descname"><span class="pre">_turn_counter_lock</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime._turn_counter_lock" title="Permalink to this definition"></a></dt>
+<dd><p>Thread lock protecting the turn counter.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime._jinja_env">
+<span class="sig-name descname"><span class="pre">_jinja_env</span></span><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime._jinja_env" title="Permalink to this definition"></a></dt>
+<dd><p>Sandboxed Jinja2 environment for template rendering.</p>
+</dd></dl>
+
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cep</span> <span class="o">=</span> <span class="n">CompiledExperiment</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;compiled_experiment.json&quot;</span><span class="p">)</span>
+<span class="n">runtime</span> <span class="o">=</span> <span class="n">ExperimentRuntime</span><span class="p">(</span><span class="n">cep</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;experiment_results/run_001&quot;</span><span class="p">)</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">session_number</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">test_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resume_session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Session" title="talkingtomachines.core.models.Session"><span class="pre">Session</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_module_complete</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><span class="pre">callable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Session" title="talkingtomachines.core.models.Session"><span class="pre">Session</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/orchestrator/runtime.html#ExperimentRuntime.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime.run" title="Permalink to this definition"></a></dt>
+<dd><p>Execute the full experiment session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>session_number</strong> – Numeric index of this session (for ID derivation).</p></li>
+<li><p><strong>test_mode</strong> – If True, run only one group per module.</p></li>
+<li><p><strong>resume_session</strong> – If provided, resume from this checkpoint. Already-completed
+modules (those with subsessions) are skipped.</p></li>
+<li><p><strong>on_module_complete</strong> – Optional callback invoked after each module
+completes. Called with <code class="docutils literal notranslate"><span class="pre">(module_index,</span> <span class="pre">module_name,</span> <span class="pre">total_modules)</span></code>
+to support progress reporting.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The completed <code class="docutils literal notranslate"><span class="pre">Session</span></code> object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime.state">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">state</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState" title="talkingtomachines.core.fields.ExperimentState"><span class="pre">ExperimentState</span></a></em><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime.state" title="Permalink to this definition"></a></dt>
+<dd><p>Read-only access to the experiment state.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="talkingtomachines.orchestrator.runtime.ExperimentRuntime.total_cost_usd">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total_cost_usd</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#talkingtomachines.orchestrator.runtime.ExperimentRuntime.total_cost_usd" title="Permalink to this definition"></a></dt>
+<dd><p>Total accumulated cost in USD.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="talkingtomachines.management.html" class="btn btn-neutral float-left" title="talkingtomachines.management package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="talkingtomachines.storage.html" class="btn btn-neutral float-right" title="talkingtomachines.storage package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

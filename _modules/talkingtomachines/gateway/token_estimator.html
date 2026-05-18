@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.gateway.token_estimator &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.gateway.token_estimator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.gateway.token_estimator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Token counting utilities for context window estimation.</span>
+
+<span class="sd">Provides functions to estimate the number of tokens in text strings and</span>
+<span class="sd">message lists. Uses the ``tiktoken`` library (``cl100k_base`` encoding)</span>
+<span class="sd">when available; otherwise falls back to a characters-divided-by-four</span>
+<span class="sd">heuristic.</span>
+
+<span class="sd">The encoder is initialised lazily on first use so that the import cost</span>
+<span class="sd">of ``tiktoken`` is only paid when token estimation is actually needed.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">_encoder</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">_USE_TIKTOKEN</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">_INIT_DONE</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_init_encoder</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialise the token encoder on first use.</span>
+
+<span class="sd">    Attempts to load ``tiktoken`` with the ``cl100k_base`` encoding. If</span>
+<span class="sd">    the import fails, sets a module-level flag so that subsequent calls</span>
+<span class="sd">    use the character-count heuristic instead. This function is</span>
+<span class="sd">    idempotent; repeated calls after initialisation are no-ops.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_encoder</span><span class="p">,</span> <span class="n">_USE_TIKTOKEN</span><span class="p">,</span> <span class="n">_INIT_DONE</span>
+    <span class="k">if</span> <span class="n">_INIT_DONE</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">tiktoken</span>
+
+        <span class="n">_encoder</span> <span class="o">=</span> <span class="n">tiktoken</span><span class="o">.</span><span class="n">get_encoding</span><span class="p">(</span><span class="s2">&quot;cl100k_base&quot;</span><span class="p">)</span>
+        <span class="n">_USE_TIKTOKEN</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Using tiktoken for token estimation.&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="n">_USE_TIKTOKEN</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;tiktoken not available; using chars/4 heuristic.&quot;</span><span class="p">)</span>
+    <span class="n">_INIT_DONE</span> <span class="o">=</span> <span class="kc">True</span>
+
+
+<div class="viewcode-block" id="estimate_tokens"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.token_estimator.estimate_tokens">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">estimate_tokens</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Estimate the token count of a text string.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        text: The input string to tokenise.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The estimated number of tokens. Always at least ``1`` when</span>
+<span class="sd">        the heuristic path is used.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_init_encoder</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">_USE_TIKTOKEN</span> <span class="ow">and</span> <span class="n">_encoder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">_encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+    <span class="c1"># Heuristic: ~4 characters per token for English text</span>
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">//</span> <span class="mi">4</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="estimate_messages_tokens"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.token_estimator.estimate_messages_tokens">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">estimate_messages_tokens</span><span class="p">(</span><span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Estimate total tokens for a list of message dicts.</span>
+
+<span class="sd">    Each message contributes the tokens of its ``content`` field plus a</span>
+<span class="sd">    fixed per-message overhead of 4 tokens (accounting for role tags and</span>
+<span class="sd">    delimiters). For multimodal content blocks, only the ``text`` parts</span>
+<span class="sd">    are counted.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        messages: A list of message dictionaries, each containing at</span>
+<span class="sd">            least a ``content`` key whose value is either a string or a</span>
+<span class="sd">            list of content-block dicts.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The estimated total token count across all messages.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">messages</span><span class="p">:</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">total</span> <span class="o">+=</span> <span class="n">estimate_tokens</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="c1"># Multimodal content blocks — estimate text parts only</span>
+            <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">content</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;text&quot;</span> <span class="ow">in</span> <span class="n">block</span><span class="p">:</span>
+                    <span class="n">total</span> <span class="o">+=</span> <span class="n">estimate_tokens</span><span class="p">(</span><span class="n">block</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">])</span>
+        <span class="n">total</span> <span class="o">+=</span> <span class="mi">4</span>  <span class="c1"># Per-message overhead (role, delimiters)</span>
+    <span class="k">return</span> <span class="n">total</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

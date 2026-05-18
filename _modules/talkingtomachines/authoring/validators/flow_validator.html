@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.authoring.validators.flow_validator &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.authoring.validators.flow_validator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.authoring.validators.flow_validator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Flow validator for prompt template workbooks.</span>
+
+<span class="sd">Validates module-level structural and logical constraints:</span>
+
+<span class="sd">- ``is_displayed`` expression syntax (via Jinja2 sandbox).</span>
+<span class="sd">- ``MAX_NUM_ROUNDS`` and ``PLAYERS_PER_GROUP`` present in Constants</span>
+<span class="sd">  for each module.</span>
+<span class="sd">- Warns when ``PRIVATE_QUESTION`` prompts write to Group/Session-scoped</span>
+<span class="sd">  fields.</span>
+<span class="sd">- Cross-references ``field_class``/``field_name`` in prompts against</span>
+<span class="sd">  the Fields worksheet.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.schema_validator</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValidationError</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="FlowValidator"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.validators.html#talkingtomachines.authoring.validators.flow_validator.FlowValidator">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">FlowValidator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates conditional display logic and module structure.</span>
+
+<span class="sd">    Checks that each module in the experiment has the required constants,</span>
+<span class="sd">    valid ``is_displayed`` Jinja expressions, and correct field</span>
+<span class="sd">    references.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        _prompts: Mapping of module names to their prompt definitions.</span>
+<span class="sd">        _constants: Nested dictionary of constants per module.</span>
+<span class="sd">        _module_names: Ordered list of module names from</span>
+<span class="sd">            ``MODULE_SEQUENCE``.</span>
+<span class="sd">        _field_index: Lookup dictionary keyed by</span>
+<span class="sd">            ``(module, field_class, name)`` for cross-referencing.</span>
+<span class="sd">        _errors: Accumulated validation errors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
+        <span class="n">constants</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+        <span class="n">module_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">field_index</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the flow validator.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            prompts: Mapping ``{module: [PromptDefinition, ...]}`` as</span>
+<span class="sd">                returned by the prompts parser.</span>
+<span class="sd">            constants: Nested dictionary ``{module: {name: value}}``</span>
+<span class="sd">                as returned by the constants parser.</span>
+<span class="sd">            module_names: Ordered list of module names from the</span>
+<span class="sd">                ``MODULE_SEQUENCE`` setting.</span>
+<span class="sd">            field_index: Optional lookup dictionary keyed by</span>
+<span class="sd">                ``(module, field_class, name)`` for cross-referencing</span>
+<span class="sd">                prompt field references against the Fields worksheet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prompts</span> <span class="o">=</span> <span class="n">prompts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_constants</span> <span class="o">=</span> <span class="n">constants</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_module_names</span> <span class="o">=</span> <span class="n">module_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_field_index</span> <span class="o">=</span> <span class="n">field_index</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ValidationError</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="FlowValidator.validate"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.validators.html#talkingtomachines.authoring.validators.flow_validator.FlowValidator.validate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ValidationError</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run all flow validations and return accumulated errors.</span>
+
+<span class="sd">        Iterates over each module in ``MODULE_SEQUENCE`` and checks</span>
+<span class="sd">        required constants, prompt availability, ``is_displayed``</span>
+<span class="sd">        syntax, scope warnings for ``PRIVATE_QUESTION``, and field</span>
+<span class="sd">        cross-references.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of ``ValidationError`` instances. An empty list</span>
+<span class="sd">            indicates that all checks passed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_module_names</span><span class="p">:</span>
+            <span class="c1"># Check MAX_NUM_ROUNDS and PLAYERS_PER_GROUP</span>
+            <span class="n">module_consts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constants</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="k">if</span> <span class="s2">&quot;MAX_NUM_ROUNDS&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">module_consts</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                    <span class="s2">&quot;C&quot;</span><span class="p">,</span>
+                    <span class="kc">None</span><span class="p">,</span>
+                    <span class="kc">None</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Module &#39;</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">&#39;: &#39;MAX_NUM_ROUNDS&#39; is missing from C worksheet.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;PLAYERS_PER_GROUP&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">module_consts</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                    <span class="s2">&quot;C&quot;</span><span class="p">,</span>
+                    <span class="kc">None</span><span class="p">,</span>
+                    <span class="kc">None</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Module &#39;</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">&#39;: &#39;PLAYERS_PER_GROUP&#39; is missing from C worksheet.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="n">module_prompts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">module_prompts</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                    <span class="s2">&quot;Prompts&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Module &#39;</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">&#39;: no prompts defined.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Validate is_displayed syntax using Jinja2 sandbox</span>
+            <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">module_prompts</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">prompt</span><span class="o">.</span><span class="n">is_displayed</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_validate_is_displayed_syntax</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">is_displayed</span><span class="p">,</span> <span class="n">module</span><span class="p">)</span>
+
+            <span class="c1"># Warn when PRIVATE_QUESTION writes to Group/Session-scoped fields</span>
+            <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">module_prompts</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">prompt</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;PRIVATE_QUESTION&quot;</span>
+                    <span class="ow">and</span> <span class="n">prompt</span><span class="o">.</span><span class="n">field_class</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;Group&quot;</span><span class="p">,</span> <span class="s2">&quot;Session&quot;</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="n">prompt</span><span class="o">.</span><span class="n">field_name</span>
+                <span class="p">):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s2">&quot;[sheet=Prompts] Module &#39;</span><span class="si">%s</span><span class="s2">&#39;: PRIVATE_QUESTION prompt (sequence </span><span class="si">%s</span><span class="s2">) &quot;</span>
+                        <span class="s2">&quot;writes to </span><span class="si">%s</span><span class="s2">-scoped field &#39;</span><span class="si">%s</span><span class="s2">&#39;. When multiple players respond in &quot;</span>
+                        <span class="s2">&quot;parallel, their responses will be aggregated into a dictionary &quot;</span>
+                        <span class="s2">&quot;keyed by player_id (e.g., {player_1: value, player_2: value}). &quot;</span>
+                        <span class="s2">&quot;If you expect a single value per player, use field_class &#39;Player&#39; &quot;</span>
+                        <span class="s2">&quot;instead.&quot;</span><span class="p">,</span>
+                        <span class="n">module</span><span class="p">,</span>
+                        <span class="n">prompt</span><span class="o">.</span><span class="n">prompt_sequence</span><span class="p">,</span>
+                        <span class="n">prompt</span><span class="o">.</span><span class="n">field_class</span><span class="p">,</span>
+                        <span class="n">prompt</span><span class="o">.</span><span class="n">field_name</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+            <span class="c1"># Validate field_class/field_name references against Fields worksheet</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field_index</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">module_prompts</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">prompt</span><span class="o">.</span><span class="n">field_class</span> <span class="ow">and</span> <span class="n">prompt</span><span class="o">.</span><span class="n">field_name</span><span class="p">:</span>
+                        <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">prompt</span><span class="o">.</span><span class="n">field_class</span><span class="p">,</span> <span class="n">prompt</span><span class="o">.</span><span class="n">field_name</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field_index</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                                <span class="s2">&quot;Prompts&quot;</span><span class="p">,</span>
+                                <span class="kc">None</span><span class="p">,</span>
+                                <span class="s2">&quot;field_class/field_name&quot;</span><span class="p">,</span>
+                                <span class="sa">f</span><span class="s2">&quot;Module &#39;</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">&#39;: prompt (sequence </span><span class="si">{</span><span class="n">prompt</span><span class="o">.</span><span class="n">prompt_sequence</span><span class="si">}</span><span class="s2">) &quot;</span>
+                                <span class="sa">f</span><span class="s2">&quot;references field_class=&#39;</span><span class="si">{</span><span class="n">prompt</span><span class="o">.</span><span class="n">field_class</span><span class="si">}</span><span class="s2">&#39;, &quot;</span>
+                                <span class="sa">f</span><span class="s2">&quot;field_name=&#39;</span><span class="si">{</span><span class="n">prompt</span><span class="o">.</span><span class="n">field_name</span><span class="si">}</span><span class="s2">&#39; which does not match any &quot;</span>
+                                <span class="sa">f</span><span class="s2">&quot;entry in the Fields worksheet.&quot;</span><span class="p">,</span>
+                            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_is_displayed_syntax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that an ``is_displayed`` value is a parseable Jinja expression.</span>
+
+<span class="sd">        Wraps the expression in a Jinja ``{% if %}`` block inside a</span>
+<span class="sd">        sandboxed environment to check for syntax errors.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            expression: The raw ``is_displayed`` string from the</span>
+<span class="sd">                Prompts worksheet.</span>
+<span class="sd">            module: Module name, used for error reporting.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">jinja2.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxedEnvironment</span>
+
+            <span class="n">env</span> <span class="o">=</span> <span class="n">SandboxedEnvironment</span><span class="p">()</span>
+            <span class="c1"># Wrap in a conditional to check syntax</span>
+            <span class="n">env</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="s2">% if </span><span class="si">{</span><span class="n">expression</span><span class="si">}</span><span class="s2"> %</span><span class="se">}}</span><span class="s2">ok</span><span class="se">{{</span><span class="s2">% endif %</span><span class="se">}}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                <span class="s2">&quot;Prompts&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;is_displayed&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;Module &#39;</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">&#39;: invalid is_displayed expression &#39;</span><span class="si">{</span><span class="n">expression</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_err</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sheet</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Record a validation error.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sheet: Name of the worksheet where the error was found.</span>
+<span class="sd">            row: Row index, or ``None`` for sheet-level errors.</span>
+<span class="sd">            col: Column name, or ``None`` when not applicable.</span>
+<span class="sd">            message: Human-readable error description.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">ValidationError</span><span class="p">(</span><span class="n">sheet</span><span class="o">=</span><span class="n">sheet</span><span class="p">,</span> <span class="n">row</span><span class="o">=</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>
+        <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.storage.experiment &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.storage.experiment</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.storage.experiment</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Legacy experiment storage utilities.</span>
+
+<span class="sd">Provides functions for saving session output to JSON and CSV files,</span>
+<span class="sd">and for parsing JSON fields that may contain Markdown code-block delimiters.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span><span class="p">,</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_json_serializer</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Serialize various object types into JSON-compatible formats.</span>
+
+<span class="sd">    This function is designed to handle specific object types and convert them</span>
+<span class="sd">    into formats that can be serialized into JSON. The supported object types</span>
+<span class="sd">    and their conversions are as follows:</span>
+
+<span class="sd">    - `datetime` and `date`: Converted to ISO 8601 string format using `isoformat()`.</span>
+<span class="sd">    - `numpy.ndarray`: Converted to a Python list using `tolist()`.</span>
+<span class="sd">    - `numpy.generic`: Converted to a native Python scalar using `item()`.</span>
+<span class="sd">    - `Role`, `Treatment`, `Constant`: Converted to a dictionary representation using `to_dict()`.</span>
+<span class="sd">    - Other types: Converted to their string representation using `str()`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        obj: The object to be serialized.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A JSON-compatible representation of the input object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.management.experiment</span><span class="w"> </span><span class="kn">import</span> <span class="n">Role</span><span class="p">,</span> <span class="n">Treatment</span><span class="p">,</span> <span class="n">Constant</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">datetime</span><span class="p">,</span> <span class="n">date</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">generic</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">Role</span><span class="p">,</span> <span class="n">Treatment</span><span class="p">,</span> <span class="n">Constant</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="save_session"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.experiment.save_session">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">save_session</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">save_results_as_csv</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Save the outputs of a session to a local JSON file in the experiment_results folder at the root directory.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session (dict[str, Any]): The session to be saved.</span>
+<span class="sd">        save_results_as_csv (bool, optional): Indicates whether the results of the session will be saved as CSV format.</span>
+<span class="sd">                Defaults to False</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">&quot;experiment_results&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">now_utc</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+    <span class="n">datetime_str</span> <span class="o">=</span> <span class="n">now_utc</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">T%H%M%SZ&quot;</span><span class="p">)</span>
+    <span class="n">json_file_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;experiment_results/</span><span class="si">{</span><span class="n">session</span><span class="p">[</span><span class="s1">&#39;session_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">datetime_str</span><span class="si">}</span><span class="s2">.json&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_file_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">_json_serializer</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">save_results_as_csv</span><span class="p">:</span>
+        <span class="n">save_session_as_csv</span><span class="p">(</span><span class="n">json_file_path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="parse_json_field"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.experiment.parse_json_field">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">parse_json_field</span><span class="p">(</span><span class="n">json_field</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parses a JSON string field, removing optional Markdown-style JSON code block delimiters</span>
+<span class="sd">    (e.g., ```json ... ```) if present, and attempts to decode the JSON string into a Python object.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        json_field (str): The JSON string to parse. It may optionally include Markdown-style</span>
+<span class="sd">                          code block delimiters.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict or list or str: The parsed JSON object (e.g., a dictionary or list) if the input</span>
+<span class="sd">                             is valid JSON. If the input is not valid JSON, the original string</span>
+<span class="sd">                             is returned.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">json_field</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;```json&quot;</span><span class="p">):</span>
+            <span class="n">json_field</span> <span class="o">=</span> <span class="n">json_field</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="s2">&quot;```json&quot;</span><span class="p">)</span> <span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">json_field</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">):</span>
+            <span class="n">json_field</span> <span class="o">=</span> <span class="n">json_field</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_field</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">json_field</span></div>
+
+
+<div class="viewcode-block" id="save_session_as_csv"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.experiment.save_session_as_csv">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">save_session_as_csv</span><span class="p">(</span><span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads a JSON file containing the outputs of a session, processes the data to extract relevant information,</span>
+<span class="sd">    and saves the result as a CSV file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_name (str): The path to the JSON file containing the session data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="n">json_output</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+
+    <span class="n">output_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">profile_columns</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">group_info</span> <span class="ow">in</span> <span class="n">json_output</span><span class="p">[</span><span class="s2">&quot;groups&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+        <span class="k">for</span> <span class="n">role</span><span class="p">,</span> <span class="n">subject</span> <span class="ow">in</span> <span class="n">group_info</span><span class="p">[</span><span class="s2">&quot;subjects&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">role</span> <span class="o">==</span> <span class="s2">&quot;facilitator&quot;</span><span class="p">:</span>
+                <span class="n">subject_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;facilitator_group</span><span class="si">{</span><span class="n">subject</span><span class="p">[</span><span class="s1">&#39;group_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">subject_id</span> <span class="o">=</span> <span class="n">subject</span><span class="p">[</span><span class="s2">&quot;profile_info&quot;</span><span class="p">][</span><span class="s2">&quot;ID&quot;</span><span class="p">]</span>
+
+            <span class="n">output_dict</span><span class="p">[</span><span class="n">subject_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">subject</span><span class="p">[</span><span class="s2">&quot;session_id&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="n">subject</span><span class="p">[</span><span class="s2">&quot;group_id&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;model_info&quot;</span><span class="p">:</span> <span class="n">subject</span><span class="p">[</span><span class="s2">&quot;model_info&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="n">subject</span><span class="p">[</span><span class="s2">&quot;temperature&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="n">role</span><span class="p">,</span>
+                <span class="s2">&quot;treatment_label&quot;</span><span class="p">:</span> <span class="n">group_info</span><span class="p">[</span><span class="s2">&quot;treatment_label&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;experiment_context&quot;</span><span class="p">:</span> <span class="n">subject</span><span class="p">[</span><span class="s2">&quot;experiment_context&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;system_message&quot;</span><span class="p">:</span> <span class="n">subject</span><span class="p">[</span><span class="s2">&quot;system_message&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;build_profile_qna&quot;</span><span class="p">:</span> <span class="n">subject</span><span class="p">[</span><span class="s2">&quot;build_profile_qna&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;build_profile_backstories&quot;</span><span class="p">:</span> <span class="n">subject</span><span class="p">[</span><span class="s2">&quot;build_profile_backstories&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;constants&quot;</span><span class="p">:</span> <span class="n">group_info</span><span class="p">[</span><span class="s2">&quot;constants&quot;</span><span class="p">],</span>
+            <span class="p">}</span>
+
+            <span class="n">output_dict</span><span class="p">[</span><span class="n">subject_id</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">subject</span><span class="p">[</span><span class="s2">&quot;profile_info&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">&quot;ID&quot;</span><span class="p">}</span>
+            <span class="p">)</span>
+            <span class="n">profile_columns</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">subject</span><span class="p">[</span><span class="s2">&quot;profile_info&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">&quot;ID&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">group_info</span><span class="p">[</span><span class="s2">&quot;message_history&quot;</span><span class="p">]:</span>
+            <span class="n">role</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">role</span> <span class="o">==</span> <span class="s2">&quot;system&quot;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">elif</span> <span class="n">role</span> <span class="o">==</span> <span class="s2">&quot;facilitator&quot;</span><span class="p">:</span>
+                <span class="n">subject_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;facilitator_group</span><span class="si">{</span><span class="n">group_info</span><span class="p">[</span><span class="s1">&#39;group_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">subject_id</span> <span class="o">=</span> <span class="n">group_info</span><span class="p">[</span><span class="s2">&quot;subjects&quot;</span><span class="p">][</span><span class="n">role</span><span class="p">][</span><span class="s2">&quot;profile_info&quot;</span><span class="p">][</span><span class="s2">&quot;ID&quot;</span><span class="p">]</span>
+
+            <span class="n">round_num</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;round_num&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;round_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span>
+                <span class="ow">and</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response_name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span>
+            <span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="k">elif</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response_name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="n">parsed_response</span> <span class="o">=</span> <span class="n">parse_json_field</span><span class="p">(</span><span class="n">json_field</span><span class="o">=</span><span class="n">message</span><span class="p">[</span><span class="n">role</span><span class="p">])</span>
+                <span class="n">output_dict</span><span class="p">[</span><span class="n">subject_id</span><span class="p">][</span>
+                    <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;response_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.raw.round</span><span class="si">{</span><span class="n">round_num</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="k">if</span> <span class="n">round_num</span>
+                        <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;response_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.raw&quot;</span>
+                    <span class="p">)</span>
+                <span class="p">]</span> <span class="o">=</span> <span class="n">parsed_response</span>
+
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parsed_response</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">parsed_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                        <span class="n">output_dict</span><span class="p">[</span><span class="n">subject_id</span><span class="p">][</span>
+                            <span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;response_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.response.round</span><span class="si">{</span><span class="n">round_num</span><span class="si">}</span><span class="s2">&quot;</span>
+                                <span class="k">if</span> <span class="n">round_num</span>
+                                <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;response_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.response&quot;</span>
+                            <span class="p">)</span>
+                        <span class="p">]</span> <span class="o">=</span> <span class="n">parsed_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">parsed_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reasoning&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                        <span class="n">output_dict</span><span class="p">[</span><span class="n">subject_id</span><span class="p">][</span>
+                            <span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;response_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.reasoning.round</span><span class="si">{</span><span class="n">round_num</span><span class="si">}</span><span class="s2">&quot;</span>
+                                <span class="k">if</span> <span class="n">round_num</span>
+                                <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;response_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.reasoning&quot;</span>
+                            <span class="p">)</span>
+                        <span class="p">]</span> <span class="o">=</span> <span class="n">parsed_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reasoning&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">parsed_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;speculation_score&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                        <span class="n">output_dict</span><span class="p">[</span><span class="n">subject_id</span><span class="p">][</span>
+                            <span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;response_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.speculation_score.round</span><span class="si">{</span><span class="n">round_num</span><span class="si">}</span><span class="s2">&quot;</span>
+                                <span class="k">if</span> <span class="n">round_num</span>
+                                <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;response_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.speculation_score&quot;</span>
+                            <span class="p">)</span>
+                        <span class="p">]</span> <span class="o">=</span> <span class="n">parsed_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;speculation_score&quot;</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">parsed_response</span> <span class="o">=</span> <span class="n">parse_json_field</span><span class="p">(</span><span class="n">json_field</span><span class="o">=</span><span class="n">message</span><span class="p">[</span><span class="n">role</span><span class="p">])</span>
+                <span class="n">output_dict</span><span class="p">[</span><span class="n">subject_id</span><span class="p">][</span>
+                    <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;round_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.raw.round</span><span class="si">{</span><span class="n">round_num</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="k">if</span> <span class="n">round_num</span>
+                        <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;round_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.raw&quot;</span>
+                    <span class="p">)</span>
+                <span class="p">]</span> <span class="o">=</span> <span class="n">parsed_response</span>
+
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parsed_response</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">parsed_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                        <span class="n">output_dict</span><span class="p">[</span><span class="n">subject_id</span><span class="p">][</span>
+                            <span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;round_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.response.round</span><span class="si">{</span><span class="n">round_num</span><span class="si">}</span><span class="s2">&quot;</span>
+                                <span class="k">if</span> <span class="n">round_num</span>
+                                <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;round_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.response&quot;</span>
+                            <span class="p">)</span>
+                        <span class="p">]</span> <span class="o">=</span> <span class="n">parsed_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">parsed_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reasoning&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                        <span class="n">output_dict</span><span class="p">[</span><span class="n">subject_id</span><span class="p">][</span>
+                            <span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;round_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.reasoning.round</span><span class="si">{</span><span class="n">round_num</span><span class="si">}</span><span class="s2">&quot;</span>
+                                <span class="k">if</span> <span class="n">round_num</span>
+                                <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;round_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.reasoning&quot;</span>
+                            <span class="p">)</span>
+                        <span class="p">]</span> <span class="o">=</span> <span class="n">parsed_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reasoning&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">parsed_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;speculation_score&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                        <span class="n">output_dict</span><span class="p">[</span><span class="n">subject_id</span><span class="p">][</span>
+                            <span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;round_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.speculation_score.round</span><span class="si">{</span><span class="n">round_num</span><span class="si">}</span><span class="s2">&quot;</span>
+                                <span class="k">if</span> <span class="n">round_num</span>
+                                <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;round_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.speculation_score&quot;</span>
+                            <span class="p">)</span>
+                        <span class="p">]</span> <span class="o">=</span> <span class="n">parsed_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;speculation_score&quot;</span><span class="p">)</span>
+
+    <span class="n">output_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">output_dict</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;index&quot;</span><span class="p">)</span>
+    <span class="n">output_df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">output_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="s2">&quot;ID&quot;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">output_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;group_id&quot;</span><span class="p">,</span> <span class="s2">&quot;ID&quot;</span><span class="p">],</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Reorder output columns</span>
+    <span class="n">preferred_prefix_order</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;ID&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;session_id&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;group_id&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;model_info&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;temperature&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;treatment_label&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;system_message&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;experiment_context&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;build_profile_qna&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;build_profile_backstories&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;constants&quot;</span><span class="p">,</span>
+    <span class="p">]</span> <span class="o">+</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">profile_columns</span><span class="p">)</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">output_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">prefix_column_order</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">preferred_prefix_order</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">]</span>
+    <span class="n">remaining_column_order</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cols</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prefix_column_order</span><span class="p">])</span>
+    <span class="n">final_column_order</span> <span class="o">=</span> <span class="n">prefix_column_order</span> <span class="o">+</span> <span class="n">remaining_column_order</span>
+    <span class="n">output_df</span> <span class="o">=</span> <span class="n">output_df</span><span class="p">[</span><span class="n">final_column_order</span><span class="p">]</span>
+    <span class="n">output_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">file_name</span><span class="p">[:</span><span class="o">-</span><span class="mi">5</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;.csv&quot;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

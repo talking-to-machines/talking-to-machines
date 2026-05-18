@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.authoring package &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="talkingtomachines.authoring.parsers package" href="talkingtomachines.authoring.parsers.html" />
+    <link rel="prev" title="talkingtomachines.analytics package" href="talkingtomachines.analytics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">talkingtomachines</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.agents.html">talkingtomachines.agents package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.analytics.html">talkingtomachines.analytics package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">talkingtomachines.authoring package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="talkingtomachines.authoring.parsers.html">talkingtomachines.authoring.parsers package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="talkingtomachines.authoring.validators.html">talkingtomachines.authoring.validators package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.authoring.template_generator">talkingtomachines.authoring.template_generator module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.compiler.html">talkingtomachines.compiler package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.core.html">talkingtomachines.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.gateway.html">talkingtomachines.gateway package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.generative.html">talkingtomachines.generative package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.interface.html">talkingtomachines.interface package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.management.html">talkingtomachines.management package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.orchestrator.html">talkingtomachines.orchestrator package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.storage.html">talkingtomachines.storage package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">talkingtomachines</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.authoring package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/talkingtomachines.authoring.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="talkingtomachines-authoring-package">
+<h1>talkingtomachines.authoring package<a class="headerlink" href="#talkingtomachines-authoring-package" title="Permalink to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="talkingtomachines.authoring.parsers.html">talkingtomachines.authoring.parsers package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.parsers.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.parsers.html#module-talkingtomachines.authoring.parsers.constants_parser">talkingtomachines.authoring.parsers.constants_parser module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.parsers.html#module-talkingtomachines.authoring.parsers.facilitator_parser">talkingtomachines.authoring.parsers.facilitator_parser module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.parsers.html#module-talkingtomachines.authoring.parsers.fields_parser">talkingtomachines.authoring.parsers.fields_parser module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.parsers.html#module-talkingtomachines.authoring.parsers.manual_parser">talkingtomachines.authoring.parsers.manual_parser module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.parsers.html#module-talkingtomachines.authoring.parsers.profiles_parser">talkingtomachines.authoring.parsers.profiles_parser module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.parsers.html#module-talkingtomachines.authoring.parsers.prompts_parser">talkingtomachines.authoring.parsers.prompts_parser module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.parsers.html#module-talkingtomachines.authoring.parsers.settings_parser">talkingtomachines.authoring.parsers.settings_parser module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="talkingtomachines.authoring.validators.html">talkingtomachines.authoring.validators package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.validators.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.validators.html#module-talkingtomachines.authoring.validators.context_window_validator">talkingtomachines.authoring.validators.context_window_validator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.validators.html#module-talkingtomachines.authoring.validators.flow_validator">talkingtomachines.authoring.validators.flow_validator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.validators.html#module-talkingtomachines.authoring.validators.provider_validator">talkingtomachines.authoring.validators.provider_validator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.validators.html#module-talkingtomachines.authoring.validators.reference_validator">talkingtomachines.authoring.validators.reference_validator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.validators.html#module-talkingtomachines.authoring.validators.schema_validator">talkingtomachines.authoring.validators.schema_validator module</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-talkingtomachines.authoring.template_generator">
+<span id="talkingtomachines-authoring-template-generator-module"></span><h2>talkingtomachines.authoring.template_generator module<a class="headerlink" href="#module-talkingtomachines.authoring.template_generator" title="Permalink to this heading"></a></h2>
+<p>Template generator for blank experiment workbooks.</p>
+<p>Creates a blank <code class="docutils literal notranslate"><span class="pre">prompt_template.xlsx</span></code> workbook with seven worksheets
+(Settings, C, Fields, Facilitator, Prompts, Profiles, <code class="docutils literal notranslate"><span class="pre">Manual_</span></code>) containing
+bold headers and example rows for use with <code class="docutils literal notranslate"><span class="pre">talkingtomachines</span> <span class="pre">init</span></code>.</p>
+<p>Supports two output formats:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>xlsx</strong> (default): A single Excel workbook with one tab per sheet.</p></li>
+<li><p><strong>csv</strong>: Individual CSV files, one per sheet, written into a project
+subdirectory.</p></li>
+</ul>
+</div></blockquote>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.template_generator._SHEETS">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.template_generator.</span></span><span class="sig-name descname"><span class="pre">_SHEETS</span></span><a class="headerlink" href="#talkingtomachines.authoring.template_generator._SHEETS" title="Permalink to this definition"></a></dt>
+<dd><p>Registry of sheet definitions. Each entry
+maps a sheet name to a dict with <code class="docutils literal notranslate"><span class="pre">columns</span></code> (list of header
+strings), <code class="docutils literal notranslate"><span class="pre">rows</span></code> (list of example data rows), and optional
+Profiles-specific keys (<code class="docutils literal notranslate"><span class="pre">header_row0</span></code>, <code class="docutils literal notranslate"><span class="pre">header_row1</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.template_generator.generate_template">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.template_generator.</span></span><span class="sig-name descname"><span class="pre">generate_template</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'.'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'simple_pgg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'xlsx'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'csv'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'xlsx'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/authoring/template_generator.html#generate_template"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.template_generator.generate_template" title="Permalink to this definition"></a></dt>
+<dd><p>Create template files in a project subdirectory.</p>
+<p>Generates a blank experiment template with seven worksheets
+(Settings, C, Fields, Facilitator, Prompts, Profiles, <code class="docutils literal notranslate"><span class="pre">Manual_</span></code>)
+containing example rows and bold headers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_dir</strong> – Parent directory where the project folder is created.</p></li>
+<li><p><strong>project_name</strong> – Name of the project subfolder and template file prefix.</p></li>
+<li><p><strong>fmt</strong> – Output format — <code class="docutils literal notranslate"><span class="pre">&quot;xlsx&quot;</span></code> for a single Excel workbook or
+<code class="docutils literal notranslate"><span class="pre">&quot;csv&quot;</span></code> for individual CSV files per sheet.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of file paths that were created.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="talkingtomachines.analytics.html" class="btn btn-neutral float-left" title="talkingtomachines.analytics package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="talkingtomachines.authoring.parsers.html" class="btn btn-neutral float-right" title="talkingtomachines.authoring.parsers package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

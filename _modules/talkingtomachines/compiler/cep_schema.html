@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.compiler.cep_schema &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.compiler.cep_schema</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.compiler.cep_schema</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Compiled Experiment Package (CEP) schema definition (Phase 3).</span>
+
+<span class="sd">The CEP is the output of the compiler and serves as the single source of truth</span>
+<span class="sd">for runtime execution.  It is serialized to ``compiled_experiment.json`` in</span>
+<span class="sd">the run folder.</span>
+
+<span class="sd">Schema version: 1.0</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+
+<div class="viewcode-block" id="AssignmentPlan"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.AssignmentPlan">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AssignmentPlan</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pre-computed group assignments and manual variable definitions.</span>
+
+<span class="sd">    Group assignments come from the ``Manual_`` sheet (entries with</span>
+<span class="sd">    ``class=&quot;Group&quot;`` and ``name=&quot;id_in_subsession&quot;``). All other</span>
+<span class="sd">    ``Manual_`` entries (including treatment) are stored in</span>
+<span class="sd">    ``manual_variables`` and applied at runtime.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        random_seed: Seed used for deterministic randomisation.</span>
+<span class="sd">        group_assignments: Nested mapping of manual group formations</span>
+<span class="sd">            per module and round</span>
+<span class="sd">            (``{module: {round: {group_label: [agent_id]}}}``).</span>
+<span class="sd">            Empty if no manual groups are defined.</span>
+<span class="sd">        manual_variables: List of manual variable entries from the</span>
+<span class="sd">            ``Manual_`` sheet. Each entry is a dict with keys</span>
+<span class="sd">            ``profile_id``, ``module``, ``round_number``, ``class``,</span>
+<span class="sd">            ``name``, and ``value``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">group_assignments</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">manual_variables</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AssignmentPlan.get_manual_groups"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.AssignmentPlan.get_manual_groups">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_manual_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return manual group assignments for a specific module and round.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            module: Module name.</span>
+<span class="sd">            round_number: Round number (1-based).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dict ``{group_label: [agent_id, ...]}`` if manual groups</span>
+<span class="sd">            are defined for this module/round, otherwise an empty dict.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">module_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">group_assignments</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="c1"># Round keys may be int (in-memory) or str (after JSON round-trip)</span>
+        <span class="k">return</span> <span class="n">module_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">round_number</span><span class="p">)</span> <span class="ow">or</span> <span class="n">module_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">round_number</span><span class="p">),</span> <span class="p">{})</span></div>
+
+<div class="viewcode-block" id="AssignmentPlan.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.AssignmentPlan.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the assignment plan to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary containing all assignment plan fields.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;random_seed&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">,</span>
+            <span class="s2">&quot;group_assignments&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">group_assignments</span><span class="p">,</span>
+            <span class="s2">&quot;manual_variables&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">manual_variables</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="AssignmentPlan.from_dict"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.AssignmentPlan.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AssignmentPlan&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reconstruct an ``AssignmentPlan`` from a plain dictionary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Dictionary with assignment plan fields, typically</span>
+<span class="sd">                loaded from a CEP JSON file.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new ``AssignmentPlan`` instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">random_seed</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;random_seed&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+            <span class="n">group_assignments</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;group_assignments&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+            <span class="n">manual_variables</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;manual_variables&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="CompiledExperiment"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.CompiledExperiment">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CompiledExperiment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compiled Experiment Package (CEP).</span>
+
+<span class="sd">    The CEP is the single source of truth for runtime execution,</span>
+<span class="sd">    produced by the compiler and serialised to</span>
+<span class="sd">    ``compiled_experiment.json``. All Jinja compile-time references</span>
+<span class="sd">    are pre-resolved; runtime references (``round_number``,</span>
+<span class="sd">    ``player.field``, etc.) remain as Jinja placeholders for</span>
+<span class="sd">    evaluation at runtime.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        schema_version: CEP schema version string (e.g. ``&quot;1.0&quot;``).</span>
+<span class="sd">        experiment_id: Unique experiment identifier from the Settings</span>
+<span class="sd">            worksheet.</span>
+<span class="sd">        config_hash: Truncated SHA-256 hash of all parsed worksheet</span>
+<span class="sd">            data.</span>
+<span class="sd">        cep_hash: Full SHA-256 hash of the serialised CEP.</span>
+<span class="sd">        run_id: Unique run identifier incorporating a UTC timestamp</span>
+<span class="sd">            and random suffix.</span>
+<span class="sd">        settings: Flat dictionary of experiment settings.</span>
+<span class="sd">        constants: Nested dictionary of constants per module</span>
+<span class="sd">            (``{module: {name: typed_value}}``).</span>
+<span class="sd">        fields: List of field definition dictionaries.</span>
+<span class="sd">        facilitator_functions: List of facilitator function</span>
+<span class="sd">            dictionaries.</span>
+<span class="sd">        prompts: Module-grouped prompt dictionaries</span>
+<span class="sd">            (``{module: [prompt_dict, ...]}``).</span>
+<span class="sd">        profiles: Agent profile data from the Profiles worksheet.</span>
+<span class="sd">        module_sequence: Ordered list of module names.</span>
+<span class="sd">        assignment_plan: Pre-computed treatment and group assignments.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">schema_version</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">experiment_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">config_hash</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">cep_hash</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">settings</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="n">constants</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="n">fields</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>
+    <span class="n">facilitator_functions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>
+    <span class="n">prompts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]</span>
+    <span class="n">profiles</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="n">module_sequence</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">assignment_plan</span><span class="p">:</span> <span class="n">AssignmentPlan</span>
+
+<div class="viewcode-block" id="CompiledExperiment.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.CompiledExperiment.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the compiled experiment to a plain dictionary.</span>
+
+<span class="sd">        Recursively converts the ``assignment_plan`` via its own</span>
+<span class="sd">        ``to_dict`` method.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary containing all CEP fields, suitable for</span>
+<span class="sd">            JSON serialisation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;schema_version&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema_version</span><span class="p">,</span>
+            <span class="s2">&quot;experiment_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span>
+            <span class="s2">&quot;config_hash&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_hash</span><span class="p">,</span>
+            <span class="s2">&quot;cep_hash&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cep_hash</span><span class="p">,</span>
+            <span class="s2">&quot;run_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+            <span class="s2">&quot;settings&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">,</span>
+            <span class="s2">&quot;constants&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">constants</span><span class="p">,</span>
+            <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">,</span>
+            <span class="s2">&quot;facilitator_functions&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">facilitator_functions</span><span class="p">,</span>
+            <span class="s2">&quot;prompts&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompts</span><span class="p">,</span>
+            <span class="s2">&quot;profiles&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">profiles</span><span class="p">,</span>
+            <span class="s2">&quot;module_sequence&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">module_sequence</span><span class="p">,</span>
+            <span class="s2">&quot;assignment_plan&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">assignment_plan</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="CompiledExperiment.to_json"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.CompiledExperiment.to_json">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indent</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the compiled experiment to a JSON string.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            indent: Number of spaces for JSON indentation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A formatted JSON string representation of the CEP.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="CompiledExperiment.save"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.CompiledExperiment.save">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write the compiled experiment to a JSON file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path: Destination file path. Parent directories must</span>
+<span class="sd">                already exist.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_json</span><span class="p">(),</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CompiledExperiment.from_dict"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.CompiledExperiment.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CompiledExperiment&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reconstruct a ``CompiledExperiment`` from a plain dictionary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Dictionary with CEP fields, typically loaded from</span>
+<span class="sd">                a ``compiled_experiment.json`` file.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new ``CompiledExperiment`` instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">schema_version</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;schema_version&quot;</span><span class="p">,</span> <span class="s2">&quot;1.0&quot;</span><span class="p">),</span>
+            <span class="n">experiment_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">],</span>
+            <span class="n">config_hash</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;config_hash&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+            <span class="n">cep_hash</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cep_hash&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+            <span class="n">run_id</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;run_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+            <span class="n">settings</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;settings&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+            <span class="n">constants</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;constants&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+            <span class="n">fields</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fields&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">facilitator_functions</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;facilitator_functions&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">prompts</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prompts&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+            <span class="n">profiles</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;profiles&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+            <span class="n">module_sequence</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;module_sequence&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">assignment_plan</span><span class="o">=</span><span class="n">AssignmentPlan</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;assignment_plan&quot;</span><span class="p">,</span> <span class="p">{})),</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="CompiledExperiment.load"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.cep_schema.CompiledExperiment.load">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CompiledExperiment&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load a ``CompiledExperiment`` from a JSON file on disk.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path: Path to a ``compiled_experiment.json`` file.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new ``CompiledExperiment`` instance populated from the</span>
+<span class="sd">            file contents.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">text</span><span class="p">))</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

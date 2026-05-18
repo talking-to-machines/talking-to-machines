@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.authoring.validators.provider_validator &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.authoring.validators.provider_validator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.authoring.validators.provider_validator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Provider validator for LLM model names and modality support.</span>
+
+<span class="sd">Checks that a given ``model_name`` is recognised by the built-in provider</span>
+<span class="sd">registry and that the requested modalities (text, audio, video) and features</span>
+<span class="sd">(RAG) are compatible with the detected provider.</span>
+
+<span class="sd">Validations performed:</span>
+<span class="sd">    - The model name matches at least one known provider prefix or is</span>
+<span class="sd">      listed explicitly in a provider model set.</span>
+<span class="sd">    - If the experiment uses RAG, the model must belong to an OpenAI</span>
+<span class="sd">      provider (current limitation).</span>
+<span class="sd">    - If the experiment includes video or audio prompts, the model must</span>
+<span class="sd">      appear in the corresponding capability set.</span>
+
+<span class="sd">Attributes:</span>
+<span class="sd">    _OPENAI_MODELS (set[str]): Explicit set of recognised OpenAI model</span>
+<span class="sd">        identifiers.</span>
+<span class="sd">    _ANTHROPIC_PREFIXES (tuple[str, ...]): Name prefixes for Anthropic</span>
+<span class="sd">        models.</span>
+<span class="sd">    _GOOGLE_PREFIXES (tuple[str, ...]): Name prefixes for Google models.</span>
+<span class="sd">    _MISTRAL_PREFIXES (tuple[str, ...]): Name prefixes for Mistral AI</span>
+<span class="sd">        models.</span>
+<span class="sd">    _GROK_PREFIXES (tuple[str, ...]): Name prefixes for xAI Grok models.</span>
+<span class="sd">    _DEEPSEEK_PREFIXES (tuple[str, ...]): Name prefixes for DeepSeek</span>
+<span class="sd">        models.</span>
+<span class="sd">    _HF_PREFIXES (tuple[str, ...]): Name prefixes for Hugging Face</span>
+<span class="sd">        models.</span>
+<span class="sd">    _VIDEO_CAPABLE (set[str]): Model-name prefixes that support video</span>
+<span class="sd">        inputs.</span>
+<span class="sd">    _AUDIO_CAPABLE (set[str]): Model-name prefixes that support audio</span>
+<span class="sd">        inputs.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.schema_validator</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValidationError</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Provider / model registry</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="n">_OPENAI_MODELS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;gpt-5.1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-mini&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-nano&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-chat-latest&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-codex&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-pro&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4.1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4.1-mini&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4.1-nano&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4o-2024-05-13&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4o-mini&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o1-pro&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o3-pro&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o3&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o4-mini&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">_ANTHROPIC_PREFIXES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;claude-&quot;</span><span class="p">,)</span>
+<span class="n">_GOOGLE_PREFIXES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;gemini-&quot;</span><span class="p">,)</span>
+<span class="n">_MISTRAL_PREFIXES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;mistral-&quot;</span><span class="p">,</span> <span class="s2">&quot;open-mistral-&quot;</span><span class="p">,</span> <span class="s2">&quot;open-mixtral-&quot;</span><span class="p">)</span>
+<span class="n">_GROK_PREFIXES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;grok-&quot;</span><span class="p">,)</span>
+<span class="n">_DEEPSEEK_PREFIXES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;deepseek-&quot;</span><span class="p">,)</span>
+<span class="n">_HF_PREFIXES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;hf-&quot;</span><span class="p">,</span> <span class="s2">&quot;tgi&quot;</span><span class="p">)</span>
+
+<span class="c1"># Models that support video/audio inputs natively</span>
+<span class="n">_VIDEO_CAPABLE</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;gemini-&quot;</span><span class="p">,</span> <span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span> <span class="s2">&quot;gpt-4.1&quot;</span><span class="p">}</span>
+<span class="n">_AUDIO_CAPABLE</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;gemini-&quot;</span><span class="p">,</span> <span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span> <span class="s2">&quot;claude-&quot;</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_detect_provider</span><span class="p">(</span><span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Detect the provider for a given model name.</span>
+
+<span class="sd">    Compares *model_name* (case-insensitive) against known provider</span>
+<span class="sd">    prefixes and the explicit OpenAI model set.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model_name: The model identifier string to look up</span>
+<span class="sd">            (e.g. ``&quot;gpt-4o&quot;``, ``&quot;claude-sonnet-4-20250514&quot;``).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A lowercase provider key such as ``&quot;openai&quot;``, ``&quot;anthropic&quot;``,</span>
+<span class="sd">        ``&quot;google&quot;``, ``&quot;mistral&quot;``, ``&quot;grok&quot;``, ``&quot;deepseek&quot;``, or</span>
+<span class="sd">        ``&quot;huggingface&quot;``. Returns ``None`` if the model is not</span>
+<span class="sd">        recognised.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">model_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_ANTHROPIC_PREFIXES</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;anthropic&quot;</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_GOOGLE_PREFIXES</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;google&quot;</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_MISTRAL_PREFIXES</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;mistral&quot;</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_GROK_PREFIXES</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;grok&quot;</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_DEEPSEEK_PREFIXES</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;deepseek&quot;</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_HF_PREFIXES</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;huggingface&quot;</span>
+    <span class="k">if</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">_OPENAI_MODELS</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;gpt-&quot;</span><span class="p">,</span> <span class="s2">&quot;o1&quot;</span><span class="p">,</span> <span class="s2">&quot;o3&quot;</span><span class="p">,</span> <span class="s2">&quot;o4&quot;</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="s2">&quot;openai&quot;</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="ProviderValidator"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.validators.html#talkingtomachines.authoring.validators.provider_validator.ProviderValidator">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ProviderValidator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate a model name against the provider registry.</span>
+
+<span class="sd">    Ensures the specified model is recognised, and that any requested</span>
+<span class="sd">    modalities or features (RAG, video, audio) are supported by the</span>
+<span class="sd">    detected provider.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model_name: The LLM model identifier to validate.</span>
+<span class="sd">        has_rag: Whether the experiment uses retrieval-augmented</span>
+<span class="sd">            generation.</span>
+<span class="sd">        has_video: Whether the experiment includes video prompt</span>
+<span class="sd">            inputs.</span>
+<span class="sd">        has_audio: Whether the experiment includes audio prompt</span>
+<span class="sd">            inputs.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        _model_name (str): The model identifier under validation.</span>
+<span class="sd">        _has_rag (bool): RAG flag.</span>
+<span class="sd">        _has_video (bool): Video-input flag.</span>
+<span class="sd">        _has_audio (bool): Audio-input flag.</span>
+<span class="sd">        _errors (list[ValidationError]): Accumulated validation errors</span>
+<span class="sd">            populated during :meth:`validate`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">has_rag</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">has_video</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">has_audio</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span> <span class="o">=</span> <span class="n">model_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_has_rag</span> <span class="o">=</span> <span class="n">has_rag</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_has_video</span> <span class="o">=</span> <span class="n">has_video</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_has_audio</span> <span class="o">=</span> <span class="n">has_audio</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ValidationError</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="ProviderValidator.validate"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.validators.html#talkingtomachines.authoring.validators.provider_validator.ProviderValidator.validate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ValidationError</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run all provider and modality checks.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of :class:`ValidationError` instances. An empty list</span>
+<span class="sd">            indicates the model passed all checks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">provider</span> <span class="o">=</span> <span class="n">_detect_provider</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">provider</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                <span class="s2">&quot;Settings&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;Unknown model &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2">&#39;. Not found in any provider registry. &quot;</span>
+                <span class="s2">&quot;If this is a new model, add it to the provider registry in &quot;</span>
+                <span class="s2">&quot;authoring/validators/provider_validator.py.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span>
+
+        <span class="c1"># RAG only supported on OpenAI this sprint</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_rag</span> <span class="ow">and</span> <span class="n">provider</span> <span class="o">!=</span> <span class="s2">&quot;openai&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                <span class="s2">&quot;Settings&quot;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;RAG (retrieval-augmented generation) is only supported with OpenAI models &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;this sprint. Current model &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2">&#39; uses provider &#39;</span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Video support</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_video</span><span class="p">:</span>
+            <span class="n">supported</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_VIDEO_CAPABLE</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">supported</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                    <span class="s2">&quot;Settings&quot;</span><span class="p">,</span>
+                    <span class="kc">None</span><span class="p">,</span>
+                    <span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Model &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2">&#39; may not support video inputs. &quot;</span>
+                    <span class="s2">&quot;Check provider documentation.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Audio support</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_audio</span><span class="p">:</span>
+            <span class="n">supported</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_AUDIO_CAPABLE</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">supported</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                    <span class="s2">&quot;Settings&quot;</span><span class="p">,</span>
+                    <span class="kc">None</span><span class="p">,</span>
+                    <span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Model &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2">&#39; may not support audio inputs. &quot;</span>
+                    <span class="s2">&quot;Check provider documentation.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_err</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sheet</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">col</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Append a validation error to the internal error list.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sheet: Name of the worksheet where the error originated.</span>
+<span class="sd">            row: Row index or identifier (may be ``None``).</span>
+<span class="sd">            col: Column name or identifier (may be ``None``).</span>
+<span class="sd">            message: Human-readable description of the validation</span>
+<span class="sd">                failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">ValidationError</span><span class="p">(</span><span class="n">sheet</span><span class="o">=</span><span class="n">sheet</span><span class="p">,</span> <span class="n">row</span><span class="o">=</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>
+        <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

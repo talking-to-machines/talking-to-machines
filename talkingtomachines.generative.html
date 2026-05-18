@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.generative package &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="talkingtomachines.interface package" href="talkingtomachines.interface.html" />
+    <link rel="prev" title="talkingtomachines.gateway package" href="talkingtomachines.gateway.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">talkingtomachines</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.agents.html">talkingtomachines.agents package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.analytics.html">talkingtomachines.analytics package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.html">talkingtomachines.authoring package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.compiler.html">talkingtomachines.compiler package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.core.html">talkingtomachines.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.gateway.html">talkingtomachines.gateway package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">talkingtomachines.generative package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.generative.llm">talkingtomachines.generative.llm module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.generative.prompt">talkingtomachines.generative.prompt module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.generative.synthetic_subject">talkingtomachines.generative.synthetic_subject module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.generative">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.interface.html">talkingtomachines.interface package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.management.html">talkingtomachines.management package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.orchestrator.html">talkingtomachines.orchestrator package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.storage.html">talkingtomachines.storage package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">talkingtomachines</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.generative package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/talkingtomachines.generative.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="talkingtomachines-generative-package">
+<h1>talkingtomachines.generative package<a class="headerlink" href="#talkingtomachines-generative-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-talkingtomachines.generative.llm">
+<span id="talkingtomachines-generative-llm-module"></span><h2>talkingtomachines.generative.llm module<a class="headerlink" href="#module-talkingtomachines.generative.llm" title="Permalink to this heading"></a></h2>
+<p>Low-level LLM query helpers for OpenAI, Hugging Face, and OpenRouter.</p>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version This: </span>module is deprecated.  Use
+<code class="docutils literal notranslate"><span class="pre">talkingtomachines.gateway.router.LLMRouter</span></code> instead.</p>
+</div>
+<p>Provides retry-aware wrappers that route prompts to the appropriate
+backend based on the model identifier string.</p>
+<dl class="simple">
+<dt>Module-level constants:</dt><dd><p>RETRY_DELAY (int): Seconds to wait between retries on API failure.
+MAX_RETRIES (int): Maximum number of retry attempts per query.
+OPENAI_MODELS (list[str]): Model identifiers handled by the OpenAI backend.
+NO_TEMPERATURE_MODELS (list[str]): Models that do not accept a temperature parameter.</p>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.llm.extract_image_url">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.llm.</span></span><span class="sig-name descname"><span class="pre">extract_image_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message_content</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/llm.html#extract_image_url"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.llm.extract_image_url" title="Permalink to this definition"></a></dt>
+<dd><p>Extracts an image URL from the given message content.</p>
+<p>This function attempts to identify and return an image URL from the provided
+message content string. It supports both Base64-encoded image URLs and generic
+HTTP(S) image URLs. The function applies heuristics to determine whether a URL
+is likely to point to an image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>message_content</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The content of the message to parse for image URLs.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The extracted image URL if found, otherwise None.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]</p>
+</dd>
+</dl>
+<p>The extraction process includes:</p>
+<ol class="arabic simple">
+<li><p>Searching for Base64-encoded image URLs.</p></li>
+<li><p>Identifying generic HTTP(S) URLs and applying heuristics to determine if they
+are likely to point to images. This includes:
+- Checking for common image file extensions (e.g., .png, .jpg, .gif).
+- Looking for query parameters that indicate image formats.
+- Recognizing known image hosting domains.
+- Handling Dropbox URLs and normalizing them to raw image links if applicable.</p></li>
+<li><p>Falling back to URLs that appear to belong to image-related folders (e.g.,
+“/images/”, “/media/”).</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>If multiple URLs are found, the function prioritizes those that are more
+likely to be images based on the heuristics.</p></li>
+<li><p>Dropbox URLs are normalized to their raw image format if applicable.</p></li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.llm.extract_image_url_from_message">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.llm.</span></span><span class="sig-name descname"><span class="pre">extract_image_url_from_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/llm.html#extract_image_url_from_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.llm.extract_image_url_from_message" title="Permalink to this definition"></a></dt>
+<dd><p>Formats a message history by extracting image URLs and structuring the content.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>message</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The message, potentially containing an image URL.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of formatted message components. If an image URL is found in the
+message content, the list will include both a text component and an image component.
+Otherwise, it will include only a text component.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.llm.format_message_history_for_response_api">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.llm.</span></span><span class="sig-name descname"><span class="pre">format_message_history_for_response_api</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message_history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/llm.html#format_message_history_for_response_api"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.llm.format_message_history_for_response_api" title="Permalink to this definition"></a></dt>
+<dd><p>Formats a message history for use with a response API.
+This function processes a list of message dictionaries and reformats them
+based on their roles. Messages with the role “system” or “assistant” are
+wrapped in a specific structure, while messages with the role “user” are
+processed to extract image URLs. An error is raised for any unknown roles.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>message_history</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>]</em>) – A list of message dictionaries, where each
+dictionary contains the keys “role” (str) and “content” (str).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A list of reformatted message dictionaries. Each dictionary</dt><dd><p>contains the keys “role” (str) and “content” (list or dict), where
+the content structure depends on the role.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If a message contains an unknown role. Valid roles are
+    “system”, “user”, and “assistant”.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.llm.query_hugging_face">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.llm.</span></span><span class="sig-name descname"><span class="pre">query_hugging_face</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llm_client</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">OpenAI</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/llm.html#query_hugging_face"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.llm.query_hugging_face" title="Permalink to this definition"></a></dt>
+<dd><p>Query Hugging Face’s dedicated inference API end point with the provided prompt.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>llm_client</strong> (<em>openai.OpenAI</em>) – The LLM client from OpenAI class.</p></li>
+<li><p><strong>message_history</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>]</em>) – Contains the history of message exchanged between user and assistant.</p></li>
+<li><p><strong>temperature</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The model temperature setting for the LLM.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Response from the LLM.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Any</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.llm.query_llm">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.llm.</span></span><span class="sig-name descname"><span class="pre">query_llm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llm_client</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">OpenAI</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/llm.html#query_llm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.llm.query_llm" title="Permalink to this definition"></a></dt>
+<dd><p>Query a language model (LLM) based on the specified model information.</p>
+<p>This function routes the query to the appropriate LLM backend based on the
+<cite>model_info</cite> parameter. It supports OpenAI models, Hugging Face inference,
+and OpenRouter.ai-supported models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>llm_client</strong> (<em>openai.OpenAI</em>) – The client instance for interacting with the LLM.</p></li>
+<li><p><strong>model_info</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The identifier for the model to query. This can be an OpenAI
+model, “hf-inference” for Hugging Face, or an OpenRouter.ai-supported model.</p></li>
+<li><p><strong>message_history</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>]</em>) – A list of dictionaries representing the message
+history for the conversation. Each dictionary typically contains keys like
+“role” and “content”.</p></li>
+<li><p><strong>temperature</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The temperature parameter for controlling the randomness
+of the model’s output. Higher values result in more random outputs.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The response generated by the queried LLM.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.llm.query_open_ai">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.llm.</span></span><span class="sig-name descname"><span class="pre">query_open_ai</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llm_client</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">OpenAI</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/llm.html#query_open_ai"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.llm.query_open_ai" title="Permalink to this definition"></a></dt>
+<dd><p>Query OpenAI API with the provided prompt.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>llm_client</strong> (<em>openai.OpenAI</em>) – The LLM client.</p></li>
+<li><p><strong>model_info</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Information about the model.</p></li>
+<li><p><strong>message_history</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>]</em>) – Contains the history of message exchanged between user and assistant.</p></li>
+<li><p><strong>temperature</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The model temperature setting for the LLM.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Response from the LLM.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Any</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.llm.query_openrouter_ai">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.llm.</span></span><span class="sig-name descname"><span class="pre">query_openrouter_ai</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llm_client</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">OpenAI</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/llm.html#query_openrouter_ai"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.llm.query_openrouter_ai" title="Permalink to this definition"></a></dt>
+<dd><p>Queries the OpenRouter AI API using the provided LLM client and parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>llm_client</strong> (<em>openai.OpenAI</em>) – The OpenAI client instance to interact with the API.</p></li>
+<li><p><strong>model_info</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The identifier of the language model to use for the query.</p></li>
+<li><p><strong>message_history</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>]</em>) – A list of dictionaries representing the message history
+for the conversation. Each dictionary should contain keys like “role” and “content”.</p></li>
+<li><p><strong>temperature</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The sampling temperature to use for the response generation.
+Higher values result in more randomness, while lower values make the output more deterministic.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The content of the response message from the OpenRouter AI API.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Any</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.14)"><strong>Exception</strong></a> – If the API call fails after the maximum number of retries.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.generative.prompt">
+<span id="talkingtomachines-generative-prompt-module"></span><h2>talkingtomachines.generative.prompt module<a class="headerlink" href="#module-talkingtomachines.generative.prompt" title="Permalink to this heading"></a></h2>
+<p>Prompt construction helpers for synthetic subjects.</p>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version This: </span>module is deprecated.  Use
+<code class="docutils literal notranslate"><span class="pre">talkingtomachines.agents.prompt_builder</span></code> instead.</p>
+</div>
+<p>Provides functions to build profile prompts (Q&amp;A and/or backstory) and
+system messages used to initialise a synthetic subject’s conversation
+context.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.prompt.generate_backstories">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.prompt.</span></span><span class="sig-name descname"><span class="pre">generate_backstories</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">system_prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">llm_client</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">OpenAI</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/prompt.html#generate_backstories"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.prompt.generate_backstories" title="Permalink to this definition"></a></dt>
+<dd><p>Generate a backstory using a language model based on the provided system prompt.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>system_prompt</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The initial system-level prompt to guide the language model’s behavior.</p></li>
+<li><p><strong>llm_client</strong> (<em>openai.OpenAI</em>) – The OpenAI client instance used to interact with the language model.</p></li>
+<li><p><strong>model_info</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The identifier or configuration of the language model to be used.</p></li>
+<li><p><strong>temperature</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The sampling temperature to control the randomness of the model’s output.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The generated backstory in first-person narration.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.prompt.generate_profile_prompt">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.prompt.</span></span><span class="sig-name descname"><span class="pre">generate_profile_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_profile_qna</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_profile_backstories</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">llm_client</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">OpenAI</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/prompt.html#generate_profile_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.prompt.generate_profile_prompt" title="Permalink to this definition"></a></dt>
+<dd><p>Generates a profile prompt based on the provided profile information and options.
+This function constructs a prompt string that can include a Q&amp;A section, a backstory section,
+or both, depending on the specified parameters. It uses an optional language model client
+to generate backstories if required.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>profile_info</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – A dictionary containing profile questions as keys and their
+corresponding responses as values. Questions with the key “ID” or empty/NaN
+responses are ignored.</p></li>
+<li><p><strong>build_profile_qna</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – If True, includes a Q&amp;A section in the generated prompt.</p></li>
+<li><p><strong>build_profile_backstories</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – If True, generates and includes a backstory section
+in the prompt using the language model client.</p></li>
+<li><p><strong>llm_client</strong> (<em>openai.OpenAI</em><em>, </em><em>optional</em>) – The language model client used to generate
+backstories. Required if <cite>build_profile_backstories</cite> is True.</p></li>
+<li><p><strong>model_info</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – The model information for the language model client.
+Required if <cite>build_profile_backstories</cite> is True.</p></li>
+<li><p><strong>temperature</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – The temperature setting for the language model client.
+Required if <cite>build_profile_backstories</cite> is True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>The generated profile prompt, which may include a Q&amp;A section, a backstory section,</dt><dd><p>or both, depending on the specified parameters. Returns an empty string if no
+sections are requested or if an error occurs.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <cite>build_profile_backstories</cite> is True but <cite>llm_client</cite>, <cite>model_info</cite>, or
+    <cite>temperature</cite> is not provided.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.generative.prompt.generate_subject_system_message">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.prompt.</span></span><span class="sig-name descname"><span class="pre">generate_subject_system_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">role_description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/prompt.html#generate_subject_system_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.prompt.generate_subject_system_message" title="Permalink to this definition"></a></dt>
+<dd><p>Constructs system message for subjects by combining role description and profile_prompt, in that order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>role_description</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – A description of the subject’s role.</p></li>
+<li><p><strong>profile_prompt</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The profile information of the synthetic subject generated by the generate_profile_prompt function.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The constructed conversational system message for the synthetic subject.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.generative.synthetic_subject">
+<span id="talkingtomachines-generative-synthetic-subject-module"></span><h2>talkingtomachines.generative.synthetic_subject module<a class="headerlink" href="#module-talkingtomachines.generative.synthetic_subject" title="Permalink to this heading"></a></h2>
+<p>Synthetic subject implementations for AI-to-AI experiments.</p>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version This: </span>module is deprecated.  Use
+<code class="docutils literal notranslate"><span class="pre">talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject</span></code>
+instead.</p>
+</div>
+<p>Defines <code class="docutils literal notranslate"><span class="pre">SyntheticSubject</span></code> (base) and <code class="docutils literal notranslate"><span class="pre">ConversationalSyntheticSubject</span></code>
+(conversation-capable) classes that represent LLM-backed participants in
+an experiment session.</p>
+<dl class="simple">
+<dt>Module-level constants:</dt><dd><p>ProfileInfo: Type alias for a dictionary of profile key-value pairs.
+NUM_RETRY (int): Number of retries when response validation fails.
+OPENAI_MODELS (list[str]): Model identifiers handled by the OpenAI backend.</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.synthetic_subject.</span></span><span class="sig-name descname"><span class="pre">ConversationalSyntheticSubject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">session_id:</span> <span class="pre">str,</span> <span class="pre">experiment_context:</span> <span class="pre">str,</span> <span class="pre">group_id:</span> <span class="pre">Any,</span> <span class="pre">profile_info:</span> <span class="pre">ProfileInfo,</span> <span class="pre">model_info:</span> <span class="pre">str,</span> <span class="pre">temperature:</span> <span class="pre">float,</span> <span class="pre">build_profile_qna:</span> <span class="pre">bool,</span> <span class="pre">build_profile_backstories:</span> <span class="pre">bool,</span> <span class="pre">hf_inference_endpoint:</span> <span class="pre">str,</span> <span class="pre">role_label:</span> <span class="pre">str,</span> <span class="pre">role:</span> <span class="pre">Role,</span> <span class="pre">treatment:</span> <span class="pre">Treatment,</span> <span class="pre">constants:</span> <span class="pre">dict[str,</span> <span class="pre">Any],</span> <span class="pre">profile_prompt_generator:</span> <span class="pre">Callable[[ProfileInfo,</span> <span class="pre">bool,</span> <span class="pre">bool,</span> <span class="pre">openai.OpenAI,</span> <span class="pre">str,</span> <span class="pre">float],</span> <span class="pre">str]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">generate_profile_prompt&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_subject.html#ConversationalSyntheticSubject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject" title="talkingtomachines.generative.synthetic_subject.SyntheticSubject"><code class="xref py py-class docutils literal notranslate"><span class="pre">SyntheticSubject</span></code></a></p>
+<p>A synthetic subject that interacts with users in a conversational system. Inherits from the SyntheticSubject base class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>session_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The session ID of the experiment.</p></li>
+<li><p><strong>experiment_context</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The context of the experiment.</p></li>
+<li><p><strong>group_id</strong> (<em>Any</em>) – The group ID of the session.</p></li>
+<li><p><strong>profile_info</strong> (<em>ProfileInfo</em>) – The profile information of the subject.</p></li>
+<li><p><strong>model_info</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The information about the model used by the subject.</p></li>
+<li><p><strong>temperature</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The model temperature setting for the subject.</p></li>
+<li><p><strong>build_profile_qna</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether to build the subject profiles using Q&amp;A format.</p></li>
+<li><p><strong>build_profile_backstories</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether to build the subject profiles using backstories.</p></li>
+<li><p><strong>hf_inference_endpoint</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – API inference endpoint to the LLM model hosted externally in HuggingFace.</p></li>
+<li><p><strong>role_label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The name of the role assigned to the subject.</p></li>
+<li><p><strong>role</strong> (<a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Role" title="talkingtomachines.core.models.Role"><em>Role</em></a>) – The Role object assigned to the subject.</p></li>
+<li><p><strong>treatment</strong> (<a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Treatment" title="talkingtomachines.core.models.Treatment"><em>Treatment</em></a>) – The Treatment object assigned to the subject.</p></li>
+<li><p><strong>constants</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – A dictionary of constant values applied to the experiment.</p></li>
+<li><p><strong>profile_prompt_generator</strong> (<em>Callable</em><em>[</em><em>[</em><em>ProfileInfo</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>openai.OpenAI</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em><em>, </em><em>optional</em>) – A function that generates a profile prompt based on the profile information.
+Defaults to generate_profile_prompt.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.session_id">
+<span class="sig-name descname"><span class="pre">session_id</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.session_id" title="Permalink to this definition"></a></dt>
+<dd><p>The session ID of the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.experiment_context">
+<span class="sig-name descname"><span class="pre">experiment_context</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.experiment_context" title="Permalink to this definition"></a></dt>
+<dd><p>The context of the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.group_id">
+<span class="sig-name descname"><span class="pre">group_id</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.group_id" title="Permalink to this definition"></a></dt>
+<dd><p>The group ID of the session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Any</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.profile_info">
+<span class="sig-name descname"><span class="pre">profile_info</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.profile_info" title="Permalink to this definition"></a></dt>
+<dd><p>The profile information of the subject.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ProfileInfo</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.profile_prompt">
+<span class="sig-name descname"><span class="pre">profile_prompt</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.profile_prompt" title="Permalink to this definition"></a></dt>
+<dd><p>A prompt string containing the profile information of the subject.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.model_info">
+<span class="sig-name descname"><span class="pre">model_info</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.model_info" title="Permalink to this definition"></a></dt>
+<dd><p>The information about the model used by the subject.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.temperature">
+<span class="sig-name descname"><span class="pre">temperature</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.temperature" title="Permalink to this definition"></a></dt>
+<dd><p>The model temperature setting for the subject.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.build_profile_qna">
+<span class="sig-name descname"><span class="pre">build_profile_qna</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.build_profile_qna" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to build the subject profiles using Q&amp;A format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.build_profile_backstories">
+<span class="sig-name descname"><span class="pre">build_profile_backstories</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.build_profile_backstories" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to build the subject profiles using backstories.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.hf_inference_endpoint">
+<span class="sig-name descname"><span class="pre">hf_inference_endpoint</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.hf_inference_endpoint" title="Permalink to this definition"></a></dt>
+<dd><p>API inference endpoint to the LLM model hosted externally in HuggingFace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.role_label">
+<span class="sig-name descname"><span class="pre">role_label</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.role_label" title="Permalink to this definition"></a></dt>
+<dd><p>The Role object assigned to the subject.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.role">
+<span class="sig-name descname"><span class="pre">role</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.role" title="Permalink to this definition"></a></dt>
+<dd><p>The description of the role assigned to the subject.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Role" title="talkingtomachines.core.models.Role">Role</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.treatment">
+<span class="sig-name descname"><span class="pre">treatment</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.treatment" title="Permalink to this definition"></a></dt>
+<dd><p>The Treatment object assigned to the subject.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Treatment" title="talkingtomachines.core.models.Treatment">Treatment</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.constants">
+<span class="sig-name descname"><span class="pre">constants</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.constants" title="Permalink to this definition"></a></dt>
+<dd><p>A dictionary of constant values applied to the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.system_message">
+<span class="sig-name descname"><span class="pre">system_message</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.system_message" title="Permalink to this definition"></a></dt>
+<dd><p>The system message generated for the conversation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.llm_client">
+<span class="sig-name descname"><span class="pre">llm_client</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.llm_client" title="Permalink to this definition"></a></dt>
+<dd><p>The LLM client.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>openai.OpenAI</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.message_history">
+<span class="sig-name descname"><span class="pre">message_history</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.message_history" title="Permalink to this definition"></a></dt>
+<dd><p>The history of the conversation with the synthetic subject.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.render_role_and_treatment_templates">
+<span class="sig-name descname"><span class="pre">render_role_and_treatment_templates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_subject.html#ConversationalSyntheticSubject.render_role_and_treatment_templates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.render_role_and_treatment_templates" title="Permalink to this definition"></a></dt>
+<dd><p>Renders templates for the <cite>role</cite> and <cite>treatment</cite> attributes by recursively
+resolving their values using a rendering context. The rendering process
+iterates until the values converge or the maximum number of iterations is reached.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>max_iter</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – The maximum number of iterations to attempt
+before stopping the rendering process. Defaults to 5.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#UserWarning" title="(in Python v3.14)"><strong>UserWarning</strong></a> – If the maximum number of iterations is reached without
+    achieving convergence.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.respond">
+<span class="sig-name descname"><span class="pre">respond</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">latest_message_history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validate_response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generate_speculation_score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format_response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_subject.html#ConversationalSyntheticSubject.respond"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.respond" title="Permalink to this definition"></a></dt>
+<dd><p>Generates a response from the conversational synthetic subject based on the provided message history.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>latest_message_history</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>]</em>) – The latest history of messages exchanged in the conversation.</p></li>
+<li><p><strong>validate_response</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, validates the generated response against the provided response_options. Defaults to False.</p></li>
+<li><p><strong>response_options</strong> (<em>Any</em><em>, </em><em>optional</em>) – Options to validate the response against. Defaults to an empty string.</p></li>
+<li><p><strong>generate_speculation_score</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, includes instructions to generate a speculation score in the response. Defaults to False.</p></li>
+<li><p><strong>format_response</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, formats the response according to specific instructions. Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The generated response from the subject. Returns an empty string if an exception occurs during response generation.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.14)"><strong>Exception</strong></a> – Logs any exception that occurs during response generation and returns an empty string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_subject.html#ConversationalSyntheticSubject.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.to_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the ConversationalSyntheticSubject object to a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary representation of the ConversationalSyntheticSubject object.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.update_message_history">
+<span class="sig-name descname"><span class="pre">update_message_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">latest_message_history</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_subject.html#ConversationalSyntheticSubject.update_message_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.update_message_history" title="Permalink to this definition"></a></dt>
+<dd><p>Updates the message history with the latest messages.</p>
+<p>This method takes a list of dictionaries representing the latest messages,
+formats them using the <cite>_build_message_history</cite> method, and appends the
+formatted messages to the existing message history.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>latest_message_history</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>]</em>) – A list of dictionaries representing
+the latest messages to be added to the message history.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.SyntheticSubject">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.generative.synthetic_subject.</span></span><span class="sig-name descname"><span class="pre">SyntheticSubject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">session_id:</span> <span class="pre">str,</span> <span class="pre">experiment_context:</span> <span class="pre">str,</span> <span class="pre">group_id:</span> <span class="pre">~typing.Any,</span> <span class="pre">profile_info:</span> <span class="pre">dict[str,</span> <span class="pre">typing.Any],</span> <span class="pre">model_info:</span> <span class="pre">str,</span> <span class="pre">temperature:</span> <span class="pre">float,</span> <span class="pre">build_profile_qna:</span> <span class="pre">bool,</span> <span class="pre">build_profile_backstories:</span> <span class="pre">bool,</span> <span class="pre">hf_inference_endpoint:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'',</span> <span class="pre">profile_prompt_generator:</span> <span class="pre">~typing.Callable[[dict[str,</span> <span class="pre">typing.Any],</span> <span class="pre">bool,</span> <span class="pre">bool,</span> <span class="pre">~openai.OpenAI,</span> <span class="pre">str,</span> <span class="pre">float],</span> <span class="pre">str]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">generate_profile_prompt&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_subject.html#SyntheticSubject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A class for constructing the base synthetic subject.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>session_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The session ID of the experiment.</p></li>
+<li><p><strong>experiment_context</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The context of the experiment.</p></li>
+<li><p><strong>group_id</strong> (<em>Any</em>) – The group ID of the session.</p></li>
+<li><p><strong>profile_info</strong> (<em>ProfileInfo</em>) – The profile information of the subject.</p></li>
+<li><p><strong>model_info</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The information about the model used by the subject.</p></li>
+<li><p><strong>temperature</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The model temperature setting for the subject.</p></li>
+<li><p><strong>build_profile_qna</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether to build the subject profiles using Q&amp;A format.</p></li>
+<li><p><strong>build_profile_backstories</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether to build the subject profiles using backstories.</p></li>
+<li><p><strong>hf_inference_endpoint</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – API inference endpoint to the LLM model hosted externally in HuggingFace.</p></li>
+<li><p><strong>profile_prompt_generator</strong> (<em>Callable</em><em>[</em><em>[</em><em>ProfileInfo</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>openai.OpenAI</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em><em>, </em><em>optional</em>) – A function that generates a profile prompt based on the profile information.
+Defaults to generate_profile_prompt.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.SyntheticSubject.session_id">
+<span class="sig-name descname"><span class="pre">session_id</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject.session_id" title="Permalink to this definition"></a></dt>
+<dd><p>The session ID of the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.SyntheticSubject.experiment_context">
+<span class="sig-name descname"><span class="pre">experiment_context</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject.experiment_context" title="Permalink to this definition"></a></dt>
+<dd><p>The context of the experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.SyntheticSubject.group_id">
+<span class="sig-name descname"><span class="pre">group_id</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject.group_id" title="Permalink to this definition"></a></dt>
+<dd><p>The group ID of the session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Any</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.SyntheticSubject.profile_info">
+<span class="sig-name descname"><span class="pre">profile_info</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject.profile_info" title="Permalink to this definition"></a></dt>
+<dd><p>The profile information of the subject.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ProfileInfo</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.SyntheticSubject.profile_prompt">
+<span class="sig-name descname"><span class="pre">profile_prompt</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject.profile_prompt" title="Permalink to this definition"></a></dt>
+<dd><p>A prompt string containing the profile information of the subject.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.SyntheticSubject.model_info">
+<span class="sig-name descname"><span class="pre">model_info</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject.model_info" title="Permalink to this definition"></a></dt>
+<dd><p>The information about the model used by the subject.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.SyntheticSubject.temperature">
+<span class="sig-name descname"><span class="pre">temperature</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject.temperature" title="Permalink to this definition"></a></dt>
+<dd><p>The model temperature setting for the subject.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.SyntheticSubject.build_profile_qna">
+<span class="sig-name descname"><span class="pre">build_profile_qna</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject.build_profile_qna" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to build the subject profiles using Q&amp;A format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.SyntheticSubject.build_profile_backstories">
+<span class="sig-name descname"><span class="pre">build_profile_backstories</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject.build_profile_backstories" title="Permalink to this definition"></a></dt>
+<dd><p>Whether to build the subject profiles using backstories.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.SyntheticSubject.hf_inference_endpoint">
+<span class="sig-name descname"><span class="pre">hf_inference_endpoint</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject.hf_inference_endpoint" title="Permalink to this definition"></a></dt>
+<dd><p>API inference endpoint to the LLM model hosted externally in HuggingFace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.SyntheticSubject.llm_client">
+<span class="sig-name descname"><span class="pre">llm_client</span></span><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject.llm_client" title="Permalink to this definition"></a></dt>
+<dd><p>The LLM client.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>openai.OpenAI</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.SyntheticSubject.respond">
+<span class="sig-name descname"><span class="pre">respond</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_subject.html#SyntheticSubject.respond"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject.respond" title="Permalink to this definition"></a></dt>
+<dd><p>Generate a response based on the synthetic subject’s model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The response generated by the synthetic subject.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.generative.synthetic_subject.SyntheticSubject.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/generative/synthetic_subject.html#SyntheticSubject.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.generative.synthetic_subject.SyntheticSubject.to_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the SyntheticSubject object to a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary representation of the SyntheticSubject object.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.generative">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-talkingtomachines.generative" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="talkingtomachines.gateway.html" class="btn btn-neutral float-left" title="talkingtomachines.gateway package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="talkingtomachines.interface.html" class="btn btn-neutral float-right" title="talkingtomachines.interface package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

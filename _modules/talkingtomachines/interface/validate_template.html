@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.interface.validate_template &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.interface.validate_template</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.interface.validate_template</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Validation helpers for prompt template workbooks.</span>
+
+<span class="sd">This module provides functions that validate the structure and content of</span>
+<span class="sd">Excel-based prompt template files used to configure experiments on the</span>
+<span class="sd">Talking to Machines platform.  Validators check file paths, required</span>
+<span class="sd">worksheets, column headers, and mandatory field presence.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+
+<div class="viewcode-block" id="validate_prompt_template_path"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.validate_template.validate_prompt_template_path">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">validate_prompt_template_path</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates the provided file path to ensure it points to an existing Excel prompt template file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path (str): The path to the prompt template file that needs to be validated.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the file does not exist at the provided path or is not an Excel file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Validate the provided directory path</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The prompt template workbook cannot be found in the path you provided: </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Check if the file has a valid Excel extension</span>
+    <span class="n">valid_extensions</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;.xlsx&quot;</span><span class="p">,</span> <span class="s2">&quot;.xls&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">file_path</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span> <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">valid_extensions</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The file provided is not a valid Excel file. Expected extensions: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">valid_extensions</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="validate_prompt_template_sheets"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.validate_template.validate_prompt_template_sheets">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">validate_prompt_template_sheets</span><span class="p">(</span>
+    <span class="n">excel_file</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">ExcelFile</span><span class="p">,</span> <span class="n">required_sheet_list</span><span class="p">:</span> <span class="nb">list</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates that all required sheets are present in the given prompt template file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        excel_file (pd.ExcelFile): The Excel file to validate.</span>
+<span class="sd">        required_sheet_list (list[str]): A list of sheet names that are required to be present in the Excel file.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If any of the required sheets are missing from the Excel file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Validate that all required sheets are present in the Excel file</span>
+    <span class="n">missing_sheets</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">sheet</span> <span class="k">for</span> <span class="n">sheet</span> <span class="ow">in</span> <span class="n">required_sheet_list</span> <span class="k">if</span> <span class="n">sheet</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">excel_file</span><span class="o">.</span><span class="n">sheet_names</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="n">missing_sheets</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The following sheets are missing from the prompt template workbook: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing_sheets</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="validate_settings_sheet"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.validate_template.validate_settings_sheet">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">validate_settings_sheet</span><span class="p">(</span><span class="n">settings</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates the experimental settings worksheet to ensure it has the correct structure and required settings.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        settings (pd.DataFrame): A DataFrame containing the experimental settings.</span>
+<span class="sd">                                It should have columns &quot;name&quot; and &quot;value&quot;.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        AssertionError: If the columns of the DataFrame do not match the expected columns.</span>
+<span class="sd">        AssertionError: If any of the required settings are missing from the &quot;name&quot; column.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Validate the column headers</span>
+    <span class="n">expected_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="p">(</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="n">expected_columns</span>
+    <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Invalid columns in the &#39;settings&#39; worksheet. Expected </span><span class="si">{</span><span class="n">expected_columns</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Validate the experimental settings field</span>
+    <span class="n">valid_settings</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;session_id&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;model_info&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;hf_inference_endpoint&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;temperature&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;num_subjects_per_group&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;num_groups&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;max_num_rounds&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;treatment_assignment_strategy&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;treatment_column&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;group_assignment_strategy&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;group_column&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;role_assignment_strategy&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;role_column&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;random_seed&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;build_profile_qna&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;build_profile_backstories&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="k">for</span> <span class="n">setting</span> <span class="ow">in</span> <span class="n">valid_settings</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">setting</span> <span class="ow">in</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">setting</span><span class="si">}</span><span class="s2"> not found in the &#39;settings&#39; worksheet.&quot;</span></div>
+
+
+<div class="viewcode-block" id="validate_treatment_sheet"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.validate_template.validate_treatment_sheet">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">validate_treatment_sheet</span><span class="p">(</span><span class="n">treatments</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates the structure of the treatments worksheet.</span>
+
+<span class="sd">    This function checks if the treatments DataFrame has the expected column headers.</span>
+<span class="sd">    It raises an assertion error if the columns do not match the expected columns.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        treatments (pd.DataFrame): The DataFrame containing treatment data to be validated.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        AssertionError: If the columns of the treatments DataFrame do not match the expected columns.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Validate the column headers</span>
+    <span class="n">expected_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;treatment_label&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="p">(</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">treatments</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="n">expected_columns</span>
+    <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Invalid columns in &#39;treatment&#39; worksheet. Expected </span><span class="si">{</span><span class="n">expected_columns</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">treatments</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="validate_role_sheet"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.validate_template.validate_role_sheet">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">validate_role_sheet</span><span class="p">(</span><span class="n">roles</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates the structure of the role worksheet.</span>
+
+<span class="sd">    This function checks if the provided DataFrame has the expected column headers.</span>
+<span class="sd">    It raises an assertion error if the columns do not match the expected structure.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        roles (pd.DataFrame): The DataFrame containing roles to be validated.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        AssertionError: If the columns of the DataFrame do not match the expected columns.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Validate the column headers</span>
+    <span class="n">expected_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;role_label&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="p">(</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">roles</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="n">expected_columns</span>
+    <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Invalid columns in &#39;role&#39; worksheet. Expected </span><span class="si">{</span><span class="n">expected_columns</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">roles</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="validate_prompt_sheet"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.validate_template.validate_prompt_sheet">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">validate_prompt_sheet</span><span class="p">(</span><span class="n">prompts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates the structure of a prompts_template worksheet containing prompt data.</span>
+
+<span class="sd">    This function checks if the DataFrame has the expected column headers.</span>
+<span class="sd">    If the columns do not match the expected headers, an assertion error is raised.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        prompts (pd.DataFrame): The DataFrame containing the prompt data to be validated.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        AssertionError: If the columns of the DataFrame do not match the expected columns.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Validate the column headers</span>
+    <span class="n">expected_columns</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;round_id&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;round_order&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;is_adapted&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;human_text&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;llm_text&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;response_name&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;response_type&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;response_options&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;randomize_response_order&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;validate_response&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;generate_speculation_score&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;format_response&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="k">assert</span> <span class="p">(</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">prompts</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="n">expected_columns</span>
+    <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Invalid columns in the &#39;prompt&#39; worksheet. Expected </span><span class="si">{</span><span class="n">expected_columns</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">prompts</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="validate_constant_sheet"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.validate_template.validate_constant_sheet">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">validate_constant_sheet</span><span class="p">(</span><span class="n">constants</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates the structure of the constants worksheet.</span>
+
+<span class="sd">    This function checks that the DataFrame has the expected column headers: &quot;constant_label&quot; and &quot;value&quot;.</span>
+<span class="sd">    If the columns do not match the expected headers, an assertion error is raised.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        constants (pd.DataFrame): The DataFrame to validate.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        AssertionError: If the DataFrame does not have the expected columns.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Validate the column headers</span>
+    <span class="n">expected_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;constant_label&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="p">(</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="n">expected_columns</span>
+    <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Invalid columns in the &#39;constant&#39; worksheet. Expected </span><span class="si">{</span><span class="n">expected_columns</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.interface.prompt_template &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.interface.prompt_template</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.interface.prompt_template</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Legacy prompt-template parser and experiment runner.</span>
+
+<span class="sd">This module implements the original (pre-CLI) entry point for the Talking</span>
+<span class="sd">to Machines platform.  It reads an Excel prompt template, extracts</span>
+<span class="sd">settings, treatments, roles, prompts, profiles, and constants from their</span>
+<span class="sd">respective worksheets, initialises experiment sessions, and runs them in</span>
+<span class="sd">test or full (parallel) mode.</span>
+
+<span class="sd">Module-level constants:</span>
+<span class="sd">    PROMPT_TEMPLATE_SHEETS: Required worksheet names in a prompt template.</span>
+<span class="sd">    SPECIAL_ROLES: Role labels that receive special handling (e.g. ``&quot;facilitator&quot;``).</span>
+<span class="sd">    SUPPORTED_PROMPT_TYPES: Valid values for the ``type`` column in the prompt worksheet.</span>
+<span class="sd">    BOOLEAN_KEYS: Setting/prompt keys whose string values are coerced to ``bool``.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span><span class="o">,</span><span class="w"> </span><span class="nn">warnings</span><span class="o">,</span><span class="w"> </span><span class="nn">ast</span><span class="o">,</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="o">,</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span><span class="p">,</span> <span class="n">PackageNotFoundError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.interface.validate_template</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">validate_prompt_template_path</span><span class="p">,</span>
+    <span class="n">validate_settings_sheet</span><span class="p">,</span>
+    <span class="n">validate_treatment_sheet</span><span class="p">,</span>
+    <span class="n">validate_role_sheet</span><span class="p">,</span>
+    <span class="n">validate_prompt_sheet</span><span class="p">,</span>
+    <span class="n">validate_constant_sheet</span><span class="p">,</span>
+    <span class="n">validate_prompt_template_sheets</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.management.initialize_experiment</span><span class="w"> </span><span class="kn">import</span> <span class="n">initialize_experiment</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.management.experiment</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AItoAIInterviewExperiment</span><span class="p">,</span>
+    <span class="n">Treatment</span><span class="p">,</span>
+    <span class="n">Role</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="n">PROMPT_TEMPLATE_SHEETS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;settings&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;treatment&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;role&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;prompt&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;profile&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;constant&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">SPECIAL_ROLES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;facilitator&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">SUPPORTED_PROMPT_TYPES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;context&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;discussion&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;public_question&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;repeat_public_question&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;private_question&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;repeat_private_question&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">BOOLEAN_KEYS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;build_profile_qna&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;build_profile_backstories&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;randomize_response_order&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;validate_response&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;generate_speculation_score&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;format_response&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="extract_settings"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.prompt_template.extract_settings">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">extract_settings</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sheet_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extracts the experimental settings from a specified worksheet in the prompt template.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path (str): The file path to the prompt template.</span>
+<span class="sd">        sheet_name (str): The name of the worksheet containing the experimental settings.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: A dictionary representation of the experimental settings, where the keys are the</span>
+<span class="sd">              values from the first column and the values are the corresponding values from the</span>
+<span class="sd">              second column.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the mandatory fields are not present in the settings worksheet.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Read the settings worksheet into a DataFrame</span>
+    <span class="n">settings_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span><span class="p">)</span>
+
+    <span class="c1"># Validate the presence of mandatory fields in the settings worksheet</span>
+    <span class="n">validate_settings_sheet</span><span class="p">(</span><span class="n">settings_df</span><span class="p">)</span>
+
+    <span class="c1"># Convert the experimental setting worksheet to a dictionary</span>
+    <span class="n">settings_dict</span> <span class="o">=</span> <span class="n">settings_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">settings_df</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()[</span>
+        <span class="n">settings_df</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="p">]</span>
+
+    <span class="c1"># Convert string booleans to actual booleans</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">BOOLEAN_KEYS</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">settings_dict</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">settings_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="s2">&quot;true&quot;</span><span class="p">:</span>
+                    <span class="n">settings_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">elif</span> <span class="n">v</span> <span class="o">==</span> <span class="s2">&quot;false&quot;</span><span class="p">:</span>
+                    <span class="n">settings_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+                <span class="c1"># treat 0 as False, non-zero as True</span>
+                <span class="n">settings_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">settings_dict</span></div>
+
+
+<div class="viewcode-block" id="extract_treatments"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.prompt_template.extract_treatments">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">extract_treatments</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sheet_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extracts treatment information from an Excel worksheet and returns it as a dictionary.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path (str): The file path to the Excel workbook.</span>
+<span class="sd">        sheet_name (str): The name of the worksheet containing treatment data.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: A dictionary with a single key &quot;treatments&quot;, where the value is another dictionary</span>
+<span class="sd">              mapping treatment labels to `Treatment` objects. Each `Treatment` object is created</span>
+<span class="sd">              based on the data in the worksheet.</span>
+
+<span class="sd">    The function performs the following steps:</span>
+<span class="sd">        1. Reads the specified worksheet into a pandas DataFrame.</span>
+<span class="sd">        2. Validates the presence of mandatory fields in the worksheet.</span>
+<span class="sd">        3. Iterates through each row of the DataFrame to extract treatment labels and their</span>
+<span class="sd">           corresponding attributes.</span>
+<span class="sd">        4. Parses the &quot;value&quot; field as a JSON-style string if possible, or treats it as plain text.</span>
+<span class="sd">        5. Creates a `Treatment` object for each treatment label and adds it to the resulting dictionary.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the treatment worksheet fails validation.</span>
+<span class="sd">        json.JSONDecodeError: If the &quot;value&quot; field contains invalid JSON and cannot be parsed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Read the treatment worksheet into a DataFrame</span>
+    <span class="n">treatments_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span><span class="p">)</span>
+
+    <span class="c1"># Validate the presence of mandatory fields in the treatment worksheet</span>
+    <span class="n">validate_treatment_sheet</span><span class="p">(</span><span class="n">treatments_df</span><span class="p">)</span>
+
+    <span class="c1"># Convert the treatment worksheet to a dictionary</span>
+    <span class="n">treatments</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">treatments_df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;treatment_label&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">raw_value</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Skip empty labels</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">label</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">attr_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw_value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">raw_value</span> <span class="o">=</span> <span class="n">raw_value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="c1"># Try to parse JSON-style string</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">attr_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">raw_value</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="n">attr_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">attr_dict</span><span class="p">)}</span>
+            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Error parsing treatment label &#39;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&#39; as a Python dictionary. The treatment value will be treated as a plain string and assigned to the description field.&quot;</span>
+                <span class="p">)</span>
+                <span class="n">attr_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">raw_value</span><span class="p">}</span>
+
+        <span class="k">elif</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">raw_value</span><span class="p">):</span>
+            <span class="n">attr_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># For non-string (e.g., numeric or object), just cast to str</span>
+            <span class="n">attr_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw_value</span><span class="p">)}</span>
+
+        <span class="c1"># Create Treatment object for each treatment arm</span>
+        <span class="n">treatments</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">Treatment</span><span class="p">(</span><span class="o">**</span><span class="n">attr_dict</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;treatments&quot;</span><span class="p">:</span> <span class="n">treatments</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="extract_roles"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.prompt_template.extract_roles">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">extract_roles</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sheet_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract roles from an Excel worksheet and convert them into a dictionary.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path (str): The path to the Excel file containing the role worksheet.</span>
+<span class="sd">        sheet_name (str): The name of the worksheet to read roles from.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: A dictionary with a single key &quot;roles&quot;, where the value is another</span>
+<span class="sd">              dictionary mapping role labels to Role objects. Each Role object</span>
+<span class="sd">              contains attributes parsed from the worksheet.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the role worksheet does not contain mandatory fields or</span>
+<span class="sd">                    if the data format is invalid.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Read the role worksheet into a DataFrame</span>
+    <span class="n">roles_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span><span class="p">)</span>
+
+    <span class="c1"># Validate the presence of mandatory fields in the role worksheet</span>
+    <span class="n">validate_role_sheet</span><span class="p">(</span><span class="n">roles_df</span><span class="p">)</span>
+
+    <span class="c1"># Convert the role worksheet to a dictionary</span>
+    <span class="n">roles</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">roles_df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;role_label&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">raw_value</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Skip empty labels</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">label</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">attr_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw_value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">raw_value</span> <span class="o">=</span> <span class="n">raw_value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="c1"># Try to parse JSON-style string</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">attr_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">raw_value</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="n">attr_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">attr_dict</span><span class="p">)}</span>
+            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Error parsing role label &#39;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&#39; as a Python dictionary. The role value will be treated as a plain string and assigned to the description field.&quot;</span>
+                <span class="p">)</span>
+                <span class="c1"># Treat as plain description text</span>
+                <span class="n">attr_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">raw_value</span><span class="p">}</span>
+
+        <span class="k">elif</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">raw_value</span><span class="p">):</span>
+            <span class="n">attr_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># For non-string (e.g., numeric or object), just cast to str</span>
+            <span class="n">attr_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw_value</span><span class="p">)}</span>
+
+        <span class="c1"># Create Role object for each role defined</span>
+        <span class="n">roles</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">Role</span><span class="p">(</span><span class="o">**</span><span class="n">attr_dict</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;roles&quot;</span><span class="p">:</span> <span class="n">roles</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="parse_prompt_text_field"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.prompt_template.parse_prompt_text_field">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">parse_prompt_text_field</span><span class="p">(</span>
+    <span class="n">text_field</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">role_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+    <span class="n">round_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">prompt_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">is_response_options</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parses the prompt text for the llm_text and response_options fields, converting them into Python objects and assigning to roles.</span>
+
+<span class="sd">    If text_field is a plain string (i.e. not a dictionary literal), this function</span>
+<span class="sd">    creates a dictionary where the keys are the roles in role_list (excluding those in SPECIAL_ROLES)</span>
+<span class="sd">    and the value is the plain string.</span>
+
+<span class="sd">    Otherwise, if text_field is a string representation of a dictionary, it is parsed as a Python dictionary.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        text_field (str): The text field to parse.</span>
+<span class="sd">        role_list (list): A list of role names.</span>
+<span class="sd">        round_id (str): The round ID associated with that round.</span>
+<span class="sd">        prompt_type (str): The type of the prompt.</span>
+<span class="sd">        is_response_options (bool): Boolean indicator on whether the function is parsing the text for the llm_text field or response_options field.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: A dictionary mapping roles to the prompt text field.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Create list of user-defined roles, excluding the special roles</span>
+    <span class="n">user_defined_roles</span> <span class="o">=</span> <span class="p">[</span><span class="n">role</span> <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">role_list</span> <span class="k">if</span> <span class="n">role</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SPECIAL_ROLES</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text_field</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">text_field</span> <span class="o">=</span> <span class="n">text_field</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">text_field</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">text_field</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">text_field</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">prompt_type</span> <span class="ow">in</span> <span class="p">[</span>
+        <span class="s2">&quot;public_question&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;private_question&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;repeat_public_question&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;repeat_private_question&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;context&quot;</span><span class="p">,</span>
+    <span class="p">]:</span>
+        <span class="c1"># If the text starts with &quot;{&quot; and ends with &quot;}&quot;, assume it&#39;s a dictionary literal.</span>
+        <span class="k">if</span> <span class="n">text_field</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;{&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">text_field</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">prompt_dict</span> <span class="o">=</span> <span class="n">ast</span><span class="o">.</span><span class="n">literal_eval</span><span class="p">(</span><span class="n">text_field</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">SyntaxError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Error parsing text field (</span><span class="si">{</span><span class="n">text_field</span><span class="si">}</span><span class="s2">) in Round ID </span><span class="si">{</span><span class="n">round_id</span><span class="si">}</span><span class="s2"> as dictionary: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. The prompt will be treated as a plain string and assigned to all user-defined roles.&quot;</span>
+                <span class="p">)</span>
+                <span class="n">prompt_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">role</span><span class="p">:</span> <span class="n">text_field</span> <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">user_defined_roles</span><span class="p">}</span>
+
+            <span class="k">return</span> <span class="n">prompt_dict</span>
+
+        <span class="c1"># Otherwise, it&#39;s a plain string: build a dictionary mapping each user-defined role to that string.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">is_response_options</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="p">{</span>
+                        <span class="n">role</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">literal_eval</span><span class="p">(</span><span class="n">text_field</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">user_defined_roles</span>
+                    <span class="p">}</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="p">{</span><span class="n">role</span><span class="p">:</span> <span class="n">text_field</span> <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">user_defined_roles</span><span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="n">role</span><span class="p">:</span> <span class="n">text_field</span> <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">user_defined_roles</span><span class="p">}</span>
+
+    <span class="k">elif</span> <span class="n">prompt_type</span> <span class="o">==</span> <span class="s2">&quot;discussion&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_response_options</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;facilitator&quot;</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">literal_eval</span><span class="p">(</span><span class="n">text_field</span><span class="p">)}</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;facilitator&quot;</span><span class="p">:</span> <span class="n">text_field</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;facilitator&quot;</span><span class="p">:</span> <span class="n">text_field</span><span class="p">}</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Invalid prompt type: </span><span class="si">{</span><span class="n">prompt_type</span><span class="si">}</span><span class="s2"> in Round ID </span><span class="si">{</span><span class="n">round_id</span><span class="si">}</span><span class="s2">: Supported prompt types include: </span><span class="si">{</span><span class="n">SUPPORTED_PROMPT_TYPES</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="parse_range_response_options"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.prompt_template.parse_range_response_options">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">parse_range_response_options</span><span class="p">(</span><span class="n">response_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parses a dictionary of response options, converting any tuple values into a range object.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        response_options (dict): A dictionary where keys represent roles and values are either</span>
+<span class="sd">                                 tuples (to be converted into range objects) or other types</span>
+<span class="sd">                                 (which are left unchanged).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: A dictionary with the same keys as the input, where tuple values are replaced</span>
+<span class="sd">              with range objects, and other values remain unchanged.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parsed_response_options</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">role</span><span class="p">:</span> <span class="p">(</span>
+            <span class="nb">range</span><span class="p">(</span><span class="o">*</span><span class="n">response_option</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response_option</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
+            <span class="k">else</span> <span class="n">response_option</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">role</span><span class="p">,</span> <span class="n">response_option</span> <span class="ow">in</span> <span class="n">response_options</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">parsed_response_options</span></div>
+
+
+<div class="viewcode-block" id="extract_prompts"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.prompt_template.extract_prompts">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">extract_prompts</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sheet_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">role_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extracts prompts from the prompt worksheet in the prompt template and returns them as a dictionary.</span>
+
+<span class="sd">    This function reads the prompt worksheet from the prompt template file, validates the presence</span>
+<span class="sd">    of mandatory fields, processes the prompts, and returns them in a structured format.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path (str): The file path to the prompt template file.</span>
+<span class="sd">        sheet_name (str): The name of the worksheet to read from the prompt template file.</span>
+<span class="sd">        role_list (list): A list of roles to be used in the experiment.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: A dictionary containing a list of prompts. Each prompt is represented as a dictionary</span>
+<span class="sd">              with relevant fields and their corresponding values.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If mandatory fields are not present in the prompts_template worksheet.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Read the prompt template worksheet into a DataFrame</span>
+    <span class="n">prompts_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span><span class="p">)</span>
+
+    <span class="c1"># Validate the presence of mandatory fields in the prompt template worksheet</span>
+    <span class="n">validate_prompt_sheet</span><span class="p">(</span><span class="n">prompts_df</span><span class="p">)</span>
+
+    <span class="c1"># Convert the prompts to a list of dictionaries</span>
+    <span class="n">prompts_list</span> <span class="o">=</span> <span class="n">prompts_df</span><span class="p">[</span>
+        <span class="p">[</span>
+            <span class="s2">&quot;round_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;round_order&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;llm_text&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;response_name&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;response_type&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;response_options&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;randomize_response_order&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;validate_response&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;generate_speculation_score&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;format_response&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s2">&quot;records&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Parse llm_text column from string format to appropriate Python format</span>
+    <span class="k">for</span> <span class="n">prompt_dict</span> <span class="ow">in</span> <span class="n">prompts_list</span><span class="p">:</span>
+        <span class="n">prompt_dict</span><span class="p">[</span><span class="s2">&quot;llm_text&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_prompt_text_field</span><span class="p">(</span>
+            <span class="n">text_field</span><span class="o">=</span><span class="n">prompt_dict</span><span class="p">[</span><span class="s2">&quot;llm_text&quot;</span><span class="p">],</span>
+            <span class="n">role_list</span><span class="o">=</span><span class="n">role_list</span><span class="p">,</span>
+            <span class="n">round_id</span><span class="o">=</span><span class="n">prompt_dict</span><span class="p">[</span><span class="s2">&quot;round_id&quot;</span><span class="p">],</span>
+            <span class="n">prompt_type</span><span class="o">=</span><span class="n">prompt_dict</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">],</span>
+            <span class="n">is_response_options</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">prompt_dict</span><span class="p">[</span><span class="s2">&quot;response_options&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_prompt_text_field</span><span class="p">(</span>
+            <span class="n">text_field</span><span class="o">=</span><span class="n">prompt_dict</span><span class="p">[</span><span class="s2">&quot;response_options&quot;</span><span class="p">],</span>
+            <span class="n">role_list</span><span class="o">=</span><span class="n">role_list</span><span class="p">,</span>
+            <span class="n">round_id</span><span class="o">=</span><span class="n">prompt_dict</span><span class="p">[</span><span class="s2">&quot;round_id&quot;</span><span class="p">],</span>
+            <span class="n">prompt_type</span><span class="o">=</span><span class="n">prompt_dict</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">],</span>
+            <span class="n">is_response_options</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">prompt_dict</span><span class="p">[</span><span class="s2">&quot;response_options&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_range_response_options</span><span class="p">(</span>
+            <span class="n">prompt_dict</span><span class="p">[</span><span class="s2">&quot;response_options&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">prompt_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">BOOLEAN_KEYS</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">v</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="s2">&quot;true&quot;</span><span class="p">:</span>
+                        <span class="n">prompt_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">elif</span> <span class="n">v</span> <span class="o">==</span> <span class="s2">&quot;false&quot;</span><span class="p">:</span>
+                        <span class="n">prompt_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+                    <span class="c1"># treat 0 as False, non-zero as True</span>
+                    <span class="n">prompt_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;prompts&quot;</span><span class="p">:</span> <span class="n">prompts_list</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="extract_profiles"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.prompt_template.extract_profiles">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">extract_profiles</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sheet_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extracts subject profiles from the profile worksheet in the prompt template.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path (str): The file path to the prompt template.</span>
+<span class="sd">        sheet_name (str): The name of the sheet to read from the prompt template.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: A dictionary containing:</span>
+<span class="sd">            - &quot;profiles_mapping&quot; (dict): A dictionary mapping of the first row of the sheet.</span>
+<span class="sd">            - &quot;profiles&quot; (pd.DataFrame): A DataFrame containing the remaining data with new column headers.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If mandatory fields are not present in the profile worksheet.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Read the specified sheet into a DataFrame</span>
+    <span class="n">profiles_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span><span class="p">)</span>
+
+    <span class="c1"># Extract the first row and convert them to a dictionary</span>
+    <span class="n">profiles_mapping</span> <span class="o">=</span> <span class="n">profiles_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+
+    <span class="c1"># Use the first row as the new column headers for the remaining data</span>
+    <span class="n">profiles</span> <span class="o">=</span> <span class="n">profiles_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">profiles</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">profiles_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;profiles_mapping&quot;</span><span class="p">:</span> <span class="n">profiles_mapping</span><span class="p">,</span>
+        <span class="s2">&quot;profiles&quot;</span><span class="p">:</span> <span class="n">profiles</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="extract_constants"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.prompt_template.extract_constants">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">extract_constants</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sheet_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extracts constants from a specified Excel worksheet and returns them as a dictionary.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path (str): The path to the Excel file containing the constants.</span>
+<span class="sd">        sheet_name (str): The name of the worksheet to extract constants from.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: A dictionary with a single key &quot;constants&quot;, where the value is another dictionary</span>
+<span class="sd">              mapping the first column values to the second column values. If the second column</span>
+<span class="sd">              contains string representations of lists, they are converted to actual lists.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the worksheet does not contain the required fields or if the data format</span>
+<span class="sd">                    is invalid.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Read the constant worksheet into a DataFrame</span>
+    <span class="n">constants_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span><span class="p">)</span>
+
+    <span class="c1"># Validate the presence of mandatory fields in the constant worksheet</span>
+    <span class="n">validate_constant_sheet</span><span class="p">(</span><span class="n">constants_df</span><span class="p">)</span>
+
+    <span class="c1"># Convert the roles worksheet to a dictionary</span>
+    <span class="n">constants_dict</span> <span class="o">=</span> <span class="n">constants_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">constants_df</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()[</span>
+        <span class="n">constants_df</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="p">]</span>
+
+    <span class="c1"># Convert string representations of lists to actual lists</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">constants_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">):</span>
+            <span class="n">constants_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">ast</span><span class="o">.</span><span class="n">literal_eval</span><span class="p">(</span><span class="n">value</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">constants_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">value</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;constants&quot;</span><span class="p">:</span> <span class="n">constants_dict</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="print_session_settings"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.prompt_template.print_session_settings">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">print_session_settings</span><span class="p">(</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">AItoAIInterviewExperiment</span><span class="p">,</span> <span class="n">constant_permutation</span><span class="p">:</span> <span class="nb">dict</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Prints the experimental settings and configuration details for an AI-to-AI interview experiment.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session (AItoAIInterviewExperiment): An object containing all relevant session parameters and settings.</span>
+<span class="sd">        constant_permutation (dict): A dictionary representing constant permutations used in the session.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+
+<span class="sd">    The function outputs a formatted summary of the session&#39;s configuration, including model information,</span>
+<span class="sd">    API keys, session and role details, treatment and assignment strategies, random seed, roles,</span>
+<span class="sd">    and interview prompts.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_format_dict_to_str</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">indent</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Format a nested dictionary as an indented, human-readable string.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            d: The dictionary to format.</span>
+<span class="sd">            indent: Number of leading spaces for each line.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A multi-line string representation of the dictionary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">d</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="n">indent</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_format_val</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">ind</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Recursively format a value for display.</span>
+
+<span class="sd">            Args:</span>
+<span class="sd">                val: The value to format (dict, list, tuple, or scalar).</span>
+<span class="sd">                ind: Current indentation level.</span>
+
+<span class="sd">            Returns:</span>
+<span class="sd">                A formatted string representation of *val*.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">sub_lines</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">kk</span><span class="p">,</span> <span class="n">vv</span> <span class="ow">in</span> <span class="n">val</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vv</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                        <span class="n">sub_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">ind</span><span class="si">}{</span><span class="n">kk</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+                        <span class="n">sub_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_format_val</span><span class="p">(</span><span class="n">vv</span><span class="p">,</span> <span class="n">ind</span> <span class="o">+</span> <span class="mi">4</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">sub_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">ind</span><span class="si">}{</span><span class="n">kk</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">vv</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sub_lines</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                <span class="k">return</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">val</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">indent</span><span class="si">}{</span><span class="n">k</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_format_val</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">indent</span> <span class="o">+</span> <span class="mi">4</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">indent</span><span class="si">}{</span><span class="n">k</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="w"> </span><span class="n">_format_val</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">indent</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+    <span class="nb">print</span><span class="p">(</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Experiment Settings for {session_id}:</span>
+<span class="sd">        {line_separator}</span>
+<span class="sd">        Model Info: {model_info}</span>
+<span class="sd">        HF Inference Endpoint (Only applicable when using Hugging Face Models): {hf_inference_endpoint}</span>
+<span class="sd">        Temperature: {temperature}</span>
+<span class="sd">        Number of Subjects per Group (Excluding Special Roles like &#39;facilitator&#39;): {num_subjects_per_group}</span>
+<span class="sd">        Number of Groups: {num_groups}</span>
+<span class="sd">        Maximum Number of Rounds: {max_num_rounds}</span>
+<span class="sd">        Treatment Assignment Strategy: {treatment_assignment_strategy}</span>
+<span class="sd">        Treatment Column (Only valid when using manual treatment assignment strategy): {treatment_column}</span>
+<span class="sd">        Treatments: {treatments}</span>
+
+<span class="sd">        Group Assignment Strategy: {group_assignment_strategy}</span>
+<span class="sd">        Group Column (Only valid when using manual group assignment strategy): {group_column}</span>
+<span class="sd">        Role Assignment Strategy: {role_assignment_strategy}</span>
+<span class="sd">        Role Column (Only valid when using manual role assignment strategy): {role_column}</span>
+<span class="sd">        Roles: {roles}</span>
+
+<span class="sd">        Random Seed: {random_seed}</span>
+<span class="sd">        Build Profiles using Q&amp;A Format: {build_profile_qna}</span>
+<span class="sd">        Build Profiles using Backstories: {build_profile_backstories}</span>
+<span class="sd">        Constant Permutation: {constant_permutation}</span>
+<span class="sd">        Prompts: </span>
+<span class="sd">        {prompts}</span>
+
+<span class="sd">        Constants: {constants}</span>
+
+<span class="sd">        &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">line_separator</span><span class="o">=</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="p">(</span><span class="mi">25</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">)),</span>
+            <span class="n">model_info</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">model_info</span><span class="p">,</span>
+            <span class="n">hf_inference_endpoint</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">hf_inference_endpoint</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="n">num_subjects_per_group</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">num_subjects_per_group</span><span class="p">,</span>
+            <span class="n">num_groups</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">num_groups</span><span class="p">,</span>
+            <span class="n">max_num_rounds</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">max_num_rounds</span><span class="p">,</span>
+            <span class="n">treatments</span><span class="o">=</span><span class="n">_format_dict_to_str</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">treatments</span><span class="p">),</span>
+            <span class="n">treatment_assignment_strategy</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">treatment_assignment_strategy</span><span class="p">,</span>
+            <span class="n">treatment_column</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">treatment_column</span><span class="p">,</span>
+            <span class="n">group_assignment_strategy</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">group_assignment_strategy</span><span class="p">,</span>
+            <span class="n">group_column</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">group_column</span><span class="p">,</span>
+            <span class="n">role_assignment_strategy</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">role_assignment_strategy</span><span class="p">,</span>
+            <span class="n">role_column</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">role_column</span><span class="p">,</span>
+            <span class="n">random_seed</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">random_seed</span><span class="p">,</span>
+            <span class="n">build_profile_qna</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">build_profile_qna</span><span class="p">,</span>
+            <span class="n">build_profile_backstories</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">build_profile_backstories</span><span class="p">,</span>
+            <span class="n">constant_permutation</span><span class="o">=</span><span class="n">constant_permutation</span><span class="p">,</span>
+            <span class="n">roles</span><span class="o">=</span><span class="n">_format_dict_to_str</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">roles</span><span class="p">),</span>
+            <span class="n">prompts</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">prompts</span><span class="p">,</span>
+            <span class="n">constants</span><span class="o">=</span><span class="n">_format_dict_to_str</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">constants</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="run_session_wrapper"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.prompt_template.run_session_wrapper">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">run_session_wrapper</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrapper function to execute a session with the provided arguments.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        args (tuple): A tuple containing the following elements:</span>
+<span class="sd">            - session: An object with a `run_session` method to execute the session.</span>
+<span class="sd">            - test_mode (bool): A flag indicating whether the session should run in test mode.</span>
+<span class="sd">            - version (str): The version identifier for the session.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">session</span><span class="p">,</span> <span class="n">test_mode</span><span class="p">,</span> <span class="n">version</span> <span class="o">=</span> <span class="n">args</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">run_session</span><span class="p">(</span><span class="n">test_mode</span><span class="o">=</span><span class="n">test_mode</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span> <span class="n">save_results_as_csv</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../../talkingtomachines.interface.html#talkingtomachines.interface.prompt_template.main">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Legacy CLI entry point for parsing a prompt template and running an experiment.</span>
+
+<span class="sd">    Parses command-line arguments to locate an Excel prompt template file,</span>
+<span class="sd">    validates it, extracts all worksheet data, initialises experiment</span>
+<span class="sd">    sessions (one per constant permutation), and prompts the user to run</span>
+<span class="sd">    in *test* or *full* mode.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        SystemExit: Via ``argparse`` if required arguments are missing.</span>
+<span class="sd">        ValueError: Propagated from validation helpers when the template</span>
+<span class="sd">            is malformed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Set up command-line argument parsing</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Parse the prompt template provided by the user and initialise the experiment in the Talking to Machines Platform.&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-v&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--version&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Prints the current package version.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;prompt_template_file_path&quot;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to the prompt template Excel file.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="c1"># Handle --version flag and exit</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">version</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;talkingtomachines </span><span class="si">{</span><span class="n">version</span><span class="p">(</span><span class="s1">&#39;talkingtomachines&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">PackageNotFoundError</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;talkingtomachines (version unknown)&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Require a valid path to the prompt template if not using --version</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">prompt_template_file_path</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+            <span class="s2">&quot;A valid file path to the prompt template needs to be provided as an argument.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">prompt_template_file_path</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">prompt_template_file_path</span>
+
+    <span class="c1"># Validate the provided directory path to the prompt template</span>
+    <span class="n">validate_prompt_template_path</span><span class="p">(</span><span class="n">file_path</span><span class="o">=</span><span class="n">prompt_template_file_path</span><span class="p">)</span>
+
+    <span class="c1"># Read the prompt template in Excel format</span>
+    <span class="n">prompt_template</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">ExcelFile</span><span class="p">(</span><span class="n">prompt_template_file_path</span><span class="p">)</span>
+
+    <span class="c1"># Validate the required sheets in the prompt template</span>
+    <span class="n">validate_prompt_template_sheets</span><span class="p">(</span>
+        <span class="n">excel_file</span><span class="o">=</span><span class="n">prompt_template</span><span class="p">,</span> <span class="n">required_sheet_list</span><span class="o">=</span><span class="n">PROMPT_TEMPLATE_SHEETS</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Dictionary to store data from each worksheet</span>
+    <span class="n">prompt_template_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># Iterate through each worksheet</span>
+    <span class="k">for</span> <span class="n">sheet_name</span> <span class="ow">in</span> <span class="n">prompt_template</span><span class="o">.</span><span class="n">sheet_names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sheet_name</span> <span class="o">==</span> <span class="s2">&quot;settings&quot;</span><span class="p">:</span>
+            <span class="n">prompt_template_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">extract_settings</span><span class="p">(</span>
+                    <span class="n">file_path</span><span class="o">=</span><span class="n">prompt_template_file_path</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">sheet_name</span> <span class="o">==</span> <span class="s2">&quot;treatment&quot;</span><span class="p">:</span>
+            <span class="n">prompt_template_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">extract_treatments</span><span class="p">(</span>
+                    <span class="n">file_path</span><span class="o">=</span><span class="n">prompt_template_file_path</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">sheet_name</span> <span class="o">==</span> <span class="s2">&quot;role&quot;</span><span class="p">:</span>
+            <span class="n">prompt_template_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">extract_roles</span><span class="p">(</span>
+                    <span class="n">file_path</span><span class="o">=</span><span class="n">prompt_template_file_path</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">sheet_name</span> <span class="o">==</span> <span class="s2">&quot;prompt&quot;</span><span class="p">:</span>
+            <span class="n">prompt_template_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">extract_prompts</span><span class="p">(</span>
+                    <span class="n">file_path</span><span class="o">=</span><span class="n">prompt_template_file_path</span><span class="p">,</span>
+                    <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span><span class="p">,</span>
+                    <span class="n">role_list</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">prompt_template_dict</span><span class="p">[</span><span class="s2">&quot;roles&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">sheet_name</span> <span class="o">==</span> <span class="s2">&quot;profile&quot;</span><span class="p">:</span>
+            <span class="n">prompt_template_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">extract_profiles</span><span class="p">(</span>
+                    <span class="n">file_path</span><span class="o">=</span><span class="n">prompt_template_file_path</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">sheet_name</span> <span class="o">==</span> <span class="s2">&quot;constant&quot;</span><span class="p">:</span>
+            <span class="n">prompt_template_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">extract_constants</span><span class="p">(</span>
+                    <span class="n">file_path</span><span class="o">=</span><span class="n">prompt_template_file_path</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">sheet_name</span><span class="si">}</span><span class="s2"> will be ignored as it is not one of the required prompt template sheets: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">PROMPT_TEMPLATE_SHEETS</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+    <span class="c1"># Initialize experiment based on prompt template</span>
+    <span class="n">session_list</span><span class="p">,</span> <span class="n">constant_permutations</span> <span class="o">=</span> <span class="n">initialize_experiment</span><span class="p">(</span>
+        <span class="n">prompt_template_dict</span><span class="o">=</span><span class="n">prompt_template_dict</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Print out experimental settings for each session for user verification</span>
+    <span class="k">for</span> <span class="n">session</span><span class="p">,</span> <span class="n">constant_permutation</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">session_list</span><span class="p">,</span> <span class="n">constant_permutations</span><span class="p">):</span>
+        <span class="n">print_session_settings</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">constant_permutation</span><span class="p">)</span>
+
+    <span class="c1"># Ask for user confirmation to run the experiment</span>
+    <span class="n">user_input</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">input</span><span class="p">(</span>
+            <span class="s2">&quot;Verify the experiment settings above and choose a run mode:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;  • Type &#39;test&#39;  → Runs the session in TEST mode (one randomly selected group per treatment)</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;  • Type &#39;full&#39;  → Runs the FULL session</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;  • Anything else → Terminates the session immediately</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Your choice: &quot;</span>
+        <span class="p">)</span>
+        <span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">user_input</span> <span class="o">==</span> <span class="s2">&quot;test&quot;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Experiment has started running in TEST mode.&quot;</span><span class="p">)</span>
+
+        <span class="n">session_version</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">session</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">session_list</span><span class="p">):</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">run_session</span><span class="p">(</span>
+                <span class="n">test_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">version</span><span class="o">=</span><span class="n">session_version</span><span class="p">,</span>
+                <span class="n">save_results_as_csv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">session_version</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Experiment is completed successfully in TEST mode.&quot;</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">user_input</span> <span class="o">==</span> <span class="s2">&quot;full&quot;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Experiment has started running in FULL mode.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Prepare a list of arguments for each session</span>
+        <span class="n">experiment_args</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">session</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">session_list</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Run session in parallel using ProcessPoolExecutor</span>
+        <span class="k">with</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">ProcessPoolExecutor</span><span class="p">()</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+            <span class="c1"># Submit all sessions</span>
+            <span class="n">futures</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">run_session_wrapper</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">experiment_args</span>
+            <span class="p">]</span>
+
+            <span class="c1"># Update progress bar as each session completes</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">as_completed</span><span class="p">(</span><span class="n">futures</span><span class="p">),</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">futures</span><span class="p">)):</span>
+                <span class="k">pass</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Experiment is completed successfully in FULL mode.&quot;</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Experiment is terminated by the user.&quot;</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

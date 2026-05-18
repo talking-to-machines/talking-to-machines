@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.gateway.media &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.gateway.media</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.gateway.media</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Multimodal media utilities for extracting and processing embedded media.</span>
+
+<span class="sd">This module provides a unified API for detecting, extracting, and</span>
+<span class="sd">converting image, video, and audio content embedded in prompt text into</span>
+<span class="sd">provider-compatible multimodal content blocks.</span>
+
+<span class="sd">Three embedding formats are recognised (in priority order):</span>
+
+<span class="sd">    1. **Bracket tags** (preferred)::</span>
+
+<span class="sd">           [IMAGE: https://example.com/photo.jpg]</span>
+<span class="sd">           [VIDEO: https://example.com/clip.mp4]</span>
+<span class="sd">           [AUDIO: https://example.com/sound.mp3]</span>
+
+<span class="sd">    2. **Markdown image syntax**::</span>
+
+<span class="sd">           ![alt text](https://example.com/photo.jpg)</span>
+
+<span class="sd">    3. **Raw URLs** (auto-detected by file extension)::</span>
+
+<span class="sd">           https://example.com/photo.png</span>
+
+<span class="sd">URL normalisation is applied automatically — for example, Dropbox share</span>
+<span class="sd">links (``dl=0``) are converted to direct-download links (``dl=1``) so</span>
+<span class="sd">that LLM providers can fetch the raw bytes.</span>
+
+<span class="sd">Typical usage::</span>
+
+<span class="sd">    media_items = extract_all_media(prompt_text)</span>
+<span class="sd">    clean_text  = strip_media_tags(prompt_text)</span>
+<span class="sd">    content     = build_multimodal_content(clean_text, media_items)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">urlparse</span><span class="p">,</span> <span class="n">urlunparse</span><span class="p">,</span> <span class="n">parse_qsl</span><span class="p">,</span> <span class="n">urlencode</span>
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Extension sets</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="n">IMAGE_EXTENSIONS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;.jpg&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.jpeg&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.png&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.gif&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.webp&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.bmp&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.tiff&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.svg&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+<span class="n">VIDEO_EXTENSIONS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;.mp4&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.mov&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.avi&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.webm&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.mkv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.m4v&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.wmv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.flv&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+<span class="n">AUDIO_EXTENSIONS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;.mp3&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.wav&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.ogg&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.flac&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.aac&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.m4a&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.opus&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.wma&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Regex patterns</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="c1"># [IMAGE: url] / [VIDEO: url] / [AUDIO: url]</span>
+<span class="n">_TAG_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="sa">r</span><span class="s2">&quot;\[(IMAGE|VIDEO|AUDIO):\s*(https?://[^\]\s]+)\]&quot;</span><span class="p">,</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Markdown: ![alt](url)</span>
+<span class="n">_MD_IMAGE_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="sa">r</span><span class="s2">&quot;!\[([^\]]*)\]\((https?://[^\)]+)\)&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Data model</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="MediaContent"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.media.MediaContent">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MediaContent</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A single media item extracted from prompt text.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        url: The normalised URL pointing to the media resource.</span>
+<span class="sd">        media_type: One of ``&quot;image&quot;``, ``&quot;video&quot;``, or ``&quot;audio&quot;``.</span>
+<span class="sd">        caption: Optional caption or alt text (from Markdown syntax).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">url</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">media_type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">caption</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># URL normalisation</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="normalize_url"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.media.normalize_url">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">normalize_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalise a media URL for direct-download access where possible.</span>
+
+<span class="sd">    Applies provider-specific transformations so that the resulting URL</span>
+<span class="sd">    returns raw file bytes rather than an HTML preview page.</span>
+
+<span class="sd">    Currently handles:</span>
+<span class="sd">        - **Dropbox**: Converts ``?dl=0`` to ``?dl=1``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        url: The original media URL to normalise.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The normalised URL string. If no transformation applies, the</span>
+<span class="sd">        original URL is returned unchanged.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;dropbox.com&quot;</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
+        <span class="n">parsed</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">parse_qsl</span><span class="p">(</span><span class="n">parsed</span><span class="o">.</span><span class="n">query</span><span class="p">))</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;dl&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+        <span class="n">new_query</span> <span class="o">=</span> <span class="n">urlencode</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">urlunparse</span><span class="p">(</span><span class="n">parsed</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">new_query</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">url</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_media_type_from_extension</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Infer media type from a URL&#39;s file extension.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        url: The URL whose path is inspected for a known media</span>
+<span class="sd">            extension.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ``&quot;image&quot;``, ``&quot;video&quot;``, or ``&quot;audio&quot;`` if the extension is</span>
+<span class="sd">        recognised, otherwise ``None``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="c1"># Strip query string from extension detection</span>
+    <span class="n">ext</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">path</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">path</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">IMAGE_EXTENSIONS</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;image&quot;</span>
+    <span class="k">if</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">VIDEO_EXTENSIONS</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;video&quot;</span>
+    <span class="k">if</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">AUDIO_EXTENSIONS</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;audio&quot;</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Extraction</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="extract_all_media"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.media.extract_all_media">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">extract_all_media</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">MediaContent</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract all media items from *content* in document order.</span>
+
+<span class="sd">    Scans the text using three strategies in priority order: bracket</span>
+<span class="sd">    tags, Markdown image syntax, and raw URLs with known media</span>
+<span class="sd">    extensions. Duplicate URLs are deduplicated (first occurrence wins).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        content: The prompt text to scan for embedded media references.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of ``MediaContent`` instances in the order they appear.</span>
+<span class="sd">        Returns an empty list if no media is found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">seen</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">items</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">MediaContent</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">media_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">caption</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Normalise *url* and append a MediaContent item if not yet seen.&quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">normalize_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">url</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+            <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">MediaContent</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="n">media_type</span><span class="p">,</span> <span class="n">caption</span><span class="o">=</span><span class="n">caption</span><span class="p">))</span>
+
+    <span class="c1"># 1. Bracket tags: [IMAGE: ...] / [VIDEO: ...] / [AUDIO: ...]</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">_TAG_PATTERN</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">content</span><span class="p">):</span>
+        <span class="n">tag_type</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">_add</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">tag_type</span><span class="p">)</span>
+
+    <span class="c1"># 2. Markdown images: ![alt](url)</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">_MD_IMAGE_PATTERN</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">content</span><span class="p">):</span>
+        <span class="n">caption</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">_add</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="s2">&quot;image&quot;</span><span class="p">,</span> <span class="n">caption</span><span class="p">)</span>
+
+    <span class="c1"># 3. Raw URLs — only those with unambiguous media extensions</span>
+    <span class="n">raw_url_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;https?://\S+&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">raw_url_pattern</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">content</span><span class="p">):</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.,;:)&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">url</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">detected</span> <span class="o">=</span> <span class="n">_media_type_from_extension</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">detected</span><span class="p">:</span>
+            <span class="n">_add</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">detected</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">items</span></div>
+
+
+<div class="viewcode-block" id="extract_media_url"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.media.extract_media_url">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">extract_media_url</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">media_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;image&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the first media URL of the given type found in *content*.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        content: Prompt text to search for embedded media references.</span>
+<span class="sd">        media_type: The kind of media to look for — one of</span>
+<span class="sd">            ``&quot;image&quot;``, ``&quot;video&quot;``, or ``&quot;audio&quot;``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The normalised URL string of the first matching media item, or</span>
+<span class="sd">        ``None`` if no match is found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">extract_all_media</span><span class="p">(</span><span class="n">content</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">media_type</span> <span class="o">==</span> <span class="n">media_type</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">item</span><span class="o">.</span><span class="n">url</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="strip_media_tags"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.media.strip_media_tags">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">strip_media_tags</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove bracket media tags from *content*, leaving surrounding text intact.</span>
+
+<span class="sd">    Runs of extra whitespace introduced by tag removal are collapsed to</span>
+<span class="sd">    a single space, and leading/trailing whitespace is stripped.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        content: The prompt text containing bracket media tags.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The cleaned text with all ``[IMAGE: ...]``, ``[VIDEO: ...]``,</span>
+<span class="sd">        and ``[AUDIO: ...]`` tags removed.</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        &gt;&gt;&gt; strip_media_tags(&quot;Here is a photo. [IMAGE: https://x.com/a.jpg] What do you see?&quot;)</span>
+<span class="sd">        &#39;Here is a photo. What do you see?&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">_TAG_PATTERN</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
+    <span class="c1"># Collapse runs of whitespace introduced by removal</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot; {2,}&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">text</span></div>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Multimodal content block builders</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="build_multimodal_content"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.media.build_multimodal_content">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">build_multimodal_content</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">media_items</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">MediaContent</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build an OpenAI-compatible multimodal content array.</span>
+
+<span class="sd">    The text portion always comes first, followed by one block per media</span>
+<span class="sd">    item. Image items use the standard ``image_url`` block format. Video</span>
+<span class="sd">    and audio items use ``video_url`` and ``input_audio`` blocks</span>
+<span class="sd">    respectively (provider-specific handling may be needed downstream).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        text: The rendered prompt text with media tags already stripped.</span>
+<span class="sd">        media_items: Ordered list of ``MediaContent`` items to embed</span>
+<span class="sd">            as additional content blocks.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of content-block dictionaries suitable for the</span>
+<span class="sd">        ``content`` field of an ``{&quot;role&quot;: &quot;user&quot;, ...}`` message.</span>
+<span class="sd">        The first element is always a ``{&quot;type&quot;: &quot;text&quot;, ...}`` block.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">blocks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">}]</span>
+
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">media_items</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">media_type</span> <span class="o">==</span> <span class="s2">&quot;image&quot;</span><span class="p">:</span>
+            <span class="n">block</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;image_url&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;image_url&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">url</span><span class="p">},</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">caption</span><span class="p">:</span>
+                <span class="c1"># Some providers honour an alt/caption field; harmless otherwise</span>
+                <span class="n">block</span><span class="p">[</span><span class="s2">&quot;image_url&quot;</span><span class="p">][</span><span class="s2">&quot;alt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">caption</span>
+            <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">item</span><span class="o">.</span><span class="n">media_type</span> <span class="o">==</span> <span class="s2">&quot;video&quot;</span><span class="p">:</span>
+            <span class="c1"># OpenAI Responses API supports video via a `video_url` block (preview).</span>
+            <span class="c1"># Fall back to text for providers that do not support it.</span>
+            <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;video_url&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;video_url&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">url</span><span class="p">},</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">item</span><span class="o">.</span><span class="n">media_type</span> <span class="o">==</span> <span class="s2">&quot;audio&quot;</span><span class="p">:</span>
+            <span class="c1"># Audio support varies widely; use an input_audio block (OpenAI format).</span>
+            <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;input_audio&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;input_audio&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">url</span><span class="p">},</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">blocks</span></div>
+
+
+<div class="viewcode-block" id="has_media"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.media.has_media">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">has_media</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether *content* contains at least one extractable media item.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        content: The prompt text to scan.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ``True`` if any image, video, or audio reference is found,</span>
+<span class="sd">        ``False`` otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">extract_all_media</span><span class="p">(</span><span class="n">content</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="has_video"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.media.has_video">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">has_video</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether *content* contains at least one video item.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        content: The prompt text to scan.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ``True`` if a video reference is found, ``False`` otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">media_type</span> <span class="o">==</span> <span class="s2">&quot;video&quot;</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">extract_all_media</span><span class="p">(</span><span class="n">content</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="has_audio"><a class="viewcode-back" href="../../../talkingtomachines.gateway.html#talkingtomachines.gateway.media.has_audio">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">has_audio</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether *content* contains at least one audio item.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        content: The prompt text to scan.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ``True`` if an audio reference is found, ``False`` otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">media_type</span> <span class="o">==</span> <span class="s2">&quot;audio&quot;</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">extract_all_media</span><span class="p">(</span><span class="n">content</span><span class="p">))</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

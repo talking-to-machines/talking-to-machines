@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.storage.codebook &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.storage.codebook</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.storage.codebook</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Codebook generator</span>
+
+<span class="sd">Produces a ``codebook.json`` documenting all field definitions, response</span>
+<span class="sd">options, and data types for a compiled experiment.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.compiler.cep_schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">CompiledExperiment</span>
+
+
+<div class="viewcode-block" id="generate_codebook"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.codebook.generate_codebook">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">generate_codebook</span><span class="p">(</span><span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a codebook dictionary from a Compiled Experiment Package.</span>
+
+<span class="sd">    The codebook documents all field definitions, response options, data types,</span>
+<span class="sd">    prompt definitions, and profile columns for a compiled experiment. Fields</span>
+<span class="sd">    are grouped by scope into logical tables (session, agent, group, responses).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cep: The compiled experiment package containing field definitions,</span>
+<span class="sd">            prompts, and profile information.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A structured dictionary with keys ``experiment_id``, ``cep_hash``,</span>
+<span class="sd">        ``schema_version``, ``tables``, ``prompts``, and ``profile_columns``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">codebook</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;experiment_id&quot;</span><span class="p">:</span> <span class="n">cep</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span>
+        <span class="s2">&quot;cep_hash&quot;</span><span class="p">:</span> <span class="n">cep</span><span class="o">.</span><span class="n">cep_hash</span><span class="p">,</span>
+        <span class="s2">&quot;schema_version&quot;</span><span class="p">:</span> <span class="n">cep</span><span class="o">.</span><span class="n">schema_version</span><span class="p">,</span>
+        <span class="s2">&quot;tables&quot;</span><span class="p">:</span> <span class="p">{},</span>
+    <span class="p">}</span>
+
+    <span class="c1"># Group fields by scope → table</span>
+    <span class="n">scope_to_table</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;Session&quot;</span><span class="p">:</span> <span class="s2">&quot;session_table&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Agent&quot;</span><span class="p">:</span> <span class="s2">&quot;agent_table&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Group&quot;</span><span class="p">:</span> <span class="s2">&quot;group_table&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Player&quot;</span><span class="p">:</span> <span class="s2">&quot;player&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">for</span> <span class="n">field_dict</span> <span class="ow">in</span> <span class="n">cep</span><span class="o">.</span><span class="n">fields</span><span class="p">:</span>
+        <span class="n">scope</span> <span class="o">=</span> <span class="n">field_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;field_class&quot;</span><span class="p">,</span> <span class="s2">&quot;Player&quot;</span><span class="p">)</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">scope_to_table</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="s2">&quot;player&quot;</span><span class="p">)</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="n">field_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;module&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">field_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">full_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">module</span> <span class="k">else</span> <span class="n">name</span>
+
+        <span class="n">entry</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;field&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module</span><span class="p">,</span>
+            <span class="s2">&quot;scope&quot;</span><span class="p">:</span> <span class="n">scope</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">field_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;response_options&quot;</span><span class="p">:</span> <span class="n">field_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response_options&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;response_options_intro&quot;</span><span class="p">:</span> <span class="n">field_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response_options_intro&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;validate&quot;</span><span class="p">:</span> <span class="n">field_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;validate&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="s2">&quot;format_response&quot;</span><span class="p">:</span> <span class="n">field_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;format_response&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="s2">&quot;generate_speculation_score&quot;</span><span class="p">:</span> <span class="n">field_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">&quot;generate_speculation_score&quot;</span><span class="p">,</span> <span class="kc">False</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;randomise_options_order&quot;</span><span class="p">:</span> <span class="n">field_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;randomise_options_order&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">codebook</span><span class="p">[</span><span class="s2">&quot;tables&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="p">{})[</span><span class="n">full_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
+
+    <span class="c1"># Prompt definitions</span>
+    <span class="n">codebook</span><span class="p">[</span><span class="s2">&quot;prompts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">module</span><span class="p">,</span> <span class="n">prompt_list</span> <span class="ow">in</span> <span class="n">cep</span><span class="o">.</span><span class="n">prompts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">codebook</span><span class="p">[</span><span class="s2">&quot;prompts&quot;</span><span class="p">][</span><span class="n">module</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module</span><span class="p">,</span>
+                <span class="s2">&quot;sequence&quot;</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prompt_sequence&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;is_displayed&quot;</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_displayed&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;field_class&quot;</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;field_class&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;field_name&quot;</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;field_name&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;llm_text&quot;</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;llm_text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;human_text&quot;</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;human_text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;is_adapted&quot;</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_adapted&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+                <span class="s2">&quot;kwargs&quot;</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kwargs&quot;</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;args&quot;</span><span class="p">,</span> <span class="p">{})),</span>
+            <span class="p">}</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">prompt_list</span>
+        <span class="p">]</span>
+
+    <span class="c1"># Profile columns</span>
+    <span class="n">profiles</span> <span class="o">=</span> <span class="n">cep</span><span class="o">.</span><span class="n">profiles</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">codebook</span><span class="p">[</span><span class="s2">&quot;profile_columns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">profiles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;short_names&quot;</span><span class="p">,</span> <span class="p">[])</span>
+
+    <span class="k">return</span> <span class="n">codebook</span></div>
+
+
+<div class="viewcode-block" id="save_codebook"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.codebook.save_codebook">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">save_codebook</span><span class="p">(</span><span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Save a codebook as ``codebook.json`` in the specified directory.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cep: The compiled experiment package to generate the codebook from.</span>
+<span class="sd">        output_dir: Directory where ``codebook.json`` will be written.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The absolute file path of the saved ``codebook.json``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cb</span> <span class="o">=</span> <span class="n">generate_codebook</span><span class="p">(</span><span class="n">cep</span><span class="p">)</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;codebook.json&quot;</span>
+    <span class="n">path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

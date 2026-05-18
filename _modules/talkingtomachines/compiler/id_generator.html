@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.compiler.id_generator &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.compiler.id_generator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.compiler.id_generator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">ID generator (Phase 3).</span>
+
+<span class="sd">Derives all stable, deterministic IDs per the ID derivation scheme:</span>
+
+<span class="sd">    experiment_id   → from Settings sheet</span>
+<span class="sd">    config_hash     → SHA256 of canonical JSON of all parsed sheets (16 chars)</span>
+<span class="sd">    cep_hash        → SHA256 of serialized CEP</span>
+<span class="sd">    run_id          → {experiment_id}_{datetime_utc}_{random_suffix}</span>
+<span class="sd">    session_id      → {run_id}_s{n}</span>
+<span class="sd">    module_id       → {session_id}_{module_name}</span>
+<span class="sd">    subsession_id   → {module_id}_r{round_number}</span>
+<span class="sd">    group_id        → {subsession_id}_g{group_number}</span>
+<span class="sd">    agent_id        → {profile_ID}</span>
+<span class="sd">    agent_instance_id → {run_id}_{agent_id}</span>
+<span class="sd">    player_id       → {agent_instance_id}_{subsession_id}</span>
+<span class="sd">    turn_id         → {group_id}_t{turn_number}_{agent_instance_id}</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">string</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sha256_truncated</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">16</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute a truncated SHA-256 hex digest.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data: Input data as a string or bytes. Strings are encoded</span>
+<span class="sd">            to UTF-8 before hashing.</span>
+<span class="sd">        length: Number of hex characters to return from the digest.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The first *length* characters of the SHA-256 hex digest.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="n">length</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="compute_config_hash"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.id_generator.compute_config_hash">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">compute_config_hash</span><span class="p">(</span><span class="n">parsed_sheets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute a truncated SHA-256 hash of all parsed worksheet data.</span>
+
+<span class="sd">    Serialises the parsed sheets to canonical JSON (sorted keys,</span>
+<span class="sd">    non-ASCII preserved) and returns the first 16 hex characters of</span>
+<span class="sd">    the SHA-256 digest.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        parsed_sheets: Dictionary of all parsed worksheet data, as</span>
+<span class="sd">            returned by the template parser pipeline.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A 16-character hexadecimal config hash string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">canonical</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+        <span class="n">parsed_sheets</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_sha256_truncated</span><span class="p">(</span><span class="n">canonical</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="compute_cep_hash"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.id_generator.compute_cep_hash">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">compute_cep_hash</span><span class="p">(</span><span class="n">cep_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the full SHA-256 hash of a serialised CEP dictionary.</span>
+
+<span class="sd">    Serialises the compiled experiment package (CEP) to canonical JSON</span>
+<span class="sd">    and returns the complete SHA-256 hex digest.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cep_dict: The CEP dictionary to hash, typically produced by</span>
+<span class="sd">            ``ExperimentConfig.to_dict()``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A 64-character hexadecimal SHA-256 digest string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">canonical</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">cep_dict</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">canonical</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="make_run_id"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.id_generator.make_run_id">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">make_run_id</span><span class="p">(</span><span class="n">experiment_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">rng</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a unique run ID with a UTC timestamp and random suffix.</span>
+
+<span class="sd">    Format: ``{experiment_id}_{YYYYMMDDTHHMMSSZ}_{6-char suffix}``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        experiment_id: The experiment identifier from the Settings</span>
+<span class="sd">            worksheet.</span>
+<span class="sd">        rng: Optional ``random.Random`` instance for deterministic</span>
+<span class="sd">            suffix generation. A new instance is created if ``None``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A unique run ID string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">rng</span> <span class="ow">or</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">()</span>
+    <span class="n">ts</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">T%H%M%SZ&quot;</span><span class="p">)</span>
+    <span class="n">suffix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">choices</span><span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">ascii_lowercase</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">6</span><span class="p">))</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">experiment_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ts</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="make_session_id"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.id_generator.make_session_id">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">make_session_id</span><span class="p">(</span><span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">session_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Derive a session ID from a run ID and session number.</span>
+
+<span class="sd">    Format: ``{run_id}_s{session_number}``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        run_id: The parent run identifier.</span>
+<span class="sd">        session_number: Zero-based or one-based session index.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A deterministic session ID string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">_s</span><span class="si">{</span><span class="n">session_number</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="make_module_id"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.id_generator.make_module_id">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">make_module_id</span><span class="p">(</span><span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">module_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Derive a module ID from a session ID and module name.</span>
+
+<span class="sd">    Format: ``{session_id}_{module_name}``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session_id: The parent session identifier.</span>
+<span class="sd">        module_name: Name of the module (from ``MODULE_SEQUENCE``).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A deterministic module ID string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="make_subsession_id"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.id_generator.make_subsession_id">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">make_subsession_id</span><span class="p">(</span><span class="n">module_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Derive a subsession ID from a module ID and round number.</span>
+
+<span class="sd">    Format: ``{module_id}_r{round_number}``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        module_id: The parent module identifier.</span>
+<span class="sd">        round_number: The round number within the module.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A deterministic subsession ID string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">module_id</span><span class="si">}</span><span class="s2">_r</span><span class="si">{</span><span class="n">round_number</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="make_group_id"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.id_generator.make_group_id">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">make_group_id</span><span class="p">(</span><span class="n">subsession_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">group_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Derive a group ID from a subsession ID and group number.</span>
+
+<span class="sd">    Format: ``{subsession_id}_g{group_number}``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        subsession_id: The parent subsession identifier.</span>
+<span class="sd">        group_number: The group number within the subsession.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A deterministic group ID string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">subsession_id</span><span class="si">}</span><span class="s2">_g</span><span class="si">{</span><span class="n">group_number</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="make_agent_id"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.id_generator.make_agent_id">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">make_agent_id</span><span class="p">(</span><span class="n">experiment_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">profile_id</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Derive an agent ID from a profile ID.</span>
+
+<span class="sd">    Returns the raw profile ID as a string, matching the ``ID`` column</span>
+<span class="sd">    in the Profiles worksheet.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        experiment_id: The experiment identifier (retained for interface</span>
+<span class="sd">            compatibility but not used in the ID).</span>
+<span class="sd">        profile_id: The agent&#39;s profile identifier (from the Profiles</span>
+<span class="sd">            worksheet).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The profile ID as a string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">profile_id</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="make_agent_instance_id"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.id_generator.make_agent_instance_id">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">make_agent_instance_id</span><span class="p">(</span><span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Derive an agent instance ID from a run ID and agent ID.</span>
+
+<span class="sd">    An agent instance represents a specific agent participating in a</span>
+<span class="sd">    specific run. Format: ``{run_id}_{agent_id}``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        run_id: The parent run identifier.</span>
+<span class="sd">        agent_id: The agent identifier (from ``make_agent_id``).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A deterministic agent instance ID string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="make_player_id"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.id_generator.make_player_id">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">make_player_id</span><span class="p">(</span><span class="n">agent_instance_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">subsession_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Derive a player ID from an agent instance ID and subsession ID.</span>
+
+<span class="sd">    A player represents an agent instance&#39;s participation in a</span>
+<span class="sd">    specific subsession (round). Format:</span>
+<span class="sd">    ``{agent_instance_id}_{subsession_id}``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        agent_instance_id: The agent instance identifier.</span>
+<span class="sd">        subsession_id: The subsession identifier.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A deterministic player ID string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">agent_instance_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">subsession_id</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="make_turn_id"><a class="viewcode-back" href="../../../talkingtomachines.compiler.html#talkingtomachines.compiler.id_generator.make_turn_id">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">make_turn_id</span><span class="p">(</span><span class="n">group_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">turn_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">agent_instance_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Derive a turn ID from a group ID, turn number, and agent instance.</span>
+
+<span class="sd">    Format: ``{group_id}_t{turn_number}_{agent_instance_id}``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        group_id: The parent group identifier.</span>
+<span class="sd">        turn_number: The sequential turn number within the group.</span>
+<span class="sd">        agent_instance_id: The agent instance taking this turn.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A deterministic turn ID string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group_id</span><span class="si">}</span><span class="s2">_t</span><span class="si">{</span><span class="n">turn_number</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">agent_instance_id</span><span class="si">}</span><span class="s2">&quot;</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

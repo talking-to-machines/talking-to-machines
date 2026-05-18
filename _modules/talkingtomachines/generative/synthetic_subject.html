@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.generative.synthetic_subject &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.generative.synthetic_subject</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.generative.synthetic_subject</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Synthetic subject implementations for AI-to-AI experiments.</span>
+
+<span class="sd">.. deprecated::</span>
+<span class="sd">    This module is deprecated.  Use</span>
+<span class="sd">    ``talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject``</span>
+<span class="sd">    instead.</span>
+
+<span class="sd">Defines ``SyntheticSubject`` (base) and ``ConversationalSyntheticSubject``</span>
+<span class="sd">(conversation-capable) classes that represent LLM-backed participants in</span>
+<span class="sd">an experiment session.</span>
+
+<span class="sd">Module-level constants:</span>
+<span class="sd">    ProfileInfo: Type alias for a dictionary of profile key-value pairs.</span>
+<span class="sd">    NUM_RETRY (int): Number of retries when response validation fails.</span>
+<span class="sd">    OPENAI_MODELS (list[str]): Model identifiers handled by the OpenAI backend.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span><span class="o">,</span><span class="w"> </span><span class="nn">warnings</span><span class="o">,</span><span class="w"> </span><span class="nn">openai</span><span class="o">,</span><span class="w"> </span><span class="nn">json</span><span class="o">,</span><span class="w"> </span><span class="nn">copy</span>
+
+<span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+    <span class="s2">&quot;talkingtomachines.generative.synthetic_subject is deprecated. &quot;</span>
+    <span class="s2">&quot;Use talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject instead.&quot;</span><span class="p">,</span>
+    <span class="ne">DeprecationWarning</span><span class="p">,</span>
+    <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.generative.prompt</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">generate_subject_system_message</span><span class="p">,</span>
+    <span class="n">generate_profile_prompt</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.generative.llm</span><span class="w"> </span><span class="kn">import</span> <span class="n">query_llm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">DevelopmentConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jinja2</span><span class="w"> </span><span class="kn">import</span> <span class="n">Template</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.management.experiment</span><span class="w"> </span><span class="kn">import</span> <span class="n">Role</span><span class="p">,</span> <span class="n">Treatment</span>
+
+<span class="n">ProfileInfo</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<span class="n">NUM_RETRY</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">OPENAI_MODELS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;gpt-5.1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-mini&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-nano&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-chat-latest&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-codex&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-pro&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4.1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4.1-mini&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4.1-nano&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4o-2024-05-13&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4o-mini&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o1-pro&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o3-pro&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o3&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o4-mini&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="SyntheticSubject"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_subject.SyntheticSubject">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">SyntheticSubject</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class for constructing the base synthetic subject.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session_id (str): The session ID of the experiment.</span>
+<span class="sd">        experiment_context (str): The context of the experiment.</span>
+<span class="sd">        group_id (Any): The group ID of the session.</span>
+<span class="sd">        profile_info (ProfileInfo): The profile information of the subject.</span>
+<span class="sd">        model_info (str): The information about the model used by the subject.</span>
+<span class="sd">        temperature (float): The model temperature setting for the subject.</span>
+<span class="sd">        build_profile_qna (bool): Whether to build the subject profiles using Q&amp;A format.</span>
+<span class="sd">        build_profile_backstories (bool): Whether to build the subject profiles using backstories.</span>
+<span class="sd">        hf_inference_endpoint (str, optional): API inference endpoint to the LLM model hosted externally in HuggingFace.</span>
+<span class="sd">        profile_prompt_generator (Callable[[ProfileInfo, bool, bool, openai.OpenAI, str, float], str], optional):</span>
+<span class="sd">            A function that generates a profile prompt based on the profile information.</span>
+<span class="sd">            Defaults to generate_profile_prompt.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        session_id (str): The session ID of the experiment.</span>
+<span class="sd">        experiment_context (str): The context of the experiment.</span>
+<span class="sd">        group_id (Any): The group ID of the session.</span>
+<span class="sd">        profile_info (ProfileInfo): The profile information of the subject.</span>
+<span class="sd">        profile_prompt (str): A prompt string containing the profile information of the subject.</span>
+<span class="sd">        model_info (str): The information about the model used by the subject.</span>
+<span class="sd">        temperature (float): The model temperature setting for the subject.</span>
+<span class="sd">        build_profile_qna (bool): Whether to build the subject profiles using Q&amp;A format.</span>
+<span class="sd">        build_profile_backstories (bool): Whether to build the subject profiles using backstories.</span>
+<span class="sd">        hf_inference_endpoint (str): API inference endpoint to the LLM model hosted externally in HuggingFace.</span>
+<span class="sd">        llm_client (openai.OpenAI): The LLM client.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">experiment_context</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">group_id</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">profile_info</span><span class="p">:</span> <span class="n">ProfileInfo</span><span class="p">,</span>
+        <span class="n">model_info</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">build_profile_qna</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">build_profile_backstories</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">hf_inference_endpoint</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">profile_prompt_generator</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span>
+            <span class="p">[</span><span class="n">ProfileInfo</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">str</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">generate_profile_prompt</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session_id</span> <span class="o">=</span> <span class="n">session_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">experiment_context</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">group_id</span> <span class="o">=</span> <span class="n">group_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profile_info</span> <span class="o">=</span> <span class="n">profile_info</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_info</span> <span class="o">=</span> <span class="n">model_info</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span> <span class="o">=</span> <span class="n">temperature</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">build_profile_qna</span> <span class="o">=</span> <span class="n">build_profile_qna</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">build_profile_backstories</span> <span class="o">=</span> <span class="n">build_profile_backstories</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hf_inference_endpoint</span> <span class="o">=</span> <span class="n">hf_inference_endpoint</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">llm_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialise_llm_client</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profile_prompt</span> <span class="o">=</span> <span class="n">profile_prompt_generator</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">profile_info</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">build_profile_qna</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">build_profile_backstories</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">llm_client</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model_info</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialise_llm_client</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes and returns an instance of the OpenAI client based on the specified model information.</span>
+<span class="sd">        This method determines the appropriate API client configuration based on the `model_info` attribute.</span>
+<span class="sd">        It supports OpenAI models, Hugging Face inference models, and OpenRouter-supported models.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            openai.OpenAI: An instance of the OpenAI client configured for the specified model.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_info</span> <span class="ow">in</span> <span class="n">OPENAI_MODELS</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">DevelopmentConfig</span><span class="o">.</span><span class="n">OPENAI_API_KEY</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_info</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;hf-inference&quot;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">(</span>
+                <span class="n">base_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hf_inference_endpoint</span><span class="p">,</span>
+                <span class="n">api_key</span><span class="o">=</span><span class="n">DevelopmentConfig</span><span class="o">.</span><span class="n">HF_API_KEY</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Since </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_info</span><span class="si">}</span><span class="s2"> is not &#39;hf-inference&#39; and not one of the openai.OpenAI instruct models (</span><span class="si">{</span><span class="n">OPENAI_MODELS</span><span class="si">}</span><span class="s2">), </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_info</span><span class="si">}</span><span class="s2"> is assumed to be an Openrouter.ai supported model.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">(</span>
+                <span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://openrouter.ai/api/v1&quot;</span><span class="p">,</span>
+                <span class="n">api_key</span><span class="o">=</span><span class="n">DevelopmentConfig</span><span class="o">.</span><span class="n">OPENROUTER_API_KEY</span><span class="p">,</span>
+            <span class="p">)</span>
+
+<div class="viewcode-block" id="SyntheticSubject.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_subject.SyntheticSubject.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts the SyntheticSubject object to a dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, Any]: A dictionary representation of the SyntheticSubject object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="s2">&quot;experiment_context&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span><span class="p">,</span>
+            <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+            <span class="s2">&quot;profile_info&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_info</span><span class="p">,</span>
+            <span class="s2">&quot;model_info&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_info</span><span class="p">,</span>
+            <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="s2">&quot;build_profile_qna&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_profile_qna</span><span class="p">,</span>
+            <span class="s2">&quot;build_profile_backstories&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_profile_backstories</span><span class="p">,</span>
+            <span class="s2">&quot;hf_inference_endpoint&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hf_inference_endpoint</span><span class="p">,</span>
+            <span class="s2">&quot;profile_prompt&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_prompt</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="SyntheticSubject.respond"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_subject.SyntheticSubject.respond">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a response based on the synthetic subject&#39;s model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The response generated by the synthetic subject.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Log the exception</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error during response generation in SyntheticSubject object: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span></div></div>
+
+
+<div class="viewcode-block" id="ConversationalSyntheticSubject"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ConversationalSyntheticSubject</span><span class="p">(</span><span class="n">SyntheticSubject</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A synthetic subject that interacts with users in a conversational system. Inherits from the SyntheticSubject base class.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session_id (str): The session ID of the experiment.</span>
+<span class="sd">        experiment_context (str): The context of the experiment.</span>
+<span class="sd">        group_id (Any): The group ID of the session.</span>
+<span class="sd">        profile_info (ProfileInfo): The profile information of the subject.</span>
+<span class="sd">        model_info (str): The information about the model used by the subject.</span>
+<span class="sd">        temperature (float): The model temperature setting for the subject.</span>
+<span class="sd">        build_profile_qna (bool): Whether to build the subject profiles using Q&amp;A format.</span>
+<span class="sd">        build_profile_backstories (bool): Whether to build the subject profiles using backstories.</span>
+<span class="sd">        hf_inference_endpoint (str, optional): API inference endpoint to the LLM model hosted externally in HuggingFace.</span>
+<span class="sd">        role_label (str): The name of the role assigned to the subject.</span>
+<span class="sd">        role (Role): The Role object assigned to the subject.</span>
+<span class="sd">        treatment (Treatment): The Treatment object assigned to the subject.</span>
+<span class="sd">        constants (dict[str, Any]): A dictionary of constant values applied to the experiment.</span>
+<span class="sd">        profile_prompt_generator (Callable[[ProfileInfo, bool, bool, openai.OpenAI, str, float], str], optional):</span>
+<span class="sd">            A function that generates a profile prompt based on the profile information.</span>
+<span class="sd">            Defaults to generate_profile_prompt.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        session_id (str): The session ID of the experiment.</span>
+<span class="sd">        experiment_context (str): The context of the experiment.</span>
+<span class="sd">        group_id (Any): The group ID of the session.</span>
+<span class="sd">        profile_info (ProfileInfo): The profile information of the subject.</span>
+<span class="sd">        profile_prompt (str): A prompt string containing the profile information of the subject.</span>
+<span class="sd">        model_info (str): The information about the model used by the subject.</span>
+<span class="sd">        temperature (float): The model temperature setting for the subject.</span>
+<span class="sd">        build_profile_qna (bool): Whether to build the subject profiles using Q&amp;A format.</span>
+<span class="sd">        build_profile_backstories (bool): Whether to build the subject profiles using backstories.</span>
+<span class="sd">        hf_inference_endpoint (str): API inference endpoint to the LLM model hosted externally in HuggingFace.</span>
+<span class="sd">        role_label (str): The Role object assigned to the subject.</span>
+<span class="sd">        role (Role): The description of the role assigned to the subject.</span>
+<span class="sd">        treatment (Treatment): The Treatment object assigned to the subject.</span>
+<span class="sd">        constants (dict[str, Any]): A dictionary of constant values applied to the experiment.</span>
+<span class="sd">        system_message (str): The system message generated for the conversation.</span>
+<span class="sd">        llm_client (openai.OpenAI): The LLM client.</span>
+<span class="sd">        message_history (List[dict]): The history of the conversation with the synthetic subject.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">experiment_context</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">group_id</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">profile_info</span><span class="p">:</span> <span class="n">ProfileInfo</span><span class="p">,</span>
+        <span class="n">model_info</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">build_profile_qna</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">build_profile_backstories</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">hf_inference_endpoint</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">role_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">role</span><span class="p">:</span> <span class="n">Role</span><span class="p">,</span>
+        <span class="n">treatment</span><span class="p">:</span> <span class="n">Treatment</span><span class="p">,</span>
+        <span class="n">constants</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">profile_prompt_generator</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span>
+            <span class="p">[</span><span class="n">ProfileInfo</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">str</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">generate_profile_prompt</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">session_id</span><span class="p">,</span>
+            <span class="n">experiment_context</span><span class="p">,</span>
+            <span class="n">group_id</span><span class="p">,</span>
+            <span class="n">profile_info</span><span class="p">,</span>
+            <span class="n">model_info</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="p">,</span>
+            <span class="n">build_profile_qna</span><span class="p">,</span>
+            <span class="n">build_profile_backstories</span><span class="p">,</span>
+            <span class="n">hf_inference_endpoint</span><span class="p">,</span>
+            <span class="n">profile_prompt_generator</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">role_label</span> <span class="o">=</span> <span class="n">role_label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">role</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">role</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">treatment</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">treatment</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constants</span> <span class="o">=</span> <span class="n">constants</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render_role_and_treatment_templates</span><span class="p">()</span>  <span class="c1"># Render templates in role and treatment recursively</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_message</span> <span class="o">=</span> <span class="n">generate_subject_system_message</span><span class="p">(</span>
+            <span class="n">role_description</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">role</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+            <span class="n">profile_prompt</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">profile_prompt</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message_history</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_message</span><span class="p">}]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_value_recursive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Recursively renders a value using a provided context.</span>
+
+<span class="sd">        This method processes the input `value` and replaces placeholders</span>
+<span class="sd">        in strings with their corresponding values from the `context` dictionary.</span>
+<span class="sd">        It supports nested structures such as dictionaries, lists, and tuples.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (Any): The value to be rendered. It can be a string, dictionary,</span>
+<span class="sd">                         list, tuple, or any other type.</span>
+<span class="sd">            context (dict[str, Any]): A dictionary containing the context for</span>
+<span class="sd">                                      rendering placeholders in strings.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Any: The rendered value. If the input is a string, placeholders are</span>
+<span class="sd">                 replaced with their corresponding values from the context. If the</span>
+<span class="sd">                 input is a dictionary, list, or tuple, the method is applied</span>
+<span class="sd">                 recursively to their elements. Other types are returned as-is.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Template</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="o">**</span><span class="n">context</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">value</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="n">k</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_value_recursive</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">rendered</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_render_value_recursive</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span>
+            <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)(</span><span class="n">rendered</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="ConversationalSyntheticSubject.render_role_and_treatment_templates"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.render_role_and_treatment_templates">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">render_role_and_treatment_templates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_iter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Renders templates for the `role` and `treatment` attributes by recursively</span>
+<span class="sd">        resolving their values using a rendering context. The rendering process</span>
+<span class="sd">        iterates until the values converge or the maximum number of iterations is reached.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            max_iter (int, optional): The maximum number of iterations to attempt</span>
+<span class="sd">                before stopping the rendering process. Defaults to 5.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            UserWarning: If the maximum number of iterations is reached without</span>
+<span class="sd">                achieving convergence.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">role_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">role</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+        <span class="n">treatment_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">treatment</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+        <span class="n">constants_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">constants</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_iter</span><span class="p">):</span>
+            <span class="n">prev_role</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">role_dict</span><span class="p">)</span>
+            <span class="n">prev_treatment</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">treatment_dict</span><span class="p">)</span>
+
+            <span class="c1"># build rendering context that templates can access</span>
+            <span class="n">context_for_role</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="n">role_dict</span><span class="p">,</span>
+                <span class="s2">&quot;treatment&quot;</span><span class="p">:</span> <span class="n">treatment_dict</span><span class="p">,</span>
+                <span class="s2">&quot;constant&quot;</span><span class="p">:</span> <span class="n">constants_dict</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="n">context_for_treatment</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;treatment&quot;</span><span class="p">:</span> <span class="n">treatment_dict</span><span class="p">,</span>
+                <span class="s2">&quot;constant&quot;</span><span class="p">:</span> <span class="n">constants_dict</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="n">role_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_value_recursive</span><span class="p">(</span><span class="n">role_dict</span><span class="p">,</span> <span class="n">context_for_role</span><span class="p">)</span>
+            <span class="n">treatment_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render_value_recursive</span><span class="p">(</span>
+                <span class="n">treatment_dict</span><span class="p">,</span> <span class="n">context_for_treatment</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">role_dict</span> <span class="o">==</span> <span class="n">prev_role</span> <span class="ow">and</span> <span class="n">treatment_dict</span> <span class="o">==</span> <span class="n">prev_treatment</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;The function: render_role_and_treatment_templates reached max iterations without convergence.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">role</span><span class="p">,</span> <span class="s2">&quot;__dict__&quot;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">role_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">role</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">role</span> <span class="o">=</span> <span class="n">Role</span><span class="p">(</span><span class="o">**</span><span class="n">role_dict</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">treatment</span><span class="p">,</span> <span class="s2">&quot;__dict__&quot;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">treatment_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">treatment</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">treatment</span> <span class="o">=</span> <span class="n">Treatment</span><span class="p">(</span><span class="o">**</span><span class="n">treatment_dict</span><span class="p">)</span>
+
+        <span class="c1"># Render experiment context</span>
+        <span class="n">experiment_context_template</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span><span class="p">)</span>
+        <span class="n">rendered_experiment_context</span> <span class="o">=</span> <span class="n">experiment_context_template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
+            <span class="n">treatment</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">treatment</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="n">role</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">role</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="n">constant</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">constants</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span> <span class="o">=</span> <span class="n">rendered_experiment_context</span></div>
+
+<div class="viewcode-block" id="ConversationalSyntheticSubject.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts the ConversationalSyntheticSubject object to a dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, Any]: A dictionary representation of the ConversationalSyntheticSubject object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="s2">&quot;experiment_context&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment_context</span><span class="p">,</span>
+            <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+            <span class="s2">&quot;profile_info&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_info</span><span class="p">,</span>
+            <span class="s2">&quot;profile_prompt&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_prompt</span><span class="p">,</span>
+            <span class="s2">&quot;model_info&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_info</span><span class="p">,</span>
+            <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="s2">&quot;build_profile_qna&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_profile_qna</span><span class="p">,</span>
+            <span class="s2">&quot;build_profile_backstories&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_profile_backstories</span><span class="p">,</span>
+            <span class="s2">&quot;hf_inference_endpoint&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hf_inference_endpoint</span><span class="p">,</span>
+            <span class="s2">&quot;role_label&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">role_label</span><span class="p">,</span>
+            <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">role</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="s2">&quot;treatment&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">treatment</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="s2">&quot;constants&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">constants</span><span class="p">,</span>
+            <span class="s2">&quot;system_message&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_message</span><span class="p">,</span>
+            <span class="s2">&quot;message_history&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">message_history</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_message_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message_history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Builds and formats a message history for a conversational AI system.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            message_history (list[dict]): A list of dictionaries representing the message history.</span>
+<span class="sd">                Each dictionary contains a single key-value pair where the key is the role</span>
+<span class="sd">                (e.g., &quot;system&quot;, &quot;assistant&quot;, or a user-defined role) and the value is the</span>
+<span class="sd">                corresponding message content.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list[dict]: A list of formatted message dictionaries. Each dictionary contains:</span>
+<span class="sd">                - &quot;role&quot;: The role of the message sender (e.g., &quot;system&quot;, &quot;assistant&quot;, or &quot;user&quot;).</span>
+<span class="sd">                - &quot;content&quot;: The formatted message content, which may include rendered templates</span>
+<span class="sd">                  based on the treatment and role information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">formatted_message_history</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">message_history</span><span class="p">:</span>
+            <span class="n">role</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">role_response</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">role</span> <span class="o">==</span> <span class="s2">&quot;system&quot;</span><span class="p">:</span>
+                <span class="n">formatted_message_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">role_response</span><span class="p">}</span>
+                <span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">role</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">role_label</span> <span class="ow">and</span> <span class="n">role</span> <span class="o">==</span> <span class="s2">&quot;facilitator&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;round_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span>
+                    <span class="ow">and</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response_name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span>
+                <span class="p">):</span>  <span class="c1"># Questions posed by facilitator agent</span>
+                    <span class="n">formatted_message_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">role</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">role_response</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># Responses from facilitator agent</span>
+                    <span class="n">formatted_message_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">role_response</span><span class="p">}</span>
+                    <span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">role</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">role_label</span> <span class="ow">and</span> <span class="n">role</span> <span class="o">!=</span> <span class="s2">&quot;facilitator&quot;</span><span class="p">:</span>
+                <span class="n">formatted_message_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">role_response</span><span class="p">}</span>
+                <span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># Other conversations in the same session</span>
+                <span class="n">formatted_message_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">role</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">role_response</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">formatted_message_history</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">response_options</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates whether a given response contains any of the valid response options as whole words.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            response (Any): The response to validate. This could be a string or a JSON dictionary</span>
+<span class="sd">            response_options (Any): The valid response options. Can be a range, a list, or a string value.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if the response contains any of the valid options as whole words, False otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;response&quot;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="c1"># Build a list of valid options as strings.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response_options</span><span class="p">,</span> <span class="nb">range</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response_options</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">opt</span><span class="p">)</span> <span class="k">for</span> <span class="n">opt</span> <span class="ow">in</span> <span class="n">response_options</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># Check if any valid option appears as a whole word inside the response.</span>
+        <span class="k">for</span> <span class="n">opt</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\b&quot;</span> <span class="o">+</span> <span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">opt</span><span class="p">)</span> <span class="o">+</span> <span class="sa">r</span><span class="s2">&quot;\b&quot;</span>
+            <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_insert_formatting_instruction</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">generate_speculation_score</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">format_response</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Appends a formatting instruction to the most recent facilitator message in the message history,</span>
+<span class="sd">        based on the specified flags.</span>
+
+<span class="sd">        If the last message in `self.message_history` starts with &quot;facilitator&quot;, this method modifies its</span>
+<span class="sd">        content by appending a formatting instruction according to the following logic:</span>
+
+<span class="sd">        - If both `generate_speculation_score` and `format_response` are True, instructs to reply with a</span>
+<span class="sd">          JSON object containing `response`, `reasoning`, and `speculation_score` keys.</span>
+<span class="sd">        - If only `generate_speculation_score` is True, instructs to reply in prose and append a</span>
+<span class="sd">          speculation score on a new line.</span>
+<span class="sd">        - If only `format_response` is True, instructs to reply with a JSON object containing `response`</span>
+<span class="sd">          and `reasoning` keys.</span>
+<span class="sd">        - If neither flag is True, does nothing.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            generate_speculation_score (bool): Whether to include instructions for a speculation score.</span>
+<span class="sd">            format_response (bool): Whether to require the response in a specific JSON format.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Only alter the most recent facilitator message.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">message_history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;content&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;facilitator&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">generate_speculation_score</span> <span class="ow">and</span> <span class="n">format_response</span><span class="p">:</span>
+            <span class="n">formatting_instruction</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">---</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;✱ **Formatting Instruction** ✱</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;Reply **only** with a valid JSON object containing exactly three keys:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;  • `response` (string)  – your main answer.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;  • `reasoning` (string) – concise explanation of how you arrived at the answer in first person narration.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;  • `speculation_score` (integer 0‑100) – how speculative the answer is, &quot;</span>
+                <span class="s2">&quot;where 0 = not speculative at all and 100 = entirely speculative.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">generate_speculation_score</span><span class="p">:</span>
+            <span class="n">formatting_instruction</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">---</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;✱ **Formatting Instruction** ✱</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;Write your response in normal prose, then on a new line append:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;`Speculation Score: &lt;integer 0‑100&gt;`</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">format_response</span><span class="p">:</span>
+            <span class="n">formatting_instruction</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">---</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;✱ **Formatting Instruction** ✱</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;Reply **only** with a valid JSON object containing exactly two keys:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;  • `response`  (string) – your main answer.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;  • `reasoning` (string) – concise explanation of how you arrived at the answer in first person narration.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Update the facilitator’s instruction with additional formatting instructions.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message_history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;content&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">formatting_instruction</span>
+
+<div class="viewcode-block" id="ConversationalSyntheticSubject.update_message_history"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.update_message_history">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">update_message_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">latest_message_history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Updates the message history with the latest messages.</span>
+
+<span class="sd">        This method takes a list of dictionaries representing the latest messages,</span>
+<span class="sd">        formats them using the `_build_message_history` method, and appends the</span>
+<span class="sd">        formatted messages to the existing message history.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            latest_message_history (list[dict]): A list of dictionaries representing</span>
+<span class="sd">                the latest messages to be added to the message history.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">formatted_latest_messages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_message_history</span><span class="p">(</span>
+            <span class="n">message_history</span><span class="o">=</span><span class="n">latest_message_history</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message_history</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">formatted_latest_messages</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConversationalSyntheticSubject.respond"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.synthetic_subject.ConversationalSyntheticSubject.respond">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">latest_message_history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+        <span class="n">validate_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">response_options</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">generate_speculation_score</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">format_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a response from the conversational synthetic subject based on the provided message history.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            latest_message_history (list[dict]): The latest history of messages exchanged in the conversation.</span>
+<span class="sd">            validate_response (bool, optional): If True, validates the generated response against the provided response_options. Defaults to False.</span>
+<span class="sd">            response_options (Any, optional): Options to validate the response against. Defaults to an empty string.</span>
+<span class="sd">            generate_speculation_score (bool, optional): If True, includes instructions to generate a speculation score in the response. Defaults to False.</span>
+<span class="sd">            format_response (bool, optional): If True, formats the response according to specific instructions. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The generated response from the subject. Returns an empty string if an exception occurs during response generation.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            Exception: Logs any exception that occurs during response generation and returns an empty string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">latest_message_history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_message_history</span><span class="p">(</span>
+            <span class="n">message_history</span><span class="o">=</span><span class="n">latest_message_history</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message_history</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">latest_message_history</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_insert_formatting_instruction</span><span class="p">(</span>
+                <span class="n">generate_speculation_score</span><span class="o">=</span><span class="n">generate_speculation_score</span><span class="p">,</span>
+                <span class="n">format_response</span><span class="o">=</span><span class="n">format_response</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">validate_response</span><span class="p">:</span>  <span class="c1"># Validate response based on response_options</span>
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">NUM_RETRY</span><span class="p">):</span>
+                    <span class="n">response</span> <span class="o">=</span> <span class="n">query_llm</span><span class="p">(</span>
+                        <span class="n">llm_client</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">llm_client</span><span class="p">,</span>
+                        <span class="n">model_info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_info</span><span class="p">,</span>
+                        <span class="n">message_history</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">message_history</span><span class="p">,</span>
+                        <span class="n">temperature</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">response_options</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_response</span><span class="p">(</span>
+                        <span class="n">response</span><span class="o">=</span><span class="n">response</span><span class="p">,</span> <span class="n">response_options</span><span class="o">=</span><span class="n">response_options</span>
+                    <span class="p">):</span>
+                        <span class="k">break</span>
+
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># Skip validation</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">query_llm</span><span class="p">(</span>
+                    <span class="n">llm_client</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">llm_client</span><span class="p">,</span>
+                    <span class="n">model_info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_info</span><span class="p">,</span>
+                    <span class="n">message_history</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">message_history</span><span class="p">,</span>
+                    <span class="n">temperature</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">response</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Log the exception</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Error during response generation by ConversationalSyntheticSubject object: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

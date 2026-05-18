@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.storage.artifact_manager &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.storage.artifact_manager</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.storage.artifact_manager</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Artifact manager.</span>
+
+<span class="sd">Manages the run folder structure and orchestrates artifact saving.</span>
+
+<span class="sd">Run folder structure::</span>
+
+<span class="sd">    &lt;template_dir&gt;/</span>
+<span class="sd">      results/</span>
+<span class="sd">        &lt;run_id&gt;/</span>
+<span class="sd">          config.json</span>
+<span class="sd">          compiled_experiment.json</span>
+<span class="sd">          assignments.csv</span>
+<span class="sd">          traces.jsonl</span>
+<span class="sd">          events.csv</span>
+<span class="sd">          metrics.csv</span>
+<span class="sd">          player.csv</span>
+<span class="sd">          agent_table.csv</span>
+<span class="sd">          group_table.csv</span>
+<span class="sd">          session_table.csv</span>
+<span class="sd">          codebook.json</span>
+<span class="sd">          checkpoints/</span>
+<span class="sd">            &lt;session_id&gt;.json</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.compiler.cep_schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">CompiledExperiment</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Session</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExperimentState</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.storage.codebook</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_codebook</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.storage.exporters</span><span class="w"> </span><span class="kn">import</span> <span class="n">export_all</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ArtifactManager"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.artifact_manager.ArtifactManager">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ArtifactManager</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates and manages the run folder for a single experiment run.</span>
+
+<span class="sd">    The run folder follows a structured layout containing configuration files,</span>
+<span class="sd">    compiled experiment data, CSV export tables, JSONL traces, and checkpoint</span>
+<span class="sd">    files.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        _run_dir: Path to the run directory</span>
+<span class="sd">            (``&lt;base_dir&gt;/results/&lt;run_id&gt;``).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">base_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+        <span class="n">experiment_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the artifact manager and create the run directory.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            base_dir: Root directory for all experiment results.</span>
+<span class="sd">            experiment_id: Unique identifier for the experiment.</span>
+<span class="sd">            run_id: Unique identifier for this particular run.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">base_dir</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;results&quot;</span> <span class="o">/</span> <span class="n">run_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the path to the run directory.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_dir</span>
+
+<div class="viewcode-block" id="ArtifactManager.save_config"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.artifact_manager.ArtifactManager.save_config">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the compiled experiment package and a lightweight config summary.</span>
+
+<span class="sd">        Writes two files to the run directory:</span>
+<span class="sd">        - ``compiled_experiment.json``: the full CEP.</span>
+<span class="sd">        - ``config.json``: a summary of experiment settings.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            cep: The compiled experiment package to persist.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The file path of the saved ``compiled_experiment.json``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Full CEP</span>
+        <span class="n">cep_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_dir</span> <span class="o">/</span> <span class="s2">&quot;compiled_experiment.json&quot;</span>
+        <span class="n">cep</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">cep_path</span><span class="p">)</span>
+
+        <span class="c1"># Lightweight config summary</span>
+        <span class="n">config_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_dir</span> <span class="o">/</span> <span class="s2">&quot;config.json&quot;</span>
+        <span class="n">config_path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">cep</span><span class="o">.</span><span class="n">settings</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Config saved to </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_dir</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">cep_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ArtifactManager.save_all_artifacts"><a class="viewcode-back" href="../../../talkingtomachines.storage.html#talkingtomachines.storage.artifact_manager.ArtifactManager.save_all_artifacts">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_all_artifacts</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+        <span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">,</span>
+        <span class="n">state</span><span class="p">:</span> <span class="n">ExperimentState</span><span class="p">,</span>
+        <span class="n">start_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">end_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">total_cost_usd</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">stop_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save all research-ready export artifacts to the run directory.</span>
+
+<span class="sd">        Delegates to ``exporters.export_all`` for CSV tables and</span>
+<span class="sd">        ``codebook.save_codebook`` for the codebook JSON.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            session: The completed session object containing all experiment</span>
+<span class="sd">                data.</span>
+<span class="sd">            cep: The compiled experiment package with field and prompt</span>
+<span class="sd">                definitions.</span>
+<span class="sd">            state: The experiment state holding all recorded field values.</span>
+<span class="sd">            start_time: ISO-format timestamp for when the run started. If</span>
+<span class="sd">                ``None``, left empty in exports.</span>
+<span class="sd">            end_time: ISO-format timestamp for when the run ended. Defaults</span>
+<span class="sd">                to the current UTC time if ``None``.</span>
+<span class="sd">            total_cost_usd: Cumulative LLM API cost in USD for the run.</span>
+<span class="sd">            stop_reason: Reason the run terminated (e.g. ``&quot;completed&quot;``,</span>
+<span class="sd">                ``&quot;budget_exceeded&quot;``).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary mapping artifact name to its file path.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">end_time</span> <span class="o">=</span> <span class="n">end_time</span> <span class="ow">or</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="n">export_all</span><span class="p">(</span>
+            <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span>
+            <span class="n">cep</span><span class="o">=</span><span class="n">cep</span><span class="p">,</span>
+            <span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="p">,</span>
+            <span class="n">output_dir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_run_dir</span><span class="p">,</span>
+            <span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+            <span class="n">end_time</span><span class="o">=</span><span class="n">end_time</span><span class="p">,</span>
+            <span class="n">total_cost_usd</span><span class="o">=</span><span class="n">total_cost_usd</span><span class="p">,</span>
+            <span class="n">stop_reason</span><span class="o">=</span><span class="n">stop_reason</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># Codebook</span>
+        <span class="n">paths</span><span class="p">[</span><span class="s2">&quot;codebook&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">save_codebook</span><span class="p">(</span><span class="n">cep</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_dir</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;All artifacts saved to </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_dir</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">paths</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

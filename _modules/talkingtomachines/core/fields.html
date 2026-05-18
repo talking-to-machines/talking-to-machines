@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.core.fields &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.core.fields</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.core.fields</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Thread-safe field state management for experiment runtime.</span>
+
+<span class="sd">Provides a thread-safe key-value store (``ExperimentState``) that tracks</span>
+<span class="sd">runtime state at four scopes: Session, Agent, Group, and Player. Each</span>
+<span class="sd">scope is keyed by a module name and a field name.</span>
+
+<span class="sd">Getter/setter API::</span>
+
+<span class="sd">    state = ExperimentState()</span>
+<span class="sd">    state.set_player(player_id, module, &quot;decision&quot;, 5)</span>
+<span class="sd">    val = state.get_player(player_id, module, &quot;decision&quot;)</span>
+
+<span class="sd">The ``build_jinja_context`` method assembles the full Jinja2 rendering</span>
+<span class="sd">context for a given agent/player/group/session at a specific round.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">Player</span><span class="p">,</span> <span class="n">Group</span><span class="p">,</span> <span class="n">Session</span>
+
+
+<div class="viewcode-block" id="ExperimentState"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ExperimentState</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Thread-safe key-value store for all field scopes.</span>
+
+<span class="sd">    Internal storage layout::</span>
+
+<span class="sd">        _session[module][name]                                → value</span>
+<span class="sd">        _agent[agent_id][module][round_number][name]          → value</span>
+<span class="sd">        _group[group_id][module][name]                        → value</span>
+<span class="sd">        _player[player_id][module][name]                      → value</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise empty state stores and per-scope threading locks.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># Agent scope: agent_id → module → round_number → field_name → value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_group</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_player</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Per-scope locks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_session_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_agent_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_group_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_player_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Session scope</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="ExperimentState.set_session"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.set_session">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store a value at session scope.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            module: Module identifier (e.g. ``&quot;pgg&quot;``).</span>
+<span class="sd">            name: Field name within the module.</span>
+<span class="sd">            value: The value to store.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_lock</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+
+<div class="viewcode-block" id="ExperimentState.get_session"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.get_session">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve a session-scoped value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            module: Module identifier.</span>
+<span class="sd">            name: Field name within the module.</span>
+<span class="sd">            default: Value returned when the field is not set.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The stored value, or *default* if not found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExperimentState.get_session_module"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.get_session_module">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_session_module</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a snapshot of all session-scoped fields for a module.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            module: Module identifier.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A shallow copy of the field-name-to-value mapping for the</span>
+<span class="sd">            given module. Returns an empty dict if no fields are stored.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{}))</span></div>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Agent scope</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="ExperimentState.set_agent"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.set_agent">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_agent</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store a value at agent scope, indexed by module and round.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_id: Unique agent identifier.</span>
+<span class="sd">            module: Module identifier.</span>
+<span class="sd">            name: Field name within the module/round.</span>
+<span class="sd">            value: The value to store.</span>
+<span class="sd">            round_number: Round number (1-based). Defaults to 1.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_agent_lock</span><span class="p">:</span>
+            <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">round_number</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="p">)[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+
+<div class="viewcode-block" id="ExperimentState.get_agent"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.get_agent">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_agent</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">default</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve an agent-scoped value for a specific module and round.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_id: Unique agent identifier.</span>
+<span class="sd">            module: Module identifier.</span>
+<span class="sd">            name: Field name within the module/round.</span>
+<span class="sd">            round_number: Round number (1-based). Defaults to 1.</span>
+<span class="sd">            default: Value returned when the field is not set.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The stored value, or *default* if not found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_agent_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">round_number</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExperimentState.get_agent_round"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.get_agent_round">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_agent_round</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a snapshot of all agent-scoped fields for a specific round.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_id: Unique agent identifier.</span>
+<span class="sd">            module: Module identifier.</span>
+<span class="sd">            round_number: Round number (1-based).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A shallow copy of the field-name-to-value mapping for that round.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_agent_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">round_number</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExperimentState.get_agent_module"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.get_agent_module">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_agent_module</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a snapshot of all agent-scoped fields for a module across rounds.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_id: Unique agent identifier.</span>
+<span class="sd">            module: Module identifier.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dict mapping round_number to field-name-to-value dicts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_agent_lock</span><span class="p">:</span>
+            <span class="n">module_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">rnd</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="k">for</span> <span class="n">rnd</span><span class="p">,</span> <span class="n">fields</span> <span class="ow">in</span> <span class="n">module_data</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span></div>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Group scope</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="ExperimentState.set_group"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.set_group">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_group</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store a value at group scope.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            group_id: Unique group identifier.</span>
+<span class="sd">            module: Module identifier.</span>
+<span class="sd">            name: Field name within the module.</span>
+<span class="sd">            value: The value to store.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_lock</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_group</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">group_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+
+<div class="viewcode-block" id="ExperimentState.get_group"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.get_group">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_group</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">group_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve a group-scoped value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            group_id: Unique group identifier.</span>
+<span class="sd">            module: Module identifier.</span>
+<span class="sd">            name: Field name within the module.</span>
+<span class="sd">            default: Value returned when the field is not set.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The stored value, or *default* if not found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">group_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExperimentState.get_group_module"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.get_group_module">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_group_module</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a snapshot of all group-scoped fields for a module.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            group_id: Unique group identifier.</span>
+<span class="sd">            module: Module identifier.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A shallow copy of the field-name-to-value mapping.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_group</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">group_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{}))</span></div>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Group scope — aggregation</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="ExperimentState.accumulate_group"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.accumulate_group">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">accumulate_group</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">group_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">player_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Accumulate a per-player value into a group-scoped dict keyed by player ID.</span>
+
+<span class="sd">        If the field does not yet exist or is not a dict, it is</span>
+<span class="sd">        initialised as an empty dict before the value is inserted.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            group_id: Unique group identifier.</span>
+<span class="sd">            module: Module identifier.</span>
+<span class="sd">            name: Field name that will hold the aggregated dict.</span>
+<span class="sd">            player_id: Key under which the value is stored.</span>
+<span class="sd">            value: The per-player value to record.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_lock</span><span class="p">:</span>
+            <span class="n">bucket</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">group_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">bucket</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bucket</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">bucket</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">bucket</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">player_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Session scope — aggregation</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="ExperimentState.accumulate_session"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.accumulate_session">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">accumulate_session</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">player_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Accumulate a per-player value into a session-scoped dict keyed by player ID.</span>
+
+<span class="sd">        If the field does not yet exist or is not a dict, it is</span>
+<span class="sd">        initialised as an empty dict before the value is inserted.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            module: Module identifier.</span>
+<span class="sd">            name: Field name that will hold the aggregated dict.</span>
+<span class="sd">            player_id: Key under which the value is stored.</span>
+<span class="sd">            value: The per-player value to record.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_lock</span><span class="p">:</span>
+            <span class="n">bucket</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">bucket</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bucket</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">bucket</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">bucket</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">player_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Player scope</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="ExperimentState.set_player"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.set_player">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_player</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">player_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store a value at player scope.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            player_id: Unique player identifier.</span>
+<span class="sd">            module: Module identifier.</span>
+<span class="sd">            name: Field name within the module.</span>
+<span class="sd">            value: The value to store.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_player_lock</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_player</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">player_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+
+<div class="viewcode-block" id="ExperimentState.get_player"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.get_player">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_player</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">player_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve a player-scoped value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            player_id: Unique player identifier.</span>
+<span class="sd">            module: Module identifier.</span>
+<span class="sd">            name: Field name within the module.</span>
+<span class="sd">            default: Value returned when the field is not set.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The stored value, or *default* if not found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_player_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_player</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">player_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExperimentState.get_player_module"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.get_player_module">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_player_module</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">player_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a snapshot of all player-scoped fields for a module.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            player_id: Unique player identifier.</span>
+<span class="sd">            module: Module identifier.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A shallow copy of the field-name-to-value mapping.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_player_lock</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_player</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">player_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{}))</span></div>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Serialization</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="ExperimentState.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialize all scoped state to a plain dict.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary with keys ``&quot;session&quot;``, ``&quot;agent&quot;``, ``&quot;group&quot;``,</span>
+<span class="sd">            and ``&quot;player&quot;``, each containing the nested field-value</span>
+<span class="sd">            mappings for that scope.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            Agent scope round numbers (int keys) are converted to strings</span>
+<span class="sd">            for JSON compatibility during serialization.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_lock</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_agent_lock</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_lock</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_player_lock</span><span class="p">:</span>
+            <span class="c1"># Convert agent int round keys to strings for JSON compat</span>
+            <span class="n">agent_serialized</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">aid</span><span class="p">,</span> <span class="n">modules</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">agent_serialized</span><span class="p">[</span><span class="n">aid</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">mod</span><span class="p">,</span> <span class="n">rounds</span> <span class="ow">in</span> <span class="n">modules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">agent_serialized</span><span class="p">[</span><span class="n">aid</span><span class="p">][</span><span class="n">mod</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="nb">str</span><span class="p">(</span><span class="n">rnd</span><span class="p">):</span> <span class="nb">dict</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="k">for</span> <span class="n">rnd</span><span class="p">,</span> <span class="n">fields</span> <span class="ow">in</span> <span class="n">rounds</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                    <span class="p">}</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;session&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="p">,</span>
+                <span class="s2">&quot;agent&quot;</span><span class="p">:</span> <span class="n">agent_serialized</span><span class="p">,</span>
+                <span class="s2">&quot;group&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group</span><span class="p">,</span>
+                <span class="s2">&quot;player&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_player</span><span class="p">,</span>
+            <span class="p">}</span></div>
+
+<div class="viewcode-block" id="ExperimentState.from_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;ExperimentState&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reconstruct an ``ExperimentState`` from a serialized dict.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Dictionary previously produced by :meth:`to_dict`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new ``ExperimentState`` with all scoped values restored.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">_session</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="c1"># Convert agent string round keys back to ints</span>
+        <span class="n">raw_agent</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;agent&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">for</span> <span class="n">aid</span><span class="p">,</span> <span class="n">modules</span> <span class="ow">in</span> <span class="n">raw_agent</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">_agent</span><span class="p">[</span><span class="n">aid</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">mod</span><span class="p">,</span> <span class="n">rounds</span> <span class="ow">in</span> <span class="n">modules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">_agent</span><span class="p">[</span><span class="n">aid</span><span class="p">][</span><span class="n">mod</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">rnd_str</span><span class="p">,</span> <span class="n">fields</span> <span class="ow">in</span> <span class="n">rounds</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">rnd</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rnd_str</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                        <span class="n">rnd</span> <span class="o">=</span> <span class="n">rnd_str</span>
+                    <span class="n">state</span><span class="o">.</span><span class="n">_agent</span><span class="p">[</span><span class="n">aid</span><span class="p">][</span><span class="n">mod</span><span class="p">][</span><span class="n">rnd</span><span class="p">]</span> <span class="o">=</span> <span class="n">fields</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">_group</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">_player</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;player&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">return</span> <span class="n">state</span></div>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Jinja2 context construction</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="ExperimentState.build_jinja_context"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState.build_jinja_context">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">build_jinja_context</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">agent</span><span class="p">:</span> <span class="n">Agent</span><span class="p">,</span>
+        <span class="n">player</span><span class="p">:</span> <span class="n">Player</span><span class="p">,</span>
+        <span class="n">group</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span>
+        <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+        <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">constants</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Assemble the full Jinja2 rendering context for a given turn.</span>
+
+<span class="sd">        Merges profile information, runtime state from all four scopes,</span>
+<span class="sd">        constants, and treatment metadata into a single dict that is</span>
+<span class="sd">        passed as ``**context`` to a Jinja2 ``SandboxedEnvironment``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent: The ``Agent`` model instance for the current turn.</span>
+<span class="sd">            player: The ``Player`` model instance for the current turn.</span>
+<span class="sd">            group: The ``Group`` the player belongs to this round.</span>
+<span class="sd">            session: The ``Session`` model instance.</span>
+<span class="sd">            module: Module identifier used to look up scoped fields.</span>
+<span class="sd">            round_number: The current round number (1-based).</span>
+<span class="sd">            constants: Optional nested dict of module-level constants,</span>
+<span class="sd">                exposed in templates as ``C.&lt;module&gt;.&lt;name&gt;``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dict suitable for Jinja2 template rendering, containing</span>
+<span class="sd">            namespaced keys ``player``, ``agent``, ``group``,</span>
+<span class="sd">            ``session``, ``C``, ``round_number``, ``group_id``,</span>
+<span class="sd">            ``session_id``, and ``run_id``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Profile fields accessible as ``player.&lt;field&gt;``</span>
+        <span class="n">player_profile</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">profile_info</span><span class="p">)</span>
+
+        <span class="c1"># Runtime player state</span>
+        <span class="n">player_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_player_module</span><span class="p">(</span><span class="n">player</span><span class="o">.</span><span class="n">player_id</span><span class="p">,</span> <span class="n">module</span><span class="p">)</span>
+        <span class="n">player_profile</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">player_state</span><span class="p">)</span>
+
+        <span class="c1"># Built-in player model attributes</span>
+        <span class="n">player_profile</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;player_id&quot;</span><span class="p">,</span> <span class="n">player</span><span class="o">.</span><span class="n">player_id</span><span class="p">)</span>
+        <span class="n">player_profile</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;agent_id&quot;</span><span class="p">,</span> <span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">)</span>
+        <span class="n">player_profile</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;agent_instance_id&quot;</span><span class="p">,</span> <span class="n">player</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">)</span>
+
+        <span class="c1"># Agent-level fields: module → round → field namespace</span>
+        <span class="n">agent_all</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">agent_ns</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">mod</span><span class="p">,</span> <span class="n">rounds_data</span> <span class="ow">in</span> <span class="n">agent_all</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">agent_ns</span><span class="p">[</span><span class="n">mod</span><span class="p">]</span> <span class="o">=</span> <span class="n">_RoundedModuleNamespace</span><span class="p">(</span><span class="n">rounds_data</span><span class="p">)</span>
+
+        <span class="c1"># Current round&#39;s agent-scoped values as flat attributes</span>
+        <span class="c1"># (Manual_ Agent entries accessible as agent.&lt;field&gt;)</span>
+        <span class="n">agent_round_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_agent_round</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">round_number</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">agent_round_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">agent_ns</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+        <span class="c1"># Profile fields as flat agent attributes: agent.age, agent.gender, etc.</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">agent</span><span class="o">.</span><span class="n">profile_info</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">agent_ns</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+        <span class="c1"># Built-in flat attributes (always override)</span>
+        <span class="n">agent_ns</span><span class="p">[</span><span class="s2">&quot;agent_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span>
+        <span class="n">agent_ns</span><span class="p">[</span><span class="s2">&quot;agent_instance_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">agent_instance_id</span>
+
+        <span class="c1"># Group-level fields</span>
+        <span class="n">group_fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_group_module</span><span class="p">(</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span> <span class="n">module</span><span class="p">)</span>
+        <span class="c1"># Built-in group model attributes</span>
+        <span class="n">group_fields</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;group_id&quot;</span><span class="p">,</span> <span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">)</span>
+        <span class="n">group_fields</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;num_players&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">))</span>
+
+        <span class="c1"># Session-level fields</span>
+        <span class="n">session_fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_session_module</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+        <span class="c1"># Built-in session model attributes</span>
+        <span class="n">session_fields</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;session_id&quot;</span><span class="p">,</span> <span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">)</span>
+        <span class="n">session_fields</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;run_id&quot;</span><span class="p">,</span> <span class="n">session</span><span class="o">.</span><span class="n">run_id</span><span class="p">)</span>
+        <span class="n">session_fields</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">,</span> <span class="n">session</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">)</span>
+
+        <span class="n">ctx</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;round_number&quot;</span><span class="p">:</span> <span class="n">round_number</span><span class="p">,</span>
+            <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="s2">&quot;run_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+            <span class="c1"># Namespaced access: player.&lt;field&gt;</span>
+            <span class="s2">&quot;player&quot;</span><span class="p">:</span> <span class="n">_Namespace</span><span class="p">(</span><span class="n">player_profile</span><span class="p">),</span>
+            <span class="c1"># Agent-level: agent.module[round].field or agent.agent_id</span>
+            <span class="s2">&quot;agent&quot;</span><span class="p">:</span> <span class="n">_Namespace</span><span class="p">(</span><span class="n">agent_ns</span><span class="p">),</span>
+            <span class="c1"># Group-level</span>
+            <span class="s2">&quot;group&quot;</span><span class="p">:</span> <span class="n">_Namespace</span><span class="p">(</span><span class="n">group_fields</span><span class="p">),</span>
+            <span class="c1"># Session-level</span>
+            <span class="s2">&quot;session&quot;</span><span class="p">:</span> <span class="n">_Namespace</span><span class="p">(</span><span class="n">session_fields</span><span class="p">),</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Module-level constant access: C.&lt;module&gt;.&lt;name&gt;</span>
+        <span class="k">if</span> <span class="n">constants</span><span class="p">:</span>
+            <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;C&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_DeepNamespace</span><span class="p">(</span><span class="n">constants</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ctx</span></div></div>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_Namespace</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple attribute-access wrapper over a dict for Jinja2 templates.</span>
+
+<span class="sd">    Allows Jinja2 expressions like ``player.decision`` to resolve to</span>
+<span class="sd">    dictionary lookups.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data: The underlying dict whose values are exposed as attributes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the namespace with the given data dict.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Dict whose keys become attribute names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Look up *name* in the underlying dict.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: Attribute name to resolve.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The value associated with *name*.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: If *name* is not present in the dict.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No field &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a developer-friendly string representation.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Namespace(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_RoundedModuleNamespace</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bracket-access namespace for round-indexed agent data.</span>
+
+<span class="sd">    Wraps ``{round_number: {field_name: value}}`` so that</span>
+<span class="sd">    ``agent.module[1].field`` resolves correctly in Jinja2 templates.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data: A dict mapping round numbers (int) to field-value dicts.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;_Namespace&quot;</span><span class="p">:</span>
+        <span class="n">round_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">),</span> <span class="p">{})</span>
+        <span class="k">return</span> <span class="n">_Namespace</span><span class="p">(</span><span class="n">round_data</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;RoundedModuleNamespace(</span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_DeepNamespace</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Two-level attribute-access namespace for constants (``C.&lt;module&gt;.&lt;name&gt;``).</span>
+
+<span class="sd">    Wraps a dict-of-dicts so that the outer keys are resolved as</span>
+<span class="sd">    attributes returning ``_Namespace`` instances for the inner dicts.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data: A dict mapping module names to dicts of constant values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise with nested dicts wrapped as ``_Namespace`` objects.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Mapping of module names to field-value dicts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">{</span><span class="n">module</span><span class="p">:</span> <span class="n">_Namespace</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span> <span class="k">for</span> <span class="n">module</span><span class="p">,</span> <span class="n">vals</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolve a module name to its ``_Namespace``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name: Module name to look up.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A ``_Namespace`` instance for the requested module.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: If no constants exist for the given module.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No constant module &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

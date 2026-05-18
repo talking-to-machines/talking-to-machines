@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.orchestrator.runtime &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.orchestrator.runtime</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.orchestrator.runtime</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Experiment runtime engine for executing compiled experiments.</span>
+
+<span class="sd">Replaces the monolithic ``run_session()`` with a modular, hierarchical</span>
+<span class="sd">execution engine that supports parallel group execution, checkpointing,</span>
+<span class="sd">guardrails, and multiple prompt types (facilitator, context, discussion,</span>
+<span class="sd">public questions, private questions).</span>
+
+<span class="sd">Runtime loop::</span>
+
+<span class="sd">    ExperimentRuntime.run(session, cep):</span>
+<span class="sd">      initialize_session()</span>
+<span class="sd">      for each module in session:</span>
+<span class="sd">        for each subsession in module:</span>
+<span class="sd">          form_groups()</span>
+<span class="sd">          for each group in subsession:</span>
+<span class="sd">            for each prompt in module (filtered by is_displayed):</span>
+<span class="sd">              if FACILITATOR      -&gt; execute_facilitator()</span>
+<span class="sd">              if CONTEXT          -&gt; broadcast_context()</span>
+<span class="sd">              if DISCUSSION       -&gt; run_discussion_turn()</span>
+<span class="sd">              if PUBLIC_QUESTION  -&gt; run_question_turn(visibility=group_only)</span>
+<span class="sd">              if PRIVATE_QUESTION -&gt; run_question_turn(visibility=private)</span>
+<span class="sd">            evaluate_stop_condition()</span>
+<span class="sd">          # end_round/continue scoped to group; only end_session propagates</span>
+<span class="sd">          if stop == &quot;end_session&quot; -&gt; break</span>
+<span class="sd">      finalize_session()</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Agent</span><span class="p">,</span>
+    <span class="n">Player</span><span class="p">,</span>
+    <span class="n">Group</span><span class="p">,</span>
+    <span class="n">Module</span><span class="p">,</span>
+    <span class="n">Session</span><span class="p">,</span>
+    <span class="n">Subsession</span><span class="p">,</span>
+    <span class="n">PromptDefinition</span><span class="p">,</span>
+    <span class="n">FieldDefinition</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExperimentState</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.flow</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowEvaluator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.facilitator</span><span class="w"> </span><span class="kn">import</span> <span class="n">FacilitatorEngine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.randomisation</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomisationEngine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">make_message</span><span class="p">,</span>
+    <span class="n">VISIBILITY_GROUP_ONLY</span><span class="p">,</span>
+    <span class="n">VISIBILITY_PRIVATE</span><span class="p">,</span>
+    <span class="n">VISIBILITY_FACILITATOR</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.agents.synthetic_subject</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConversationalSyntheticSubject</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.compiler.cep_schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">CompiledExperiment</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.compiler.id_generator</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">make_session_id</span><span class="p">,</span>
+    <span class="n">make_module_id</span><span class="p">,</span>
+    <span class="n">make_subsession_id</span><span class="p">,</span>
+    <span class="n">make_group_id</span><span class="p">,</span>
+    <span class="n">make_agent_id</span><span class="p">,</span>
+    <span class="n">make_agent_instance_id</span><span class="p">,</span>
+    <span class="n">make_player_id</span><span class="p">,</span>
+    <span class="n">make_turn_id</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.orchestrator.checkpointing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Checkpointer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.orchestrator.guardrails</span><span class="w"> </span><span class="kn">import</span> <span class="n">Guardrails</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.orchestrator.parallel</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">run_groups_parallel</span><span class="p">,</span>
+    <span class="n">run_private_questions_parallel</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.gateway.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMRouter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.gateway.cost_tracker</span><span class="w"> </span><span class="kn">import</span> <span class="n">CostTracker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.storage.event_log</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventLogger</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ExperimentRuntime"><a class="viewcode-back" href="../../../talkingtomachines.orchestrator.html#talkingtomachines.orchestrator.runtime.ExperimentRuntime">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ExperimentRuntime</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Executes a compiled experiment for a single session.</span>
+
+<span class="sd">    Orchestrates the full lifecycle of an experiment session, including</span>
+<span class="sd">    agent construction, module/subsession iteration, group formation,</span>
+<span class="sd">    prompt dispatch, checkpointing, and finalization.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        _cep: The compiled experiment protocol containing all configuration.</span>
+<span class="sd">        _output_dir: Directory where session artifacts are written.</span>
+<span class="sd">        _cost_tracker: Tracks cumulative LLM API costs.</span>
+<span class="sd">        _router: Routes LLM calls to the configured provider.</span>
+<span class="sd">        _context_guard: Enforces context window limits per model.</span>
+<span class="sd">        _rng_engine: Seeded randomisation engine for reproducibility.</span>
+<span class="sd">        _state: Mutable experiment state shared across the session.</span>
+<span class="sd">        _flow: Evaluator for flow-control expressions (is_displayed, stop conditions).</span>
+<span class="sd">        _guardrails: Anomaly detection and safety checks.</span>
+<span class="sd">        _checkpointer: Saves/loads session state at subsession boundaries.</span>
+<span class="sd">        _event_logger: Writes structured trace events to a JSONL file.</span>
+<span class="sd">        _turn_counter: Global turn counter within the session.</span>
+<span class="sd">        _turn_counter_lock: Thread lock protecting the turn counter.</span>
+<span class="sd">        _jinja_env: Sandboxed Jinja2 environment for template rendering.</span>
+
+<span class="sd">    Usage::</span>
+
+<span class="sd">        cep = CompiledExperiment.load(&quot;compiled_experiment.json&quot;)</span>
+<span class="sd">        runtime = ExperimentRuntime(cep, output_dir=&quot;experiment_results/run_001&quot;)</span>
+<span class="sd">        session = runtime.run(session_number=1, test_mode=False)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">,</span>
+        <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+        <span class="n">budget_cap_usd</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the experiment runtime.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            cep: Compiled experiment protocol containing settings, profiles,</span>
+<span class="sd">                prompts, assignment plans, and facilitator definitions.</span>
+<span class="sd">            output_dir: Filesystem path where session output, checkpoints,</span>
+<span class="sd">                and trace logs are written. Created if it does not exist.</span>
+<span class="sd">            budget_cap_usd: Maximum spend in USD for this session. A value</span>
+<span class="sd">                of 0.0 means unlimited.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cep</span> <span class="o">=</span> <span class="n">cep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cost_tracker</span> <span class="o">=</span> <span class="n">CostTracker</span><span class="p">(</span><span class="n">budget_cap_usd</span><span class="o">=</span><span class="n">budget_cap_usd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_router</span> <span class="o">=</span> <span class="n">LLMRouter</span><span class="p">(</span>
+            <span class="n">cost_tracker</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_cost_tracker</span><span class="p">,</span>
+            <span class="n">hf_inference_endpoint</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hf_inference_endpoint&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Context window guard</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.gateway.context_guard</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextGuard</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_context_guard</span> <span class="o">=</span> <span class="n">ContextGuard</span><span class="p">(</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model_name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+            <span class="n">policy</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;context_overflow_policy&quot;</span><span class="p">,</span> <span class="s2">&quot;terminate&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rng_engine</span> <span class="o">=</span> <span class="n">RandomisationEngine</span><span class="p">(</span>
+            <span class="n">global_seed</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;random_seed&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="n">ExperimentState</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flow</span> <span class="o">=</span> <span class="n">FlowEvaluator</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_guardrails</span> <span class="o">=</span> <span class="n">Guardrails</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checkpointer</span> <span class="o">=</span> <span class="n">Checkpointer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_dir</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_event_logger</span> <span class="o">=</span> <span class="n">EventLogger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_dir</span> <span class="o">/</span> <span class="s2">&quot;traces.jsonl&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Turn counter (global within session) — protected by lock for parallel groups</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_turn_counter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_turn_counter_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+        <span class="c1"># Shared Jinja2 environment for context broadcast rendering</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">jinja2.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxedEnvironment</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_jinja_env</span> <span class="o">=</span> <span class="n">SandboxedEnvironment</span><span class="p">()</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Public read-only properties</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ExperimentState&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read-only access to the experiment state.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_cost_usd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Total accumulated cost in USD.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cost_tracker</span><span class="o">.</span><span class="n">total_usd</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Main entry point</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="ExperimentRuntime.run"><a class="viewcode-back" href="../../../talkingtomachines.orchestrator.html#talkingtomachines.orchestrator.runtime.ExperimentRuntime.run">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">session_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">test_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">resume_session</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Session</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">on_module_complete</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Session</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Execute the full experiment session.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            session_number:  Numeric index of this session (for ID derivation).</span>
+<span class="sd">            test_mode:       If True, run only one group per module.</span>
+<span class="sd">            resume_session:  If provided, resume from this checkpoint. Already-completed</span>
+<span class="sd">                             modules (those with subsessions) are skipped.</span>
+<span class="sd">            on_module_complete: Optional callback invoked after each module</span>
+<span class="sd">                completes. Called with ``(module_index, module_name, total_modules)``</span>
+<span class="sd">                to support progress reporting.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The completed ``Session`` object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cep</span>
+
+        <span class="k">if</span> <span class="n">resume_session</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">session</span> <span class="o">=</span> <span class="n">resume_session</span>
+            <span class="n">session_id</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">session_id</span>
+            <span class="n">completed_module_names</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">m</span><span class="o">.</span><span class="n">module_name</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">modules</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">subsessions</span>
+            <span class="p">}</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Resuming session </span><span class="si">%s</span><span class="s2"> — </span><span class="si">%d</span><span class="s2"> module(s) already completed.&quot;</span><span class="p">,</span>
+                <span class="n">session_id</span><span class="p">,</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">completed_module_names</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">session_id</span> <span class="o">=</span> <span class="n">make_session_id</span><span class="p">(</span><span class="n">cep</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="n">session_number</span><span class="p">)</span>
+            <span class="n">session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span>
+                <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+                <span class="n">run_id</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+                <span class="n">experiment_id</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span>
+                <span class="n">cep_hash</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">cep_hash</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">completed_module_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="c1"># Build agents from profiles</span>
+        <span class="n">profiles</span> <span class="o">=</span> <span class="n">cep</span><span class="o">.</span><span class="n">profiles</span>
+        <span class="n">profile_rows</span> <span class="o">=</span> <span class="n">profiles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rows&quot;</span><span class="p">,</span> <span class="p">[])</span> <span class="k">if</span> <span class="n">profiles</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">id_col</span> <span class="o">=</span> <span class="n">profiles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id_column&quot;</span><span class="p">,</span> <span class="s2">&quot;ID&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">profiles</span> <span class="k">else</span> <span class="s2">&quot;ID&quot;</span>
+        <span class="n">assignment_plan</span> <span class="o">=</span> <span class="n">cep</span><span class="o">.</span><span class="n">assignment_plan</span>
+
+        <span class="n">agents</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Agent</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">profile_row</span> <span class="ow">in</span> <span class="n">profile_rows</span><span class="p">:</span>
+            <span class="n">pid</span> <span class="o">=</span> <span class="n">profile_row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">id_col</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">agent_id</span> <span class="o">=</span> <span class="n">make_agent_id</span><span class="p">(</span><span class="n">cep</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+            <span class="n">agent_instance_id</span> <span class="o">=</span> <span class="n">make_agent_instance_id</span><span class="p">(</span><span class="n">cep</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">)</span>
+            <span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span>
+                <span class="n">agent_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+                <span class="n">agent_instance_id</span><span class="o">=</span><span class="n">agent_instance_id</span><span class="p">,</span>
+                <span class="n">profile_info</span><span class="o">=</span><span class="n">profile_row</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">agents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">agent</span><span class="p">)</span>
+
+        <span class="n">session</span><span class="o">.</span><span class="n">agents</span> <span class="o">=</span> <span class="n">agents</span>
+
+        <span class="c1"># Initialize session via creating_session facilitator (skip if resuming)</span>
+        <span class="k">if</span> <span class="n">resume_session</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_session</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">cep</span><span class="p">)</span>
+
+        <span class="n">stop_signal</span> <span class="o">=</span> <span class="s2">&quot;continue&quot;</span>
+        <span class="c1"># In test mode, lock to the first group&#39;s agents across all modules</span>
+        <span class="n">test_group_agent_ids</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Execute modules</span>
+        <span class="k">for</span> <span class="n">module_idx</span><span class="p">,</span> <span class="n">module_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cep</span><span class="o">.</span><span class="n">module_sequence</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">stop_signal</span> <span class="o">==</span> <span class="s2">&quot;end_session&quot;</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="c1"># Skip already-completed modules when resuming</span>
+            <span class="k">if</span> <span class="n">module_name</span> <span class="ow">in</span> <span class="n">completed_module_names</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Skipping already-completed module: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">module_name</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">module_id</span> <span class="o">=</span> <span class="n">make_module_id</span><span class="p">(</span><span class="n">session_id</span><span class="p">,</span> <span class="n">module_name</span><span class="p">)</span>
+            <span class="n">module</span> <span class="o">=</span> <span class="n">Module</span><span class="p">(</span>
+                <span class="n">module_id</span><span class="o">=</span><span class="n">module_id</span><span class="p">,</span>
+                <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+                <span class="n">module_name</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+
+            <span class="n">module_consts</span> <span class="o">=</span> <span class="n">cep</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">max_rounds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">module_consts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;MAX_NUM_ROUNDS&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+            <span class="n">prompts</span> <span class="o">=</span> <span class="p">[</span><span class="n">PromptDefinition</span><span class="p">(</span><span class="o">**</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">cep</span><span class="o">.</span><span class="n">prompts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="p">[])]</span>
+
+            <span class="k">for</span> <span class="n">round_num</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_rounds</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">stop_signal</span> <span class="o">==</span> <span class="s2">&quot;end_session&quot;</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+                <span class="n">subsession_id</span> <span class="o">=</span> <span class="n">make_subsession_id</span><span class="p">(</span><span class="n">module_id</span><span class="p">,</span> <span class="n">round_num</span><span class="p">)</span>
+                <span class="n">subsession</span> <span class="o">=</span> <span class="n">Subsession</span><span class="p">(</span>
+                    <span class="n">subsession_id</span><span class="o">=</span><span class="n">subsession_id</span><span class="p">,</span>
+                    <span class="n">module_id</span><span class="o">=</span><span class="n">module_id</span><span class="p">,</span>
+                    <span class="n">round_number</span><span class="o">=</span><span class="n">round_num</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">module</span><span class="o">.</span><span class="n">subsessions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subsession</span><span class="p">)</span>
+
+                <span class="c1"># Apply manual variables from the Manual_ sheet</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_apply_manual_variables</span><span class="p">(</span>
+                    <span class="n">assignment_plan</span><span class="p">,</span> <span class="n">agents</span><span class="p">,</span> <span class="n">session</span><span class="p">,</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">round_num</span><span class="p">,</span> <span class="n">cep</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Form groups: use manual groups if defined, else sequential</span>
+                <span class="n">precomputed_groups</span> <span class="o">=</span> <span class="n">assignment_plan</span><span class="o">.</span><span class="n">get_manual_groups</span><span class="p">(</span>
+                    <span class="n">module_name</span><span class="p">,</span> <span class="n">round_num</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">precomputed_groups</span><span class="p">:</span>
+                    <span class="c1"># Default sequential grouping by Profile order</span>
+                    <span class="n">ppg</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">module_consts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;PLAYERS_PER_GROUP&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">agents</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">1</span><span class="p">))</span>
+                    <span class="n">precomputed_groups</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">agents</span><span class="p">),</span> <span class="n">ppg</span><span class="p">):</span>
+                        <span class="n">chunk</span> <span class="o">=</span> <span class="n">agents</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">ppg</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="n">chunk</span><span class="p">:</span>
+                            <span class="n">g_label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;g</span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">ppg</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="n">precomputed_groups</span><span class="p">[</span><span class="n">g_label</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">agent_id</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">chunk</span><span class="p">]</span>
+
+                <span class="n">groups</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Group</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">g_idx</span><span class="p">,</span> <span class="p">(</span><span class="n">g_label</span><span class="p">,</span> <span class="n">member_agent_ids</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+                    <span class="n">precomputed_groups</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="p">):</span>
+                    <span class="n">group_id</span> <span class="o">=</span> <span class="n">make_group_id</span><span class="p">(</span><span class="n">subsession_id</span><span class="p">,</span> <span class="n">g_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">group_agents</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">agents</span> <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">agent_id</span> <span class="ow">in</span> <span class="n">member_agent_ids</span><span class="p">]</span>
+                    <span class="n">players</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Player</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">ga</span> <span class="ow">in</span> <span class="n">group_agents</span><span class="p">:</span>
+                        <span class="n">player_id</span> <span class="o">=</span> <span class="n">make_player_id</span><span class="p">(</span><span class="n">ga</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">,</span> <span class="n">subsession_id</span><span class="p">)</span>
+                        <span class="n">player</span> <span class="o">=</span> <span class="n">Player</span><span class="p">(</span>
+                            <span class="n">player_id</span><span class="o">=</span><span class="n">player_id</span><span class="p">,</span>
+                            <span class="n">agent_instance_id</span><span class="o">=</span><span class="n">ga</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">,</span>
+                            <span class="n">agent_id</span><span class="o">=</span><span class="n">ga</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                            <span class="n">group_id</span><span class="o">=</span><span class="n">group_id</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">players</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">player</span><span class="p">)</span>
+                    <span class="n">group</span> <span class="o">=</span> <span class="n">Group</span><span class="p">(</span>
+                        <span class="n">group_id</span><span class="o">=</span><span class="n">group_id</span><span class="p">,</span>
+                        <span class="n">subsession_id</span><span class="o">=</span><span class="n">subsession_id</span><span class="p">,</span>
+                        <span class="n">players</span><span class="o">=</span><span class="n">players</span><span class="p">,</span>
+                        <span class="n">turn_order</span><span class="o">=</span><span class="p">[</span><span class="n">ga</span><span class="o">.</span><span class="n">agent_instance_id</span> <span class="k">for</span> <span class="n">ga</span> <span class="ow">in</span> <span class="n">group_agents</span><span class="p">],</span>
+                    <span class="p">)</span>
+                    <span class="n">groups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+                    <span class="n">subsession</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+
+                <span class="c1"># Apply Player/Group Manual_ entries to proper scopes</span>
+                <span class="c1"># now that player_id and group_id exist</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_apply_scoped_manual_variables</span><span class="p">(</span>
+                    <span class="n">assignment_plan</span><span class="p">,</span> <span class="n">agents</span><span class="p">,</span> <span class="n">groups</span><span class="p">,</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">round_num</span>
+                <span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">test_mode</span> <span class="ow">and</span> <span class="n">groups</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">test_group_agent_ids</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="c1"># First module: capture agents from the first group</span>
+                        <span class="n">test_group_agent_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">p</span><span class="o">.</span><span class="n">agent_id</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">players</span><span class="p">}</span>
+                        <span class="n">groups</span> <span class="o">=</span> <span class="n">groups</span><span class="p">[:</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># Subsequent modules: pick the group whose members</span>
+                        <span class="c1"># best overlap with the locked test group agents</span>
+                        <span class="n">best</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                            <span class="n">groups</span><span class="p">,</span>
+                            <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">g</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span>
+                                <span class="p">{</span><span class="n">p</span><span class="o">.</span><span class="n">agent_id</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">g</span><span class="o">.</span><span class="n">players</span><span class="p">}</span> <span class="o">&amp;</span> <span class="n">test_group_agent_ids</span>
+                            <span class="p">),</span>
+                        <span class="p">)</span>
+                        <span class="n">groups</span> <span class="o">=</span> <span class="p">[</span><span class="n">best</span><span class="p">]</span>
+
+                <span class="c1"># Build agent map once per subsession (shared across groups)</span>
+                <span class="n">agents_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">a</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">:</span> <span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">agents</span><span class="p">}</span>
+
+                <span class="c1"># Execute groups — parallel if max_group_workers &gt; 1, else sequential</span>
+                <span class="n">max_group_workers</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cep</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_group_workers&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">max_group_workers</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+
+                    <span class="k">def</span><span class="w"> </span><span class="nf">_group_wrapper</span><span class="p">(</span><span class="n">grp</span><span class="p">:</span> <span class="n">Group</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_group</span><span class="p">(</span>
+                            <span class="n">group</span><span class="o">=</span><span class="n">grp</span><span class="p">,</span>
+                            <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span>
+                            <span class="n">agents_map</span><span class="o">=</span><span class="n">agents_map</span><span class="p">,</span>
+                            <span class="n">module_name</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                            <span class="n">round_number</span><span class="o">=</span><span class="n">round_num</span><span class="p">,</span>
+                            <span class="n">prompts</span><span class="o">=</span><span class="n">prompts</span><span class="p">,</span>
+                            <span class="n">cep</span><span class="o">=</span><span class="n">cep</span><span class="p">,</span>
+                        <span class="p">)</span>
+
+                    <span class="n">stop_signals</span> <span class="o">=</span> <span class="n">run_groups_parallel</span><span class="p">(</span>
+                        <span class="n">_group_wrapper</span><span class="p">,</span>
+                        <span class="p">[(</span><span class="n">grp</span><span class="p">,)</span> <span class="k">for</span> <span class="n">grp</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">],</span>
+                        <span class="n">max_workers</span><span class="o">=</span><span class="n">max_group_workers</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="c1"># Only propagate end_session across groups;</span>
+                    <span class="c1"># end_round and continue are scoped to individual groups.</span>
+                    <span class="n">stop_signal</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="s2">&quot;end_session&quot;</span> <span class="k">if</span> <span class="s2">&quot;end_session&quot;</span> <span class="ow">in</span> <span class="n">stop_signals</span> <span class="k">else</span> <span class="s2">&quot;continue&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
+                        <span class="n">group_signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_group</span><span class="p">(</span>
+                            <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span>
+                            <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span>
+                            <span class="n">agents_map</span><span class="o">=</span><span class="n">agents_map</span><span class="p">,</span>
+                            <span class="n">module_name</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                            <span class="n">round_number</span><span class="o">=</span><span class="n">round_num</span><span class="p">,</span>
+                            <span class="n">prompts</span><span class="o">=</span><span class="n">prompts</span><span class="p">,</span>
+                            <span class="n">cep</span><span class="o">=</span><span class="n">cep</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="c1"># Only propagate end_session across groups;</span>
+                        <span class="c1"># end_round and continue are scoped to individual groups.</span>
+                        <span class="k">if</span> <span class="n">group_signal</span> <span class="o">==</span> <span class="s2">&quot;end_session&quot;</span><span class="p">:</span>
+                            <span class="n">stop_signal</span> <span class="o">=</span> <span class="s2">&quot;end_session&quot;</span>
+                            <span class="k">break</span>
+
+                <span class="c1"># Archive player-scoped fields to agent scope for cross-round access</span>
+                <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">player</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">:</span>
+                        <span class="n">player_fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">get_player_module</span><span class="p">(</span>
+                            <span class="n">player</span><span class="o">.</span><span class="n">player_id</span><span class="p">,</span> <span class="n">module_name</span>
+                        <span class="p">)</span>
+                        <span class="k">for</span> <span class="n">fname</span><span class="p">,</span> <span class="n">fval</span> <span class="ow">in</span> <span class="n">player_fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_agent</span><span class="p">(</span>
+                                <span class="n">player</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                                <span class="n">module_name</span><span class="p">,</span>
+                                <span class="n">fname</span><span class="p">,</span>
+                                <span class="n">fval</span><span class="p">,</span>
+                                <span class="n">round_number</span><span class="o">=</span><span class="n">round_num</span><span class="p">,</span>
+                            <span class="p">)</span>
+
+                <span class="c1"># Checkpoint at subsession boundary</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_checkpointer</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+
+            <span class="c1"># Notify progress after each module completes</span>
+            <span class="k">if</span> <span class="n">on_module_complete</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">on_module_complete</span><span class="p">(</span><span class="n">module_idx</span><span class="p">,</span> <span class="n">module_name</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cep</span><span class="o">.</span><span class="n">module_sequence</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_finalize_session</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">session</span></div>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Session lifecycle</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialize_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log a ``session_start`` event.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            session: The newly created session object.</span>
+<span class="sd">            cep: Compiled experiment package.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_event_logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="s2">&quot;session_start&quot;</span><span class="p">,</span>
+            <span class="n">run_id</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">:</span> <span class="n">cep</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_manual_variables</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">assignment_plan</span><span class="p">,</span>
+        <span class="n">agents</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Agent</span><span class="p">],</span>
+        <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+        <span class="n">module_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">cep</span><span class="p">:</span> <span class="s2">&quot;CompiledExperiment&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply manual variable assignments from the ``Manual_`` sheet.</span>
+
+<span class="sd">        At the start of each round, iterates through the manual</span>
+<span class="sd">        variables and sets values on the appropriate scope</span>
+<span class="sd">        (Session, Agent, Player, Group) via ``ExperimentState``.</span>
+<span class="sd">        Values are then automatically accessible in Jinja templates</span>
+<span class="sd">        via dot notation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            assignment_plan: The assignment plan from the CEP.</span>
+<span class="sd">            agents: List of agents in the session.</span>
+<span class="sd">            session: The current session.</span>
+<span class="sd">            module_name: Name of the current module.</span>
+<span class="sd">            round_number: Current round number (1-based).</span>
+<span class="sd">            cep: Compiled experiment package.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Build profile_id → agent map.</span>
+        <span class="c1"># agent_id equals the raw profile ID (from make_agent_id), so</span>
+        <span class="c1"># register both the string and numeric forms.</span>
+        <span class="n">agent_by_pid</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">agent</span> <span class="ow">in</span> <span class="n">agents</span><span class="p">:</span>
+            <span class="n">agent_by_pid</span><span class="p">[</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">agent</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">agent_by_pid</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">)]</span> <span class="o">=</span> <span class="n">agent</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                <span class="k">pass</span>
+
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">assignment_plan</span><span class="o">.</span><span class="n">manual_variables</span><span class="p">:</span>
+            <span class="n">entry_module</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;module&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">entry_round</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;round_number&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">entry_class</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">entry_name</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">entry_value</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">entry_pid</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;profile_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Check if this entry applies to the current module/round</span>
+            <span class="k">if</span> <span class="n">entry_module</span> <span class="ow">and</span> <span class="n">entry_module</span> <span class="o">!=</span> <span class="n">module_name</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">entry_round</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="ow">and</span> <span class="n">entry_round</span> <span class="o">!=</span> <span class="n">round_number</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">entry_round</span><span class="p">)</span> <span class="o">!=</span> <span class="n">round_number</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                    <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">entry_class</span> <span class="o">==</span> <span class="s2">&quot;Session&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_session</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">entry_name</span><span class="p">,</span> <span class="n">entry_value</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">entry_class</span> <span class="o">==</span> <span class="s2">&quot;Agent&quot;</span><span class="p">:</span>
+                <span class="n">agent</span> <span class="o">=</span> <span class="n">agent_by_pid</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">entry_pid</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">agent</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_agent</span><span class="p">(</span>
+                        <span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                        <span class="n">module_name</span><span class="p">,</span>
+                        <span class="n">entry_name</span><span class="p">,</span>
+                        <span class="n">entry_value</span><span class="p">,</span>
+                        <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">entry_class</span> <span class="o">==</span> <span class="s2">&quot;Player&quot;</span><span class="p">:</span>
+                <span class="n">agent</span> <span class="o">=</span> <span class="n">agent_by_pid</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">entry_pid</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">agent</span><span class="p">:</span>
+                    <span class="c1"># Player ID is constructed at group formation time;</span>
+                    <span class="c1"># set on agent scope so it flows to the player context</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_agent</span><span class="p">(</span>
+                        <span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                        <span class="n">module_name</span><span class="p">,</span>
+                        <span class="n">entry_name</span><span class="p">,</span>
+                        <span class="n">entry_value</span><span class="p">,</span>
+                        <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">entry_class</span> <span class="o">==</span> <span class="s2">&quot;Group&quot;</span><span class="p">:</span>
+                <span class="c1"># Group-level variables (not id_in_subsession, which is</span>
+                <span class="c1"># handled by group formation) are set on agent scope and</span>
+                <span class="c1"># will be resolved at group execution time</span>
+                <span class="n">agent</span> <span class="o">=</span> <span class="n">agent_by_pid</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">entry_pid</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">agent</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_agent</span><span class="p">(</span>
+                        <span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                        <span class="n">module_name</span><span class="p">,</span>
+                        <span class="n">entry_name</span><span class="p">,</span>
+                        <span class="n">entry_value</span><span class="p">,</span>
+                        <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_scoped_manual_variables</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">assignment_plan</span><span class="p">,</span>
+        <span class="n">agents</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Agent</span><span class="p">],</span>
+        <span class="n">groups</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Group</span><span class="p">],</span>
+        <span class="n">module_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply Player/Group ``Manual_`` entries to their proper scopes.</span>
+
+<span class="sd">        Called after group formation, when ``player_id`` and ``group_id``</span>
+<span class="sd">        are known.  The existing ``_apply_manual_variables`` stores</span>
+<span class="sd">        Player/Group entries on agent scope (for cross-round access);</span>
+<span class="sd">        this method additionally sets them on player/group scope so that</span>
+<span class="sd">        ``{{ player.&lt;field&gt; }}`` and ``{{ group.&lt;field&gt; }}`` resolve</span>
+<span class="sd">        correctly in Jinja templates.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            assignment_plan: The assignment plan from the CEP.</span>
+<span class="sd">            agents: List of agents in the session.</span>
+<span class="sd">            groups: List of groups formed for this round.</span>
+<span class="sd">            module_name: Name of the current module.</span>
+<span class="sd">            round_number: Current round number (1-based).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Build agent_id → player/group mapping</span>
+        <span class="n">agent_to_player</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Player</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">agent_to_group</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Group</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">player</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">:</span>
+                <span class="n">agent_to_player</span><span class="p">[</span><span class="n">player</span><span class="o">.</span><span class="n">agent_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">player</span>
+                <span class="n">agent_to_group</span><span class="p">[</span><span class="n">player</span><span class="o">.</span><span class="n">agent_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">group</span>
+
+        <span class="c1"># Build profile_id → agent map (same logic as _apply_manual_variables)</span>
+        <span class="n">agent_by_pid</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">agent</span> <span class="ow">in</span> <span class="n">agents</span><span class="p">:</span>
+            <span class="n">agent_by_pid</span><span class="p">[</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">agent</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">agent_by_pid</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">)]</span> <span class="o">=</span> <span class="n">agent</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                <span class="k">pass</span>
+
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">assignment_plan</span><span class="o">.</span><span class="n">manual_variables</span><span class="p">:</span>
+            <span class="n">entry_class</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">entry_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;Player&quot;</span><span class="p">,</span> <span class="s2">&quot;Group&quot;</span><span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="n">entry_module</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;module&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">entry_round</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;round_number&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">entry_module</span> <span class="ow">and</span> <span class="n">entry_module</span> <span class="o">!=</span> <span class="n">module_name</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">entry_round</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="ow">and</span> <span class="n">entry_round</span> <span class="o">!=</span> <span class="n">round_number</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">entry_round</span><span class="p">)</span> <span class="o">!=</span> <span class="n">round_number</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                    <span class="k">continue</span>
+
+            <span class="n">entry_pid</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;profile_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">agent</span> <span class="o">=</span> <span class="n">agent_by_pid</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">entry_pid</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">agent</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">entry_name</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">entry_value</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">entry_class</span> <span class="o">==</span> <span class="s2">&quot;Player&quot;</span><span class="p">:</span>
+                <span class="n">player</span> <span class="o">=</span> <span class="n">agent_to_player</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">player</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_player</span><span class="p">(</span>
+                        <span class="n">player</span><span class="o">.</span><span class="n">player_id</span><span class="p">,</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">entry_name</span><span class="p">,</span> <span class="n">entry_value</span>
+                    <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">entry_class</span> <span class="o">==</span> <span class="s2">&quot;Group&quot;</span><span class="p">:</span>
+                <span class="n">grp</span> <span class="o">=</span> <span class="n">agent_to_group</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">grp</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_group</span><span class="p">(</span>
+                        <span class="n">grp</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">entry_name</span><span class="p">,</span> <span class="n">entry_value</span>
+                    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_finalize_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the final checkpoint and log a session-end event.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            session: The completed session to finalize.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checkpointer</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_event_logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="s2">&quot;session_end&quot;</span><span class="p">,</span>
+            <span class="n">run_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_cep</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;total_cost_usd&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cost_tracker</span><span class="o">.</span><span class="n">total_usd</span><span class="p">},</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Session </span><span class="si">%s</span><span class="s2"> complete. Total cost: $</span><span class="si">%.4f</span><span class="s2"> USD&quot;</span><span class="p">,</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cost_tracker</span><span class="o">.</span><span class="n">total_usd</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Group execution</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_group</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">group</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span>
+        <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+        <span class="n">agents_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Agent</span><span class="p">],</span>
+        <span class="n">module_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">prompts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PromptDefinition</span><span class="p">],</span>
+        <span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute all prompts for a single group within a subsession.</span>
+
+<span class="sd">        Iterates through each prompt in the module, dispatching to the</span>
+<span class="sd">        appropriate handler based on prompt type (FACILITATOR, CONTEXT,</span>
+<span class="sd">        DISCUSSION, PUBLIC_QUESTION, PRIVATE_QUESTION). Builds synthetic</span>
+<span class="sd">        subjects for each player and evaluates flow-control expressions.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            group: The group to execute prompts for.</span>
+<span class="sd">            session: The parent session object.</span>
+<span class="sd">            agents_map: Mapping from agent_instance_id to Agent objects.</span>
+<span class="sd">            module_name: Name of the current module.</span>
+<span class="sd">            round_number: Current round (subsession) number.</span>
+<span class="sd">            prompts: Ordered list of prompt definitions for this module.</span>
+<span class="sd">            cep: Compiled experiment for accessing settings and constants.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A stop signal string: ``&quot;continue&quot;``, ``&quot;end_round&quot;``, or</span>
+<span class="sd">            ``&quot;end_session&quot;``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model_name</span> <span class="o">=</span> <span class="n">cep</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model_name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">temperature</span> <span class="o">=</span> <span class="n">cep</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">profiles_meta</span> <span class="o">=</span> <span class="n">cep</span><span class="o">.</span><span class="n">profiles</span> <span class="ow">or</span> <span class="p">{}</span>
+
+        <span class="c1"># Build synthetic subjects for each player in the group</span>
+        <span class="n">subjects</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ConversationalSyntheticSubject</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">player</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">:</span>
+            <span class="n">agent</span> <span class="o">=</span> <span class="n">agents_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">player</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">agent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">subject</span> <span class="o">=</span> <span class="n">ConversationalSyntheticSubject</span><span class="p">(</span>
+                <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+                <span class="n">player</span><span class="o">=</span><span class="n">player</span><span class="p">,</span>
+                <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span>
+                <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span>
+                <span class="n">state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">,</span>
+                <span class="n">router</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_router</span><span class="p">,</span>
+                <span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+                <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+                <span class="n">profiles_meta</span><span class="o">=</span><span class="n">profiles_meta</span><span class="p">,</span>
+                <span class="n">build_profile_qa</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;build_profile_qa&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+                <span class="n">build_profile_backstories</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="s2">&quot;build_profile_backstories&quot;</span><span class="p">,</span> <span class="kc">False</span>
+                <span class="p">),</span>
+                <span class="n">constants</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">constants</span><span class="p">,</span>
+                <span class="n">context_guard</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_context_guard</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">subjects</span><span class="p">[</span><span class="n">player</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">subject</span>
+
+        <span class="c1"># Build field definitions lookup once (not per-prompt)</span>
+        <span class="n">field_defs_by_key</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">&quot;module&quot;</span><span class="p">],</span> <span class="n">f</span><span class="p">[</span><span class="s2">&quot;field_class&quot;</span><span class="p">],</span> <span class="n">f</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]):</span> <span class="n">FieldDefinition</span><span class="p">(</span><span class="o">**</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">cep</span><span class="o">.</span><span class="n">fields</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Build a representative Jinja context for is_displayed evaluation.</span>
+        <span class="c1"># Uses the first player/agent in the group as a proxy so expressions</span>
+        <span class="c1"># such as &quot;player.treatment == &#39;T1&#39;&quot; or &quot;agent.democrat == 1&quot; work.</span>
+        <span class="k">if</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">:</span>
+            <span class="n">rep_player</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">rep_agent</span> <span class="o">=</span> <span class="n">agents_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rep_player</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">rep_agent</span><span class="p">:</span>
+                <span class="n">jinja_ctx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">build_jinja_context</span><span class="p">(</span>
+                    <span class="n">agent</span><span class="o">=</span><span class="n">rep_agent</span><span class="p">,</span>
+                    <span class="n">player</span><span class="o">=</span><span class="n">rep_player</span><span class="p">,</span>
+                    <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span>
+                    <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span>
+                    <span class="n">module</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                    <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                    <span class="n">constants</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">constants</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">jinja_ctx</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;round_number&quot;</span><span class="p">:</span> <span class="n">round_number</span><span class="p">,</span> <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">jinja_ctx</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;round_number&quot;</span><span class="p">:</span> <span class="n">round_number</span><span class="p">,</span> <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">}</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_is_player_specific</span><span class="p">(</span><span class="n">expr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Check if an ``is_displayed`` expression references player/agent attributes.</span>
+
+<span class="sd">            Args:</span>
+<span class="sd">                expr: A Jinja2 boolean expression string.</span>
+
+<span class="sd">            Returns:</span>
+<span class="sd">                ``True`` if the expression contains ``player.`` or ``agent.``.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">expr</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">return</span> <span class="s2">&quot;player.&quot;</span> <span class="ow">in</span> <span class="n">expr</span> <span class="ow">or</span> <span class="s2">&quot;agent.&quot;</span> <span class="ow">in</span> <span class="n">expr</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_player_jinja_ctx</span><span class="p">(</span><span class="n">player</span><span class="p">,</span> <span class="n">agent</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Build a per-player Jinja context for ``is_displayed`` evaluation.</span>
+
+<span class="sd">            Args:</span>
+<span class="sd">                player: The ``Player`` instance.</span>
+<span class="sd">                agent: The ``Agent`` instance.</span>
+
+<span class="sd">            Returns:</span>
+<span class="sd">                A Jinja2 context dict for the given player/agent.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">build_jinja_context</span><span class="p">(</span>
+                <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+                <span class="n">player</span><span class="o">=</span><span class="n">player</span><span class="p">,</span>
+                <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span>
+                <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span>
+                <span class="n">module</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                <span class="n">constants</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">constants</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">stop_signal</span> <span class="o">=</span> <span class="s2">&quot;continue&quot;</span>
+
+        <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompts</span><span class="p">:</span>
+            <span class="c1"># Evaluate is_displayed — per-player if expression references player/agent</span>
+            <span class="n">is_disp_expr</span> <span class="o">=</span> <span class="n">prompt</span><span class="o">.</span><span class="n">is_displayed</span>
+            <span class="n">per_player_filter</span> <span class="o">=</span> <span class="n">_is_player_specific</span><span class="p">(</span><span class="n">is_disp_expr</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">per_player_filter</span><span class="p">:</span>
+                <span class="c1"># Non-player expression: evaluate once with representative context</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flow</span><span class="o">.</span><span class="n">is_displayed</span><span class="p">(</span><span class="n">is_disp_expr</span><span class="p">,</span> <span class="n">jinja_ctx</span><span class="p">):</span>
+                    <span class="k">continue</span>
+
+            <span class="c1"># Fetch field definition if applicable</span>
+            <span class="n">field_def</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">prompt</span><span class="o">.</span><span class="n">field_class</span> <span class="ow">and</span> <span class="n">prompt</span><span class="o">.</span><span class="n">field_name</span><span class="p">:</span>
+                <span class="n">field_key</span> <span class="o">=</span> <span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">prompt</span><span class="o">.</span><span class="n">field_class</span><span class="p">,</span> <span class="n">prompt</span><span class="o">.</span><span class="n">field_name</span><span class="p">)</span>
+                <span class="n">field_def</span> <span class="o">=</span> <span class="n">field_defs_by_key</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field_key</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">prompt</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;FACILITATOR&quot;</span><span class="p">:</span>
+                <span class="n">stop_signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_execute_facilitator_prompt</span><span class="p">(</span>
+                    <span class="n">prompt</span><span class="p">,</span>
+                    <span class="n">group</span><span class="p">,</span>
+                    <span class="n">agents_map</span><span class="p">,</span>
+                    <span class="n">cep</span><span class="p">,</span>
+                    <span class="n">module_name</span><span class="p">,</span>
+                    <span class="n">field_def</span><span class="p">,</span>
+                    <span class="n">jinja_ctx</span><span class="p">,</span>
+                    <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span>
+                    <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                    <span class="n">is_displayed_expr</span><span class="o">=</span><span class="n">is_disp_expr</span> <span class="k">if</span> <span class="n">per_player_filter</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">stop_signal</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;end_round&quot;</span><span class="p">,</span> <span class="s2">&quot;end_session&quot;</span><span class="p">):</span>
+                    <span class="k">break</span>
+
+            <span class="k">elif</span> <span class="n">prompt</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;CONTEXT&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_context</span><span class="p">(</span>
+                    <span class="n">prompt</span><span class="p">,</span>
+                    <span class="n">group</span><span class="p">,</span>
+                    <span class="n">session</span><span class="p">,</span>
+                    <span class="n">module_name</span><span class="p">,</span>
+                    <span class="n">round_number</span><span class="p">,</span>
+                    <span class="n">agents_map</span><span class="p">,</span>
+                    <span class="n">cep</span><span class="p">,</span>
+                    <span class="n">is_displayed_expr</span><span class="o">=</span><span class="n">is_disp_expr</span> <span class="k">if</span> <span class="n">per_player_filter</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">prompt</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;DISCUSSION&quot;</span><span class="p">:</span>
+                <span class="c1"># Sequential: each agent sees the previous agent&#39;s message before responding</span>
+                <span class="k">for</span> <span class="n">agent_id</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">turn_order</span><span class="p">:</span>
+                    <span class="n">subject</span> <span class="o">=</span> <span class="n">subjects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">subject</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">player</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+                        <span class="p">(</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">agent_instance_id</span> <span class="o">==</span> <span class="n">agent_id</span><span class="p">),</span>
+                        <span class="kc">None</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">player</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="n">per_player_filter</span><span class="p">:</span>
+                        <span class="n">agent_obj_check</span> <span class="o">=</span> <span class="n">agents_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">agent_obj_check</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flow</span><span class="o">.</span><span class="n">is_displayed</span><span class="p">(</span>
+                            <span class="n">is_disp_expr</span><span class="p">,</span> <span class="n">_player_jinja_ctx</span><span class="p">(</span><span class="n">player</span><span class="p">,</span> <span class="n">agent_obj_check</span><span class="p">)</span>
+                        <span class="p">):</span>
+                            <span class="k">continue</span>
+                    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+                    <span class="n">content</span><span class="p">,</span> <span class="n">rendered_prompt</span> <span class="o">=</span> <span class="n">subject</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span>
+                        <span class="n">module_name</span><span class="p">,</span> <span class="n">round_number</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">field_def</span>
+                    <span class="p">)</span>
+                    <span class="n">latency_ms</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+                    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_turn_counter_lock</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_turn_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">turn_id</span> <span class="o">=</span> <span class="n">make_turn_id</span><span class="p">(</span>
+                            <span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_turn_counter</span><span class="p">,</span> <span class="n">agent_id</span>
+                        <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_guardrails</span><span class="o">.</span><span class="n">check_response</span><span class="p">(</span>
+                        <span class="n">turn_id</span><span class="o">=</span><span class="n">turn_id</span><span class="p">,</span>
+                        <span class="n">agent_instance_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+                        <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">,</span>
+                        <span class="n">latency_ms</span><span class="o">=</span><span class="n">latency_ms</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_event_logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                        <span class="s2">&quot;llm_call&quot;</span><span class="p">,</span>
+                        <span class="n">run_id</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+                        <span class="n">session_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+                        <span class="n">group_id</span><span class="o">=</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                        <span class="n">agent_instance_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+                        <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+                            <span class="s2">&quot;prompt_type&quot;</span><span class="p">:</span> <span class="s2">&quot;DISCUSSION&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module_name</span><span class="p">,</span>
+                            <span class="s2">&quot;round&quot;</span><span class="p">:</span> <span class="n">round_number</span><span class="p">,</span>
+                            <span class="s2">&quot;turn_id&quot;</span><span class="p">:</span> <span class="n">turn_id</span><span class="p">,</span>
+                            <span class="s2">&quot;latency_ms&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">latency_ms</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                            <span class="s2">&quot;rendered_prompt&quot;</span><span class="p">:</span> <span class="n">rendered_prompt</span><span class="p">,</span>
+                            <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="n">content</span><span class="p">,</span>
+                        <span class="p">},</span>
+                    <span class="p">)</span>
+                    <span class="n">agent_obj</span> <span class="o">=</span> <span class="n">agents_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">Agent</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">{}))</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="n">make_message</span><span class="p">(</span>
+                        <span class="n">role</span><span class="o">=</span><span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+                        <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">,</span>
+                        <span class="n">sender_agent_id</span><span class="o">=</span><span class="n">agent_obj</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                        <span class="n">group_id</span><span class="o">=</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                        <span class="n">treatment_label</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">visibility</span><span class="o">=</span><span class="n">VISIBILITY_GROUP_ONLY</span><span class="p">,</span>
+                        <span class="n">module</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                        <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_append_to_agent_histories</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">agents_map</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">prompt</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;PUBLIC_QUESTION&quot;</span><span class="p">:</span>
+                <span class="c1"># Independent: each agent answers without seeing others&#39; responses.</span>
+                <span class="c1"># Responses are collected first, then appended to history so they</span>
+                <span class="c1"># become publicly visible for subsequent prompts/rounds.</span>
+                <span class="n">pending_messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">agent_id</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">turn_order</span><span class="p">:</span>
+                    <span class="n">subject</span> <span class="o">=</span> <span class="n">subjects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">subject</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="n">per_player_filter</span><span class="p">:</span>
+                        <span class="n">pq_player</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+                            <span class="p">(</span>
+                                <span class="n">p</span>
+                                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span>
+                                <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">agent_instance_id</span> <span class="o">==</span> <span class="n">agent_id</span>
+                            <span class="p">),</span>
+                            <span class="kc">None</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">agent_obj_check</span> <span class="o">=</span> <span class="n">agents_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="p">(</span>
+                            <span class="n">pq_player</span>
+                            <span class="ow">and</span> <span class="n">agent_obj_check</span>
+                            <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flow</span><span class="o">.</span><span class="n">is_displayed</span><span class="p">(</span>
+                                <span class="n">is_disp_expr</span><span class="p">,</span>
+                                <span class="n">_player_jinja_ctx</span><span class="p">(</span><span class="n">pq_player</span><span class="p">,</span> <span class="n">agent_obj_check</span><span class="p">),</span>
+                            <span class="p">)</span>
+                        <span class="p">):</span>
+                            <span class="k">continue</span>
+                    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+                    <span class="n">content</span><span class="p">,</span> <span class="n">rendered_prompt</span> <span class="o">=</span> <span class="n">subject</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span>
+                        <span class="n">module_name</span><span class="p">,</span> <span class="n">round_number</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">field_def</span>
+                    <span class="p">)</span>
+                    <span class="n">latency_ms</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+                    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_turn_counter_lock</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_turn_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">turn_id</span> <span class="o">=</span> <span class="n">make_turn_id</span><span class="p">(</span>
+                            <span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_turn_counter</span><span class="p">,</span> <span class="n">agent_id</span>
+                        <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_guardrails</span><span class="o">.</span><span class="n">check_response</span><span class="p">(</span>
+                        <span class="n">turn_id</span><span class="o">=</span><span class="n">turn_id</span><span class="p">,</span>
+                        <span class="n">agent_instance_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+                        <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">,</span>
+                        <span class="n">latency_ms</span><span class="o">=</span><span class="n">latency_ms</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_event_logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                        <span class="s2">&quot;llm_call&quot;</span><span class="p">,</span>
+                        <span class="n">run_id</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+                        <span class="n">session_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+                        <span class="n">group_id</span><span class="o">=</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                        <span class="n">agent_instance_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+                        <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+                            <span class="s2">&quot;prompt_type&quot;</span><span class="p">:</span> <span class="s2">&quot;PUBLIC_QUESTION&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module_name</span><span class="p">,</span>
+                            <span class="s2">&quot;round&quot;</span><span class="p">:</span> <span class="n">round_number</span><span class="p">,</span>
+                            <span class="s2">&quot;field_name&quot;</span><span class="p">:</span> <span class="n">prompt</span><span class="o">.</span><span class="n">field_name</span><span class="p">,</span>
+                            <span class="s2">&quot;latency_ms&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">latency_ms</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                            <span class="s2">&quot;rendered_prompt&quot;</span><span class="p">:</span> <span class="n">rendered_prompt</span><span class="p">,</span>
+                            <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="n">content</span><span class="p">,</span>
+                        <span class="p">},</span>
+                    <span class="p">)</span>
+                    <span class="n">agent_obj</span> <span class="o">=</span> <span class="n">agents_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">Agent</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">{}))</span>
+                    <span class="n">pending_messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">make_message</span><span class="p">(</span>
+                            <span class="n">role</span><span class="o">=</span><span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+                            <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">,</span>
+                            <span class="n">sender_agent_id</span><span class="o">=</span><span class="n">agent_obj</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                            <span class="n">group_id</span><span class="o">=</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                            <span class="n">treatment_label</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                            <span class="n">visibility</span><span class="o">=</span><span class="n">VISIBILITY_GROUP_ONLY</span><span class="p">,</span>
+                            <span class="n">module</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                            <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="c1"># Append all responses after everyone has answered</span>
+                <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">pending_messages</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_append_to_agent_histories</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">agents_map</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">prompt</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;PRIVATE_QUESTION&quot;</span><span class="p">:</span>
+                <span class="c1"># Parallel: each agent&#39;s private answer is invisible to others</span>
+                <span class="k">def</span><span class="w"> </span><span class="nf">_respond_private</span><span class="p">(</span><span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">                    </span><span class="sd">&quot;&quot;&quot;Execute a private question for a single agent.</span>
+
+<span class="sd">                    Args:</span>
+<span class="sd">                        agent_id: The agent instance ID to respond.</span>
+
+<span class="sd">                    Returns:</span>
+<span class="sd">                        Tuple of (agent_id, raw_response, parsed_value, cost).</span>
+<span class="sd">                    &quot;&quot;&quot;</span>
+                    <span class="n">subj</span> <span class="o">=</span> <span class="n">subjects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">subj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">agent_id</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="mf">0.0</span>
+                    <span class="k">if</span> <span class="n">per_player_filter</span><span class="p">:</span>
+                        <span class="n">priv_player</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+                            <span class="p">(</span>
+                                <span class="n">p</span>
+                                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span>
+                                <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">agent_instance_id</span> <span class="o">==</span> <span class="n">agent_id</span>
+                            <span class="p">),</span>
+                            <span class="kc">None</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">agent_obj_check</span> <span class="o">=</span> <span class="n">agents_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="p">(</span>
+                            <span class="n">priv_player</span>
+                            <span class="ow">and</span> <span class="n">agent_obj_check</span>
+                            <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flow</span><span class="o">.</span><span class="n">is_displayed</span><span class="p">(</span>
+                                <span class="n">is_disp_expr</span><span class="p">,</span>
+                                <span class="n">_player_jinja_ctx</span><span class="p">(</span><span class="n">priv_player</span><span class="p">,</span> <span class="n">agent_obj_check</span><span class="p">),</span>
+                            <span class="p">)</span>
+                        <span class="p">):</span>
+                            <span class="k">return</span> <span class="n">agent_id</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="mf">0.0</span>
+                    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+                    <span class="n">cnt</span><span class="p">,</span> <span class="n">rp</span> <span class="o">=</span> <span class="n">subj</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">round_number</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">field_def</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">agent_id</span><span class="p">,</span> <span class="n">cnt</span><span class="p">,</span> <span class="n">rp</span><span class="p">,</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+
+                <span class="n">max_player_workers</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cep</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_player_workers&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">max_player_workers</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">group</span><span class="o">.</span><span class="n">turn_order</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">raw_results</span> <span class="o">=</span> <span class="n">run_private_questions_parallel</span><span class="p">(</span>
+                        <span class="n">_respond_private</span><span class="p">,</span>
+                        <span class="p">[(</span><span class="n">aid</span><span class="p">,)</span> <span class="k">for</span> <span class="n">aid</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">turn_order</span><span class="p">],</span>
+                        <span class="n">max_workers</span><span class="o">=</span><span class="n">max_player_workers</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">raw_results</span> <span class="o">=</span> <span class="p">[</span><span class="n">_respond_private</span><span class="p">(</span><span class="n">aid</span><span class="p">)</span> <span class="k">for</span> <span class="n">aid</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">turn_order</span><span class="p">]</span>
+
+                <span class="k">for</span> <span class="n">agent_id</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">rendered_prompt</span><span class="p">,</span> <span class="n">latency_ms</span> <span class="ow">in</span> <span class="n">raw_results</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">content</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_turn_counter_lock</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_turn_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">turn_id</span> <span class="o">=</span> <span class="n">make_turn_id</span><span class="p">(</span>
+                            <span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_turn_counter</span><span class="p">,</span> <span class="n">agent_id</span>
+                        <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_guardrails</span><span class="o">.</span><span class="n">check_response</span><span class="p">(</span>
+                        <span class="n">turn_id</span><span class="o">=</span><span class="n">turn_id</span><span class="p">,</span>
+                        <span class="n">agent_instance_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+                        <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">,</span>
+                        <span class="n">latency_ms</span><span class="o">=</span><span class="n">latency_ms</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_event_logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                        <span class="s2">&quot;llm_call&quot;</span><span class="p">,</span>
+                        <span class="n">run_id</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+                        <span class="n">session_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+                        <span class="n">group_id</span><span class="o">=</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                        <span class="n">agent_instance_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+                        <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+                            <span class="s2">&quot;prompt_type&quot;</span><span class="p">:</span> <span class="s2">&quot;PRIVATE_QUESTION&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module_name</span><span class="p">,</span>
+                            <span class="s2">&quot;round&quot;</span><span class="p">:</span> <span class="n">round_number</span><span class="p">,</span>
+                            <span class="s2">&quot;field_name&quot;</span><span class="p">:</span> <span class="n">prompt</span><span class="o">.</span><span class="n">field_name</span><span class="p">,</span>
+                            <span class="s2">&quot;latency_ms&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">latency_ms</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                            <span class="s2">&quot;rendered_prompt&quot;</span><span class="p">:</span> <span class="n">rendered_prompt</span><span class="p">,</span>
+                            <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="n">content</span><span class="p">,</span>
+                        <span class="p">},</span>
+                    <span class="p">)</span>
+                    <span class="n">agent_obj</span> <span class="o">=</span> <span class="n">agents_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">Agent</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">{}))</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="n">make_message</span><span class="p">(</span>
+                        <span class="n">role</span><span class="o">=</span><span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+                        <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">,</span>
+                        <span class="n">sender_agent_id</span><span class="o">=</span><span class="n">agent_obj</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                        <span class="n">group_id</span><span class="o">=</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                        <span class="n">treatment_label</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">visibility</span><span class="o">=</span><span class="n">VISIBILITY_PRIVATE</span><span class="p">,</span>
+                        <span class="n">module</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                        <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_append_to_agent_histories</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">agents_map</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">stop_signal</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_append_to_agent_histories</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">msg</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">group</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span>
+        <span class="n">agents_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Agent</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Append a message to every agent&#39;s session-wide message history.</span>
+
+<span class="sd">        Each agent receives a copy of the message with the ``role`` field</span>
+<span class="sd">        set relative to that agent: ``&quot;assistant&quot;`` if the agent is the</span>
+<span class="sd">        sender, ``&quot;user&quot;`` otherwise. This ensures that when the history</span>
+<span class="sd">        is replayed in the LLM context, only the agent&#39;s own prior</span>
+<span class="sd">        responses appear as ``role=&quot;assistant&quot;``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            msg: The standardised message dict to append.</span>
+<span class="sd">            group: The group whose agents should receive the message.</span>
+<span class="sd">            agents_map: Mapping from agent_instance_id to Agent objects.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sender</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sender_agent_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">player</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">:</span>
+            <span class="n">agent</span> <span class="o">=</span> <span class="n">agents_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">player</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">agent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">agent_msg</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sender</span> <span class="o">==</span> <span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">:</span>
+                <span class="n">agent_msg</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;assistant&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">agent_msg</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;user&quot;</span>
+            <span class="n">agent</span><span class="o">.</span><span class="n">message_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">agent_msg</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_broadcast_context</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="p">:</span> <span class="n">PromptDefinition</span><span class="p">,</span>
+        <span class="n">group</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span>
+        <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+        <span class="n">module_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">agents_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Agent</span><span class="p">],</span>
+        <span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">,</span>
+        <span class="n">is_displayed_expr</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Render a CONTEXT prompt per player and add to the agent&#39;s message history.</span>
+
+<span class="sd">        The prompt text is rendered through the sandboxed Jinja2 environment</span>
+<span class="sd">        once per player using that player&#39;s own attributes (profile, treatment,</span>
+<span class="sd">        state). Each rendered message is tagged with ``VISIBILITY_PRIVATE`` so</span>
+<span class="sd">        that each player sees only the version personalised for them.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            prompt: The CONTEXT-type prompt definition to render.</span>
+<span class="sd">            group: The target group receiving the context message.</span>
+<span class="sd">            session: The parent session object.</span>
+<span class="sd">            module_name: Name of the current module.</span>
+<span class="sd">            round_number: Current round (subsession) number.</span>
+<span class="sd">            agents_map: Mapping from agent_instance_id to Agent objects.</span>
+<span class="sd">            cep: Compiled experiment for accessing constants.</span>
+<span class="sd">            is_displayed_expr: Optional per-player is_displayed expression.</span>
+<span class="sd">                If provided, evaluated per player to decide whether to</span>
+<span class="sd">                broadcast the context to that player.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">player</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">:</span>
+            <span class="n">agent</span> <span class="o">=</span> <span class="n">agents_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">player</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">agent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">is_displayed_expr</span><span class="p">:</span>
+                <span class="n">player_ctx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">build_jinja_context</span><span class="p">(</span>
+                    <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+                    <span class="n">player</span><span class="o">=</span><span class="n">player</span><span class="p">,</span>
+                    <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span>
+                    <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span>
+                    <span class="n">module</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                    <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                    <span class="n">constants</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">constants</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flow</span><span class="o">.</span><span class="n">is_displayed</span><span class="p">(</span><span class="n">is_displayed_expr</span><span class="p">,</span> <span class="n">player_ctx</span><span class="p">):</span>
+                    <span class="k">continue</span>
+            <span class="n">jinja_ctx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">build_jinja_context</span><span class="p">(</span>
+                <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+                <span class="n">player</span><span class="o">=</span><span class="n">player</span><span class="p">,</span>
+                <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span>
+                <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span>
+                <span class="n">module</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                <span class="n">constants</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">constants</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">rendered</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jinja_env</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">llm_text</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
+                    <span class="o">**</span><span class="n">jinja_ctx</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Jinja rendering error in CONTEXT prompt: </span><span class="si">%s</span><span class="s2"> — using raw text.&quot;</span><span class="p">,</span> <span class="n">exc</span>
+                <span class="p">)</span>
+                <span class="n">rendered</span> <span class="o">=</span> <span class="n">prompt</span><span class="o">.</span><span class="n">llm_text</span>
+
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">make_message</span><span class="p">(</span>
+                <span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
+                <span class="n">content</span><span class="o">=</span><span class="n">rendered</span><span class="p">,</span>
+                <span class="n">sender_agent_id</span><span class="o">=</span><span class="n">agent</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                <span class="n">group_id</span><span class="o">=</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                <span class="n">visibility</span><span class="o">=</span><span class="n">VISIBILITY_PRIVATE</span><span class="p">,</span>
+                <span class="n">module</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">agent</span><span class="o">.</span><span class="n">message_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_event_logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="s2">&quot;context_broadcast&quot;</span><span class="p">,</span>
+                <span class="n">run_id</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+                <span class="n">session_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+                <span class="n">group_id</span><span class="o">=</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                <span class="n">agent_instance_id</span><span class="o">=</span><span class="n">player</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">,</span>
+                <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;prompt_type&quot;</span><span class="p">:</span> <span class="s2">&quot;CONTEXT&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module_name</span><span class="p">,</span>
+                    <span class="s2">&quot;round&quot;</span><span class="p">:</span> <span class="n">round_number</span><span class="p">,</span>
+                    <span class="s2">&quot;rendered_prompt&quot;</span><span class="p">:</span> <span class="n">rendered</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_execute_facilitator_prompt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="p">:</span> <span class="n">PromptDefinition</span><span class="p">,</span>
+        <span class="n">group</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span>
+        <span class="n">agents_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Agent</span><span class="p">],</span>
+        <span class="n">cep</span><span class="p">:</span> <span class="n">CompiledExperiment</span><span class="p">,</span>
+        <span class="n">module_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">field_def</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FieldDefinition</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">jinja_ctx</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">session</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Session</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">is_displayed_expr</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute a FACILITATOR-type prompt via the FacilitatorEngine.</span>
+
+<span class="sd">        Looks up the facilitator function by name from the CEP definitions.</span>
+<span class="sd">        The ``llm_text`` of a FACILITATOR prompt contains the function name</span>
+<span class="sd">        as defined in the Facilitator worksheet (e.g. ``&quot;evaluate_group&quot;``).</span>
+
+<span class="sd">        If the prompt has a ``field_class`` and ``field_name`` (via</span>
+<span class="sd">        *field_def*), the facilitator&#39;s response value is stored in</span>
+<span class="sd">        ``ExperimentState`` at the appropriate scope (Session, Group).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            prompt: The FACILITATOR-type prompt definition.</span>
+<span class="sd">            group: The group in whose context the facilitator runs.</span>
+<span class="sd">            agents_map: Mapping from agent_instance_id to Agent objects.</span>
+<span class="sd">            cep: Compiled experiment containing facilitator function definitions.</span>
+<span class="sd">            module_name: Name of the current module.</span>
+<span class="sd">            field_def: Optional ``FieldDefinition`` describing where to</span>
+<span class="sd">                store the facilitator&#39;s response value.</span>
+<span class="sd">            jinja_ctx: Optional Jinja context dict merged into the facilitator</span>
+<span class="sd">                execution context.</span>
+<span class="sd">            session: Optional ``Session`` instance for context.</span>
+<span class="sd">            round_number: Current round number (1-based).</span>
+<span class="sd">            is_displayed_expr: Optional Jinja2 boolean expression for</span>
+<span class="sd">                conditional display evaluation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A stop signal string: ``&quot;continue&quot;``, ``&quot;end_round&quot;``, or</span>
+<span class="sd">            ``&quot;end_session&quot;``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">FacilitatorFunction</span>
+
+        <span class="n">func_name</span> <span class="o">=</span> <span class="n">prompt</span><span class="o">.</span><span class="n">llm_text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">matched_fn</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">fn_dict</span> <span class="ow">in</span> <span class="n">cep</span><span class="o">.</span><span class="n">facilitator_functions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">fn_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">func_name</span><span class="p">:</span>
+                <span class="n">matched_fn</span> <span class="o">=</span> <span class="n">FacilitatorFunction</span><span class="p">(</span><span class="o">**</span><span class="n">fn_dict</span><span class="p">)</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">matched_fn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Facilitator function &#39;</span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s2">&#39; not found in Facilitator worksheet.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">fn</span> <span class="o">=</span> <span class="n">matched_fn</span>
+
+        <span class="n">engine</span> <span class="o">=</span> <span class="n">FacilitatorEngine</span><span class="p">(</span>
+            <span class="n">state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">,</span>
+            <span class="n">randomisation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rng_engine</span><span class="p">,</span>
+            <span class="n">router</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_router</span><span class="p">,</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model_name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># Build facilitator&#39;s view: union of all agents&#39; session-wide</span>
+        <span class="c1"># histories in this group (deduplicated, preserving insertion order).</span>
+        <span class="c1"># This gives the facilitator visibility of everything its group</span>
+        <span class="c1"># members have experienced across all modules and rounds.</span>
+        <span class="n">seen_ids</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">facilitator_messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">player</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">:</span>
+            <span class="n">agent</span> <span class="o">=</span> <span class="n">agents_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">player</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">agent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">agent</span><span class="o">.</span><span class="n">message_history</span><span class="p">:</span>
+                <span class="n">msg_id</span> <span class="o">=</span> <span class="nb">id</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">msg_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen_ids</span><span class="p">:</span>
+                    <span class="n">seen_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">msg_id</span><span class="p">)</span>
+                    <span class="n">facilitator_messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c1"># Gather session-wide agent IDs for built-in facilitators</span>
+        <span class="n">all_session_agent_ids</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">agent_id</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">agents</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">session</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="s2">&quot;agents&quot;</span><span class="p">)</span>
+            <span class="k">else</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">agent_id</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Read players_per_group from module constants</span>
+        <span class="n">module_consts</span> <span class="o">=</span> <span class="n">cep</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">players_per_group</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="n">module_consts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;PLAYERS_PER_GROUP&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_session_agent_ids</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Build profile info map for stratified assignment</span>
+        <span class="n">agents_profile_info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">session</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="s2">&quot;agents&quot;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">agents</span><span class="p">:</span>
+                <span class="n">agents_profile_info</span><span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">agent_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">profile_info</span> <span class="ow">or</span> <span class="p">{}</span>
+
+        <span class="n">base_context</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+            <span class="s2">&quot;agent_ids&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">agent_id</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">],</span>
+            <span class="s2">&quot;all_session_agent_ids&quot;</span><span class="p">:</span> <span class="n">all_session_agent_ids</span><span class="p">,</span>
+            <span class="s2">&quot;players_per_group&quot;</span><span class="p">:</span> <span class="n">players_per_group</span><span class="p">,</span>
+            <span class="s2">&quot;agents_profile_info&quot;</span><span class="p">:</span> <span class="n">agents_profile_info</span><span class="p">,</span>
+            <span class="s2">&quot;facilitator_messages&quot;</span><span class="p">:</span> <span class="n">facilitator_messages</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="n">is_player_scoped</span> <span class="o">=</span> <span class="n">field_def</span> <span class="ow">and</span> <span class="n">field_def</span><span class="o">.</span><span class="n">field_class</span> <span class="o">==</span> <span class="s2">&quot;Player&quot;</span>
+
+        <span class="k">if</span> <span class="n">is_player_scoped</span><span class="p">:</span>
+            <span class="c1"># Player-scoped facilitator: run once per player with</span>
+            <span class="c1"># player-specific Jinja context, storing the result in</span>
+            <span class="c1"># each player&#39;s field.  The facilitator still sees the</span>
+            <span class="c1"># full group conversation built above.</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">for</span> <span class="n">player</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">players</span><span class="p">:</span>
+                <span class="n">agent</span> <span class="o">=</span> <span class="n">agents_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">player</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">agent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">is_displayed_expr</span><span class="p">:</span>
+                    <span class="n">disp_ctx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">build_jinja_context</span><span class="p">(</span>
+                        <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+                        <span class="n">player</span><span class="o">=</span><span class="n">player</span><span class="p">,</span>
+                        <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span>
+                        <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span>
+                        <span class="n">module</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                        <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                        <span class="n">constants</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">constants</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flow</span><span class="o">.</span><span class="n">is_displayed</span><span class="p">(</span><span class="n">is_displayed_expr</span><span class="p">,</span> <span class="n">disp_ctx</span><span class="p">):</span>
+                        <span class="k">continue</span>
+                <span class="n">player_ctx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">build_jinja_context</span><span class="p">(</span>
+                    <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+                    <span class="n">player</span><span class="o">=</span><span class="n">player</span><span class="p">,</span>
+                    <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span>
+                    <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span>
+                    <span class="n">module</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                    <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                    <span class="n">constants</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">constants</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">player_context</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">base_context</span><span class="p">)</span>
+                <span class="n">player_context</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">player_ctx</span><span class="p">)</span>
+                <span class="n">player_result</span><span class="p">,</span> <span class="n">rendered_def</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                    <span class="n">fn</span><span class="p">,</span>
+                    <span class="n">player_context</span><span class="p">,</span>
+                    <span class="n">prompt_args</span><span class="o">=</span><span class="n">prompt</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_event_logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                    <span class="s2">&quot;facilitator_call&quot;</span><span class="p">,</span>
+                    <span class="n">run_id</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+                    <span class="n">session_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">session_id</span> <span class="k">if</span> <span class="n">session</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="n">group_id</span><span class="o">=</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                    <span class="n">agent_instance_id</span><span class="o">=</span><span class="n">player</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">,</span>
+                    <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+                        <span class="s2">&quot;prompt_type&quot;</span><span class="p">:</span> <span class="s2">&quot;FACILITATOR&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;prompt_name&quot;</span><span class="p">:</span> <span class="n">prompt</span><span class="o">.</span><span class="n">field_name</span><span class="p">,</span>
+                        <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module_name</span><span class="p">,</span>
+                        <span class="s2">&quot;round&quot;</span><span class="p">:</span> <span class="n">round_number</span><span class="p">,</span>
+                        <span class="s2">&quot;rendered_prompt&quot;</span><span class="p">:</span> <span class="n">rendered_def</span><span class="p">,</span>
+                        <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="n">player_result</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">player_result</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">player_result</span>  <span class="c1"># keep last for stop signal</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_player</span><span class="p">(</span>
+                        <span class="n">player</span><span class="o">.</span><span class="n">player_id</span><span class="p">,</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">field_def</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">player_result</span>
+                    <span class="p">)</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="n">make_message</span><span class="p">(</span>
+                        <span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
+                        <span class="n">content</span><span class="o">=</span><span class="n">player_result</span><span class="p">,</span>
+                        <span class="n">sender_agent_id</span><span class="o">=</span><span class="s2">&quot;facilitator&quot;</span><span class="p">,</span>
+                        <span class="n">group_id</span><span class="o">=</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                        <span class="n">visibility</span><span class="o">=</span><span class="n">VISIBILITY_FACILITATOR</span><span class="p">,</span>
+                        <span class="n">module</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                        <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_append_to_agent_histories</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">agents_map</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Session / Group / no-field: single group-wide execution</span>
+            <span class="n">context</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">base_context</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">jinja_ctx</span><span class="p">:</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">jinja_ctx</span><span class="p">)</span>
+            <span class="n">result</span><span class="p">,</span> <span class="n">rendered_def</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="n">fn</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="n">prompt</span><span class="o">.</span><span class="n">kwargs</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_event_logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="s2">&quot;facilitator_call&quot;</span><span class="p">,</span>
+                <span class="n">run_id</span><span class="o">=</span><span class="n">cep</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+                <span class="n">session_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">session_id</span> <span class="k">if</span> <span class="n">session</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="n">group_id</span><span class="o">=</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;prompt_type&quot;</span><span class="p">:</span> <span class="s2">&quot;FACILITATOR&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;prompt_name&quot;</span><span class="p">:</span> <span class="n">prompt</span><span class="o">.</span><span class="n">field_name</span><span class="p">,</span>
+                    <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">module_name</span><span class="p">,</span>
+                    <span class="s2">&quot;round&quot;</span><span class="p">:</span> <span class="n">round_number</span><span class="p">,</span>
+                    <span class="s2">&quot;rendered_prompt&quot;</span><span class="p">:</span> <span class="n">rendered_def</span><span class="p">,</span>
+                    <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Apply state changes from built-in facilitators</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_apply_builtin_facilitator_result</span><span class="p">(</span>
+                    <span class="n">result</span><span class="p">,</span>
+                    <span class="n">fn</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">session</span><span class="p">,</span>
+                    <span class="n">group</span><span class="p">,</span>
+                    <span class="n">agents_map</span><span class="p">,</span>
+                    <span class="n">module_name</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="n">make_message</span><span class="p">(</span>
+                        <span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
+                        <span class="n">content</span><span class="o">=</span><span class="n">result</span><span class="p">,</span>
+                        <span class="n">sender_agent_id</span><span class="o">=</span><span class="s2">&quot;facilitator&quot;</span><span class="p">,</span>
+                        <span class="n">group_id</span><span class="o">=</span><span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+                        <span class="n">visibility</span><span class="o">=</span><span class="n">VISIBILITY_FACILITATOR</span><span class="p">,</span>
+                        <span class="n">module</span><span class="o">=</span><span class="n">module_name</span><span class="p">,</span>
+                        <span class="n">round_number</span><span class="o">=</span><span class="n">round_number</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_append_to_agent_histories</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">agents_map</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">field_def</span> <span class="ow">and</span> <span class="n">field_def</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span> <span class="n">result</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">field_def</span><span class="o">.</span><span class="n">field_class</span> <span class="o">==</span> <span class="s2">&quot;Session&quot;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_session</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">field_def</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">field_def</span><span class="o">.</span><span class="n">field_class</span> <span class="o">==</span> <span class="s2">&quot;Group&quot;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="o">.</span><span class="n">set_group</span><span class="p">(</span>
+                            <span class="n">group</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">field_def</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">result</span>
+                        <span class="p">)</span>
+
+        <span class="c1"># Check raw text for stop signal keywords</span>
+        <span class="n">stop_text</span> <span class="o">=</span> <span class="n">result</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flow</span><span class="o">.</span><span class="n">evaluate_stop_condition</span><span class="p">(</span><span class="n">stop_text</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_builtin_facilitator_result</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">result</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">func_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">session</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Session</span><span class="p">],</span>
+        <span class="n">group</span><span class="p">:</span> <span class="n">Group</span><span class="p">,</span>
+        <span class="n">agents_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Agent</span><span class="p">],</span>
+        <span class="n">module_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply state changes from a built-in facilitator result.</span>
+
+<span class="sd">        For ``assign_groups``, rebuilds the current group&#39;s player</span>
+<span class="sd">        roster from the new group assignments.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            result: The dict returned by the built-in facilitator.</span>
+<span class="sd">            func_name: Name of the facilitator function that produced the result.</span>
+<span class="sd">            session: The current session (used to look up all agents).</span>
+<span class="sd">            group: The group that invoked the facilitator.</span>
+<span class="sd">            agents_map: Mapping from agent_instance_id to Agent objects.</span>
+<span class="sd">            module_name: Name of the current module.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">func_name</span> <span class="o">==</span> <span class="s2">&quot;assign_groups&quot;</span> <span class="ow">and</span> <span class="s2">&quot;group_assignments&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+            <span class="n">new_groups</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;group_assignments&quot;</span><span class="p">]</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Runtime assign_groups: rebuilt </span><span class="si">%d</span><span class="s2"> group(s) in module </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">new_groups</span><span class="p">),</span>
+                <span class="n">module_name</span><span class="p">,</span>
+            <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

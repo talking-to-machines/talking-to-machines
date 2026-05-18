@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.core.models &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.core.models</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.core.models</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Core object model for the T2M platform.</span>
+
+<span class="sd">Defines canonical dataclasses for every entity in the oTree-style</span>
+<span class="sd">hierarchy::</span>
+
+<span class="sd">    ExperimentConfig -&gt; Session -&gt; Module -&gt; Subsession -&gt; Group -&gt; Agent / Player</span>
+
+<span class="sd">Static configuration models are produced by the compiler; runtime</span>
+<span class="sd">models are instantiated during experiment execution.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Static configuration produced by the compiler</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="SettingsConfig"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.SettingsConfig">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SettingsConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parsed contents of the Settings worksheet.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        experiment_id: Unique identifier for the experiment.</span>
+<span class="sd">        model_name: Name of the LLM to use (e.g. ``&quot;gpt-4&quot;``).</span>
+<span class="sd">        hf_inference_endpoint: Optional Hugging Face inference endpoint URL.</span>
+<span class="sd">        temperature: Sampling temperature for LLM calls.</span>
+<span class="sd">        random_seed: Seed for reproducible randomisation.</span>
+<span class="sd">        profile_fields: Comma-separated profile fields or ``&quot;ALL&quot;``.</span>
+<span class="sd">        build_profile_qa: Whether to generate profile Q&amp;A pairs.</span>
+<span class="sd">        build_profile_backstories: Whether to generate agent backstories.</span>
+<span class="sd">        num_agents_per_session: Number of agents in each session.</span>
+<span class="sd">        module_sequence: Ordered list of module names to execute.</span>
+<span class="sd">        context_overflow_policy: Strategy when the context window is</span>
+<span class="sd">            exceeded (``&quot;terminate&quot;``, ``&quot;summarize&quot;``, or ``&quot;truncate&quot;``).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">experiment_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">hf_inference_endpoint</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">random_seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">profile_fields</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ALL&quot;</span>
+    <span class="n">build_profile_qa</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">build_profile_backstories</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">num_agents_per_session</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">module_sequence</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">context_overflow_policy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;terminate&quot;</span>
+
+<div class="viewcode-block" id="SettingsConfig.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.SettingsConfig.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the settings to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary containing all settings fields.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;experiment_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span>
+            <span class="s2">&quot;model_name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span>
+            <span class="s2">&quot;hf_inference_endpoint&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hf_inference_endpoint</span><span class="p">,</span>
+            <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="s2">&quot;random_seed&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="p">,</span>
+            <span class="s2">&quot;profile_fields&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_fields</span><span class="p">,</span>
+            <span class="s2">&quot;build_profile_qa&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_profile_qa</span><span class="p">,</span>
+            <span class="s2">&quot;build_profile_backstories&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_profile_backstories</span><span class="p">,</span>
+            <span class="s2">&quot;num_agents_per_session&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_agents_per_session</span><span class="p">,</span>
+            <span class="s2">&quot;module_sequence&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">module_sequence</span><span class="p">,</span>
+            <span class="s2">&quot;context_overflow_policy&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">context_overflow_policy</span><span class="p">,</span>
+        <span class="p">}</span></div></div>
+
+
+<div class="viewcode-block" id="FieldDefinition"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.FieldDefinition">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FieldDefinition</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A single field entry from the Fields worksheet.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        field_class: Hierarchy level the field belongs to</span>
+<span class="sd">            (``Session``, ``Subsession``, ``Agent``, ``Group``, or</span>
+<span class="sd">            ``Player``).</span>
+<span class="sd">        module: Module name this field is associated with.</span>
+<span class="sd">        name: Field name used as a variable identifier.</span>
+<span class="sd">        type: Data type (``integer``, ``float``, ``text``,</span>
+<span class="sd">            ``category``, or ``boolean``).</span>
+<span class="sd">        response_options: Allowed response values (list, dict, tuple,</span>
+<span class="sd">            or ``None`` for free-form).</span>
+<span class="sd">        response_options_intro: Introductory text displayed before</span>
+<span class="sd">            the response options.</span>
+<span class="sd">        randomise_options_order: Whether to shuffle response options</span>
+<span class="sd">            before presenting them.</span>
+<span class="sd">        validate: Whether to validate the agent&#39;s response against</span>
+<span class="sd">            the allowed options.</span>
+<span class="sd">        generate_speculation_score: Whether to generate a speculation</span>
+<span class="sd">            score for this field.</span>
+<span class="sd">        format_response: Whether to apply formatting to the response.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">field_class</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">module</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">response_options</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">response_options_intro</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">randomise_options_order</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">generate_speculation_score</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">format_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="FieldDefinition.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.FieldDefinition.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the field definition to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary containing all field attributes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;field_class&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_class</span><span class="p">,</span>
+            <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="p">,</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+            <span class="s2">&quot;response_options&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">response_options</span><span class="p">,</span>
+            <span class="s2">&quot;response_options_intro&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">response_options_intro</span><span class="p">,</span>
+            <span class="s2">&quot;randomise_options_order&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">randomise_options_order</span><span class="p">,</span>
+            <span class="s2">&quot;validate&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">,</span>
+            <span class="s2">&quot;generate_speculation_score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_speculation_score</span><span class="p">,</span>
+            <span class="s2">&quot;format_response&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_response</span><span class="p">,</span>
+        <span class="p">}</span></div></div>
+
+
+<div class="viewcode-block" id="PromptDefinition"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.PromptDefinition">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PromptDefinition</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A single prompt entry from the Prompts worksheet.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        module: Module name this prompt belongs to.</span>
+<span class="sd">        prompt_sequence: Ordering index within the module.</span>
+<span class="sd">        type: Prompt category (``CONTEXT``, ``DISCUSSION``,</span>
+<span class="sd">            ``PUBLIC_QUESTION``, ``PRIVATE_QUESTION``, or</span>
+<span class="sd">            ``FACILITATOR``).</span>
+<span class="sd">        is_displayed: Optional Jinja condition controlling whether</span>
+<span class="sd">            the prompt is shown.</span>
+<span class="sd">        is_adapted: Whether the prompt text is adapted at runtime.</span>
+<span class="sd">        human_text: Text shown to human participants (if any).</span>
+<span class="sd">        llm_text: Jinja template text sent to the LLM.</span>
+<span class="sd">        field_class: Hierarchy level for field-linked prompts, or</span>
+<span class="sd">            ``None``.</span>
+<span class="sd">        field_name: Name of the linked field, or ``None``.</span>
+<span class="sd">        kwargs: Optional keyword arguments parsed from the worksheet.</span>
+<span class="sd">            Used for facilitator function arguments and RAG</span>
+<span class="sd">            configuration (e.g.</span>
+<span class="sd">            ``{&quot;rag_vector_store_id&quot;: &quot;vs_abc123&quot;}``).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">module</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">prompt_sequence</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">is_displayed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">is_adapted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">human_text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">llm_text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">field_class</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">field_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PromptDefinition.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.PromptDefinition.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the prompt definition to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary containing all prompt attributes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="p">,</span>
+            <span class="s2">&quot;prompt_sequence&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompt_sequence</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+            <span class="s2">&quot;is_displayed&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_displayed</span><span class="p">,</span>
+            <span class="s2">&quot;is_adapted&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_adapted</span><span class="p">,</span>
+            <span class="s2">&quot;human_text&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">human_text</span><span class="p">,</span>
+            <span class="s2">&quot;llm_text&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_text</span><span class="p">,</span>
+            <span class="s2">&quot;field_class&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_class</span><span class="p">,</span>
+            <span class="s2">&quot;field_name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_name</span><span class="p">,</span>
+            <span class="s2">&quot;kwargs&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">}</span></div></div>
+
+
+<div class="viewcode-block" id="FacilitatorFunction"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.FacilitatorFunction">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FacilitatorFunction</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A facilitator function from the Facilitator worksheet.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        name: Function identifier (e.g. ``&quot;assign_groups&quot;``).</span>
+<span class="sd">        definition: Natural-language or built-in definition text.</span>
+<span class="sd">        kwargs: Optional keyword arguments from the Facilitator</span>
+<span class="sd">            worksheet. Merged with prompt-level kwargs at runtime.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">definition</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+<div class="viewcode-block" id="FacilitatorFunction.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.FacilitatorFunction.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the facilitator function to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary with ``name``, ``definition``, and ``kwargs``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;definition&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">definition</span><span class="p">,</span> <span class="s2">&quot;kwargs&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">}</span></div></div>
+
+
+<div class="viewcode-block" id="ExperimentConfig"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.ExperimentConfig">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ExperimentConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Static definition of an experiment produced by the compiler.</span>
+
+<span class="sd">    Contains the fully-parsed and validated contents of all worksheets.</span>
+<span class="sd">    This is not a runtime object; it serves as the blueprint that the</span>
+<span class="sd">    orchestrator uses to instantiate sessions.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        settings: Parsed Settings worksheet.</span>
+<span class="sd">        constants: Nested dictionary ``{module: {name: value}}`` from</span>
+<span class="sd">            the C worksheet.</span>
+<span class="sd">        fields: Ordered list of field definitions from the Fields</span>
+<span class="sd">            worksheet.</span>
+<span class="sd">        facilitator_functions: List of facilitator functions from the</span>
+<span class="sd">            Facilitator worksheet.</span>
+<span class="sd">        prompts: Dictionary ``{module: [PromptDefinition]}`` from the</span>
+<span class="sd">            Prompts worksheet.</span>
+<span class="sd">        profiles: Profile data with keys ``&quot;short_names&quot;``,</span>
+<span class="sd">            ``&quot;full_names&quot;``, and ``&quot;rows&quot;``.</span>
+<span class="sd">        config_hash: SHA-256 hash of the compiled configuration for</span>
+<span class="sd">            reproducibility tracking.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">settings</span><span class="p">:</span> <span class="n">SettingsConfig</span>
+    <span class="n">constants</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="n">fields</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">FieldDefinition</span><span class="p">]</span>
+    <span class="n">facilitator_functions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">FacilitatorFunction</span><span class="p">]</span>
+    <span class="n">prompts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">PromptDefinition</span><span class="p">]]</span>
+    <span class="n">profiles</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="n">config_hash</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+<div class="viewcode-block" id="ExperimentConfig.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.ExperimentConfig.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the full experiment configuration to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A nested dictionary suitable for JSON serialisation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;settings&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="s2">&quot;constants&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">constants</span><span class="p">,</span>
+            <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">],</span>
+            <span class="s2">&quot;facilitator_functions&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">facilitator_functions</span><span class="p">],</span>
+            <span class="s2">&quot;prompts&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="n">module</span><span class="p">:</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">ps</span><span class="p">]</span> <span class="k">for</span> <span class="n">module</span><span class="p">,</span> <span class="n">ps</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prompts</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;profiles&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">profiles</span><span class="p">,</span>
+            <span class="s2">&quot;config_hash&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_hash</span><span class="p">,</span>
+        <span class="p">}</span></div></div>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Treatment / Role / Constant — backward-compatible with management/experiment.py</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="Treatment"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Treatment">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">Treatment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Treatment condition with dynamically assigned attributes.</span>
+
+<span class="sd">    All keyword arguments are set as instance attributes, allowing</span>
+<span class="sd">    flexible treatment definitions from the worksheet.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        **kwargs: Arbitrary keyword arguments. The ``description``</span>
+<span class="sd">            key is extracted separately; all others become attributes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a string representation showing all attributes.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Treatment(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+<div class="viewcode-block" id="Treatment.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Treatment.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A shallow copy of the instance&#39;s attribute dictionary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="Role"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Role">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">Role</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Role definition with dynamically assigned attributes.</span>
+
+<span class="sd">    All keyword arguments are set as instance attributes, allowing</span>
+<span class="sd">    flexible role definitions from the worksheet.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        **kwargs: Arbitrary keyword arguments. The ``description``</span>
+<span class="sd">            key is extracted separately; all others become attributes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a string representation showing all attributes.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Role(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+<div class="viewcode-block" id="Role.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Role.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A shallow copy of the instance&#39;s attribute dictionary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="Constant"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Constant">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">Constant</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Experiment constant with dynamically assigned attributes.</span>
+
+<span class="sd">    All keyword arguments are set as instance attributes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        **kwargs: Arbitrary keyword arguments that become instance</span>
+<span class="sd">            attributes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a string representation showing all attributes.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Constant(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+<div class="viewcode-block" id="Constant.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Constant.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A shallow copy of the instance&#39;s attribute dictionary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div></div>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Runtime entities</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="Agent"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Agent">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Agent</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Persistent identity across all subsessions within a session.</span>
+
+<span class="sd">    The ``agent_id`` is the raw profile ID from the Profiles</span>
+<span class="sd">    worksheet, while ``agent_instance_id`` is run-specific</span>
+<span class="sd">    (``{run_id}_{agent_id}``).</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        agent_id: Profile-linked identifier, stable across runs.</span>
+<span class="sd">        agent_instance_id: Run-specific instance identifier.</span>
+<span class="sd">        profile_info: Dictionary of profile characteristics for</span>
+<span class="sd">            this agent.</span>
+<span class="sd">        is_human: Whether this agent represents a human participant.</span>
+<span class="sd">        message_history: Session-wide conversation history containing</span>
+<span class="sd">            all messages from groups this agent has participated in.</span>
+<span class="sd">            Persists across rounds and modules.</span>
+<span class="sd">        state: Mutable state dictionary that persists across</span>
+<span class="sd">            subsessions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">agent_instance_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">profile_info</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">is_human</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">message_history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">state</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Agent.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Agent.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the agent to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary containing all agent attributes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+            <span class="s2">&quot;agent_instance_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">,</span>
+            <span class="s2">&quot;profile_info&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_info</span><span class="p">,</span>
+            <span class="s2">&quot;is_human&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_human</span><span class="p">,</span>
+            <span class="s2">&quot;message_history&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">message_history</span><span class="p">,</span>
+            <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="Agent.from_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Agent.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Agent&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reconstruct an Agent from a plain dictionary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Dictionary previously produced by ``to_dict``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new ``Agent`` instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">agent_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;agent_id&quot;</span><span class="p">],</span>
+            <span class="n">agent_instance_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;agent_instance_id&quot;</span><span class="p">],</span>
+            <span class="n">profile_info</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;profile_info&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+            <span class="n">is_human</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_human&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="n">message_history</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message_history&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">state</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;state&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Player"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Player">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Player</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runtime per-round instance of an agent within a group.</span>
+
+<span class="sd">    The ``player_id`` is derived as</span>
+<span class="sd">    ``{agent_instance_id}_{subsession_id}``. State is scoped to one</span>
+<span class="sd">    subsession/group (e.g. current round decision, belief).</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        player_id: Unique identifier for this player instance.</span>
+<span class="sd">        agent_instance_id: Back-reference to the parent agent</span>
+<span class="sd">            instance.</span>
+<span class="sd">        agent_id: Back-reference to the stable agent identity.</span>
+<span class="sd">        group_id: Identifier of the group this player belongs to.</span>
+<span class="sd">        message_history: Visibility-filtered conversation history</span>
+<span class="sd">            for this player.</span>
+<span class="sd">        state: Mutable state dictionary scoped to this subsession.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">player_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">agent_instance_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">group_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">message_history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">state</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Player.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Player.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the player to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A dictionary containing all player attributes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;player_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">player_id</span><span class="p">,</span>
+            <span class="s2">&quot;agent_instance_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent_instance_id</span><span class="p">,</span>
+            <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+            <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+            <span class="s2">&quot;message_history&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">message_history</span><span class="p">,</span>
+            <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="Player.from_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Player.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Player&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reconstruct a Player from a plain dictionary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Dictionary previously produced by ``to_dict``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new ``Player`` instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">player_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;player_id&quot;</span><span class="p">],</span>
+            <span class="n">agent_instance_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;agent_instance_id&quot;</span><span class="p">],</span>
+            <span class="n">agent_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;agent_id&quot;</span><span class="p">],</span>
+            <span class="n">group_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;group_id&quot;</span><span class="p">],</span>
+            <span class="n">message_history</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message_history&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">state</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;state&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Group"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Group">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Group</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Interaction unit for one subsession.</span>
+
+<span class="sd">    Contains the players participating in this group and the speaking</span>
+<span class="sd">    order. Conversation history is stored on each ``Agent`` instance</span>
+<span class="sd">    (session-wide) rather than on the group.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        group_id: Unique identifier for this group.</span>
+<span class="sd">        subsession_id: Back-reference to the parent subsession.</span>
+<span class="sd">        players: List of players in this group.</span>
+<span class="sd">        turn_order: Ordered list of ``agent_instance_id`` values</span>
+<span class="sd">            defining the speaking sequence.</span>
+<span class="sd">        state: Mutable state dictionary scoped to this group.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">group_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">subsession_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">players</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Player</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">turn_order</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">state</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Group.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Group.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the group to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A nested dictionary including serialised players.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">group_id</span><span class="p">,</span>
+            <span class="s2">&quot;subsession_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">subsession_id</span><span class="p">,</span>
+            <span class="s2">&quot;players&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">players</span><span class="p">],</span>
+            <span class="s2">&quot;turn_order&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">turn_order</span><span class="p">,</span>
+            <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="Group.from_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Group.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Group&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reconstruct a Group from a plain dictionary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Dictionary previously produced by ``to_dict``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new ``Group`` instance with nested ``Player`` objects.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">group_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;group_id&quot;</span><span class="p">],</span>
+            <span class="n">subsession_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;subsession_id&quot;</span><span class="p">],</span>
+            <span class="n">players</span><span class="o">=</span><span class="p">[</span><span class="n">Player</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;players&quot;</span><span class="p">,</span> <span class="p">[])],</span>
+            <span class="n">turn_order</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;turn_order&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">state</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;state&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Subsession"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Subsession">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Subsession</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;One round within a module.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        subsession_id: Unique identifier for this subsession.</span>
+<span class="sd">        module_id: Back-reference to the parent module.</span>
+<span class="sd">        round_number: One-based round index within the module.</span>
+<span class="sd">        groups: List of groups active in this subsession.</span>
+<span class="sd">        state: Mutable state dictionary scoped to this subsession.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">subsession_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">module_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">round_number</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">groups</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Group</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">state</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Subsession.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Subsession.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the subsession to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A nested dictionary including serialised groups.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;subsession_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">subsession_id</span><span class="p">,</span>
+            <span class="s2">&quot;module_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">module_id</span><span class="p">,</span>
+            <span class="s2">&quot;round_number&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">round_number</span><span class="p">,</span>
+            <span class="s2">&quot;groups&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">g</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">],</span>
+            <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="Subsession.from_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Subsession.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Subsession&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reconstruct a Subsession from a plain dictionary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Dictionary previously produced by ``to_dict``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new ``Subsession`` instance with nested ``Group`` objects.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">subsession_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;subsession_id&quot;</span><span class="p">],</span>
+            <span class="n">module_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;module_id&quot;</span><span class="p">],</span>
+            <span class="n">round_number</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;round_number&quot;</span><span class="p">],</span>
+            <span class="n">groups</span><span class="o">=</span><span class="p">[</span><span class="n">Group</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;groups&quot;</span><span class="p">,</span> <span class="p">[])],</span>
+            <span class="n">state</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;state&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Module"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Module">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Module</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;One module block within a session.</span>
+
+<span class="sd">    Maps to a single entry in the ``MODULE_SEQUENCE`` setting and</span>
+<span class="sd">    contains one or more subsessions (rounds).</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        module_id: Unique identifier for this module.</span>
+<span class="sd">        session_id: Back-reference to the parent session.</span>
+<span class="sd">        module_name: Name of the module this block executes.</span>
+<span class="sd">        subsessions: Ordered list of subsessions (rounds) in this</span>
+<span class="sd">            module.</span>
+<span class="sd">        state: Mutable state dictionary scoped to this module.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">module_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">module_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">subsessions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Subsession</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">state</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Module.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Module.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the module to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A nested dictionary including serialised subsessions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;module_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">module_id</span><span class="p">,</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="s2">&quot;module_name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">module_name</span><span class="p">,</span>
+            <span class="s2">&quot;subsessions&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subsessions</span><span class="p">],</span>
+            <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="Module.from_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Module.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Module&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reconstruct a Module from a plain dictionary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Dictionary previously produced by ``to_dict``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new ``Module`` instance with nested ``Subsession``</span>
+<span class="sd">            objects.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">module_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;module_id&quot;</span><span class="p">],</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;session_id&quot;</span><span class="p">],</span>
+            <span class="n">module_name</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;module_name&quot;</span><span class="p">],</span>
+            <span class="n">subsessions</span><span class="o">=</span><span class="p">[</span><span class="n">Subsession</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;subsessions&quot;</span><span class="p">,</span> <span class="p">[])],</span>
+            <span class="n">state</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;state&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Session"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Session">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Session</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;One complete run execution.</span>
+
+<span class="sd">    Contains all modules and all agents participating in the</span>
+<span class="sd">    session.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        session_id: Unique identifier for this session.</span>
+<span class="sd">        run_id: Identifier for the specific run execution.</span>
+<span class="sd">        experiment_id: Back-reference to the parent experiment.</span>
+<span class="sd">        cep_hash: Hash of the compiled experiment package used for</span>
+<span class="sd">            this session.</span>
+<span class="sd">        agents: List of agents participating in this session.</span>
+<span class="sd">        modules: Ordered list of modules to execute.</span>
+<span class="sd">        state: Mutable state dictionary scoped to this session.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">experiment_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">cep_hash</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">agents</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Agent</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">modules</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">state</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Session.to_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Session.to_dict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise the session to a plain dictionary.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A nested dictionary including serialised agents and</span>
+<span class="sd">            modules.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="s2">&quot;run_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+            <span class="s2">&quot;experiment_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span>
+            <span class="s2">&quot;cep_hash&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cep_hash</span><span class="p">,</span>
+            <span class="s2">&quot;agents&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">],</span>
+            <span class="s2">&quot;modules&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">],</span>
+            <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="Session.from_dict"><a class="viewcode-back" href="../../../talkingtomachines.core.html#talkingtomachines.core.models.Session.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Session&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reconstruct a Session from a plain dictionary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Dictionary previously produced by ``to_dict``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A new ``Session`` instance with nested ``Agent`` and</span>
+<span class="sd">            ``Module`` objects.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;session_id&quot;</span><span class="p">],</span>
+            <span class="n">run_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;run_id&quot;</span><span class="p">],</span>
+            <span class="n">experiment_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">],</span>
+            <span class="n">cep_hash</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cep_hash&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+            <span class="n">agents</span><span class="o">=</span><span class="p">[</span><span class="n">Agent</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;agents&quot;</span><span class="p">,</span> <span class="p">[])],</span>
+            <span class="n">modules</span><span class="o">=</span><span class="p">[</span><span class="n">Module</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;modules&quot;</span><span class="p">,</span> <span class="p">[])],</span>
+            <span class="n">state</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;state&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.generative.llm &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.generative.llm</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.generative.llm</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Low-level LLM query helpers for OpenAI, Hugging Face, and OpenRouter.</span>
+
+<span class="sd">.. deprecated::</span>
+<span class="sd">    This module is deprecated.  Use</span>
+<span class="sd">    ``talkingtomachines.gateway.router.LLMRouter`` instead.</span>
+
+<span class="sd">Provides retry-aware wrappers that route prompts to the appropriate</span>
+<span class="sd">backend based on the model identifier string.</span>
+
+<span class="sd">Module-level constants:</span>
+<span class="sd">    RETRY_DELAY (int): Seconds to wait between retries on API failure.</span>
+<span class="sd">    MAX_RETRIES (int): Maximum number of retry attempts per query.</span>
+<span class="sd">    OPENAI_MODELS (list[str]): Model identifiers handled by the OpenAI backend.</span>
+<span class="sd">    NO_TEMPERATURE_MODELS (list[str]): Models that do not accept a temperature parameter.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+    <span class="s2">&quot;talkingtomachines.generative.llm is deprecated. &quot;</span>
+    <span class="s2">&quot;Use talkingtomachines.gateway.router.LLMRouter instead.&quot;</span><span class="p">,</span>
+    <span class="ne">DeprecationWarning</span><span class="p">,</span>
+    <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">truststore</span>
+
+<span class="n">truststore</span><span class="o">.</span><span class="n">inject_into_ssl</span><span class="p">()</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span><span class="o">,</span><span class="w"> </span><span class="nn">openai</span><span class="o">,</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">urlparse</span><span class="p">,</span> <span class="n">urlunparse</span><span class="p">,</span> <span class="n">parse_qsl</span><span class="p">,</span> <span class="n">urlencode</span>
+
+
+<span class="n">RETRY_DELAY</span> <span class="o">=</span> <span class="mi">300</span>
+<span class="n">MAX_RETRIES</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">OPENAI_MODELS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;gpt-5.1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-mini&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-nano&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-chat-latest&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-codex&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-pro&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4.1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4.1-mini&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4.1-nano&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4o-2024-05-13&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-4o-mini&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o1-pro&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o3-pro&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o3&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o4-mini&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">NO_TEMPERATURE_MODELS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;gpt-5.1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-mini&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-nano&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-codex&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gpt-5-pro&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o1-pro&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o3-pro&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o3&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o4-mini&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="query_llm"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.llm.query_llm">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">query_llm</span><span class="p">(</span>
+    <span class="n">llm_client</span><span class="p">:</span> <span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">,</span>
+    <span class="n">model_info</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">message_history</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Query a language model (LLM) based on the specified model information.</span>
+
+<span class="sd">    This function routes the query to the appropriate LLM backend based on the</span>
+<span class="sd">    `model_info` parameter. It supports OpenAI models, Hugging Face inference,</span>
+<span class="sd">    and OpenRouter.ai-supported models.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        llm_client (openai.OpenAI): The client instance for interacting with the LLM.</span>
+<span class="sd">        model_info (str): The identifier for the model to query. This can be an OpenAI</span>
+<span class="sd">            model, &quot;hf-inference&quot; for Hugging Face, or an OpenRouter.ai-supported model.</span>
+<span class="sd">        message_history (List[dict]): A list of dictionaries representing the message</span>
+<span class="sd">            history for the conversation. Each dictionary typically contains keys like</span>
+<span class="sd">            &quot;role&quot; and &quot;content&quot;.</span>
+<span class="sd">        temperature (float): The temperature parameter for controlling the randomness</span>
+<span class="sd">            of the model&#39;s output. Higher values result in more random outputs.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: The response generated by the queried LLM.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">model_info</span> <span class="ow">in</span> <span class="n">OPENAI_MODELS</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">query_open_ai</span><span class="p">(</span>
+            <span class="n">llm_client</span><span class="o">=</span><span class="n">llm_client</span><span class="p">,</span>
+            <span class="n">model_info</span><span class="o">=</span><span class="n">model_info</span><span class="p">,</span>
+            <span class="n">message_history</span><span class="o">=</span><span class="n">message_history</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_info</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;hf-inference&quot;</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">query_hugging_face</span><span class="p">(</span>
+            <span class="n">llm_client</span><span class="o">=</span><span class="n">llm_client</span><span class="p">,</span>
+            <span class="n">message_history</span><span class="o">=</span><span class="n">message_history</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">query_openrouter_ai</span><span class="p">(</span>
+            <span class="n">llm_client</span><span class="o">=</span><span class="n">llm_client</span><span class="p">,</span>
+            <span class="n">model_info</span><span class="o">=</span><span class="n">model_info</span><span class="p">,</span>
+            <span class="n">message_history</span><span class="o">=</span><span class="n">message_history</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_normalize_dropbox_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Normalize a Dropbox URL to ensure it points to a direct downloadable file.</span>
+
+<span class="sd">    This function modifies Dropbox URLs to use the &quot;dl.dropboxusercontent.com&quot;</span>
+<span class="sd">    host and ensures the query parameters are adjusted for direct file access</span>
+<span class="sd">    by setting &quot;raw=1&quot; and removing the &quot;dl&quot; parameter if present.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        url (str): The original URL to be normalized.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: The normalized URL pointing to a direct downloadable file.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        - Only URLs with &quot;dropbox.com&quot; or &quot;dropboxusercontent.com&quot; in the host</span>
+<span class="sd">          are modified. Other URLs are returned unchanged.</span>
+<span class="sd">        - If the input URL lacks a scheme, &quot;https&quot; is assumed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+    <span class="c1"># Only touch dropbox domains</span>
+    <span class="n">host</span> <span class="o">=</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">netloc</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="s2">&quot;dropbox.com&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">host</span> <span class="ow">and</span> <span class="s2">&quot;dropboxusercontent.com&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">host</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">url</span>
+
+    <span class="c1"># Force raw host</span>
+    <span class="n">new_host</span> <span class="o">=</span> <span class="s2">&quot;dl.dropboxusercontent.com&quot;</span>
+
+    <span class="c1"># Build new query: keep existing params except &#39;dl&#39;, ensure raw=1</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">parse_qsl</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="n">keep_blank_values</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="c1"># Remove Dropbox&#39;s dl param (dl=0/1), prefer raw=1 for direct file</span>
+    <span class="n">q</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;dl&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">q</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+
+    <span class="n">new_url</span> <span class="o">=</span> <span class="n">urlunparse</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">scheme</span> <span class="ow">or</span> <span class="s2">&quot;https&quot;</span><span class="p">,</span>
+            <span class="n">new_host</span><span class="p">,</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">params</span><span class="p">,</span>
+            <span class="n">urlencode</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">doseq</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">fragment</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">new_url</span>
+
+
+<div class="viewcode-block" id="extract_image_url"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.llm.extract_image_url">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">extract_image_url</span><span class="p">(</span><span class="n">message_content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extracts an image URL from the given message content.</span>
+
+<span class="sd">    This function attempts to identify and return an image URL from the provided</span>
+<span class="sd">    message content string. It supports both Base64-encoded image URLs and generic</span>
+<span class="sd">    HTTP(S) image URLs. The function applies heuristics to determine whether a URL</span>
+<span class="sd">    is likely to point to an image.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        message_content (str): The content of the message to parse for image URLs.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Optional[str]: The extracted image URL if found, otherwise None.</span>
+
+<span class="sd">    The extraction process includes:</span>
+
+<span class="sd">    1. Searching for Base64-encoded image URLs.</span>
+<span class="sd">    2. Identifying generic HTTP(S) URLs and applying heuristics to determine if they</span>
+<span class="sd">       are likely to point to images. This includes:</span>
+<span class="sd">       - Checking for common image file extensions (e.g., .png, .jpg, .gif).</span>
+<span class="sd">       - Looking for query parameters that indicate image formats.</span>
+<span class="sd">       - Recognizing known image hosting domains.</span>
+<span class="sd">       - Handling Dropbox URLs and normalizing them to raw image links if applicable.</span>
+<span class="sd">    3. Falling back to URLs that appear to belong to image-related folders (e.g.,</span>
+<span class="sd">       &quot;/images/&quot;, &quot;/media/&quot;).</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        - If multiple URLs are found, the function prioritizes those that are more</span>
+<span class="sd">          likely to be images based on the heuristics.</span>
+<span class="sd">        - Dropbox URLs are normalized to their raw image format if applicable.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">message_content</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># 1) Extract Base64 encoded image URL</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+        <span class="sa">r</span><span class="s2">&quot;data:image/[^;]+;base64,[A-Za-z0-9+/=]+&quot;</span><span class="p">,</span> <span class="n">message_content</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># 2) Extract generic http(s) image URLs</span>
+    <span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;https?://[^\s&lt;&gt;()</span><span class="se">\&quot;</span><span class="s2">&#39;]+&quot;</span><span class="p">,</span> <span class="n">message_content</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.,);]&#39;</span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">candidates</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># Heuristics for image-y links (w/ or w/o file extensions)</span>
+    <span class="n">IMAGE_HOST_HINT</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+        <span class="sa">r</span><span class="s2">&quot;(googleusercontent\.com|ggpht\.com|twimg\.com|fbcdn\.net|cdninstagram\.com|&quot;</span>
+        <span class="sa">r</span><span class="s2">&quot;pinimg\.com|imgur\.com|media\.amazonaws\.com|cloudfront\.net|dropboxusercontent\.com|dropbox\.com)&quot;</span><span class="p">,</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">looks_like_image</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Heuristically determine whether a URL points to an image.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            url: The URL to inspect.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ``True`` if the URL likely points to an image resource.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\.(png|jpe?g|gif|webp|svg)(?:[?#]|$)&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;(?:[?&amp;])(format|ext|fm|type|content[_-]?type)=((image/)?(png|jpe?g|gif|webp|svg))&quot;</span><span class="p">,</span>
+            <span class="n">url</span><span class="p">,</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="c1"># Dropbox raw flags</span>
+        <span class="k">if</span> <span class="s2">&quot;dropbox.com&quot;</span> <span class="ow">in</span> <span class="n">url</span> <span class="ow">and</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;[?&amp;](raw=1|dl=1)\b&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">IMAGE_HOST_HINT</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="c1"># Prefer likely image links</span>
+    <span class="k">for</span> <span class="n">url</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">looks_like_image</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+            <span class="c1"># If it&#39;s Dropbox, normalize to raw</span>
+            <span class="k">if</span> <span class="s2">&quot;dropbox.com&quot;</span> <span class="ow">in</span> <span class="n">url</span> <span class="ow">or</span> <span class="s2">&quot;dropboxusercontent.com&quot;</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">_normalize_dropbox_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">url</span>
+
+    <span class="c1"># Fallback: paths that look like images folder</span>
+    <span class="k">for</span> <span class="n">url</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;/(img|imgs|images|photos|media)/&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s2">&quot;dropbox.com&quot;</span> <span class="ow">in</span> <span class="n">url</span> <span class="ow">or</span> <span class="s2">&quot;dropboxusercontent.com&quot;</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">_normalize_dropbox_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">url</span>
+
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="extract_image_url_from_message"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.llm.extract_image_url_from_message">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">extract_image_url_from_message</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Formats a message history by extracting image URLs and structuring the content.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        message (str): The message, potentially containing an image URL.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List[str]: A list of formatted message components. If an image URL is found in the</span>
+<span class="sd">        message content, the list will include both a text component and an image component.</span>
+<span class="sd">        Otherwise, it will include only a text component.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">image_url</span> <span class="o">=</span> <span class="n">extract_image_url</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">image_url</span><span class="p">:</span>
+        <span class="n">formatted_message</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;input_text&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;input_image&quot;</span><span class="p">,</span> <span class="s2">&quot;image_url&quot;</span><span class="p">:</span> <span class="n">image_url</span><span class="p">},</span>
+        <span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">formatted_message</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;input_text&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">}]</span>
+
+    <span class="k">return</span> <span class="n">formatted_message</span></div>
+
+
+<div class="viewcode-block" id="format_message_history_for_response_api"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.llm.format_message_history_for_response_api">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">format_message_history_for_response_api</span><span class="p">(</span><span class="n">message_history</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Formats a message history for use with a response API.</span>
+<span class="sd">    This function processes a list of message dictionaries and reformats them</span>
+<span class="sd">    based on their roles. Messages with the role &quot;system&quot; or &quot;assistant&quot; are</span>
+<span class="sd">    wrapped in a specific structure, while messages with the role &quot;user&quot; are</span>
+<span class="sd">    processed to extract image URLs. An error is raised for any unknown roles.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        message_history (List[dict]): A list of message dictionaries, where each</span>
+<span class="sd">            dictionary contains the keys &quot;role&quot; (str) and &quot;content&quot; (str).</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        List[dict]: A list of reformatted message dictionaries. Each dictionary</span>
+<span class="sd">            contains the keys &quot;role&quot; (str) and &quot;content&quot; (list or dict), where</span>
+<span class="sd">            the content structure depends on the role.</span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If a message contains an unknown role. Valid roles are</span>
+<span class="sd">            &quot;system&quot;, &quot;user&quot;, and &quot;assistant&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">formatted_message_history</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">message_history</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;system&quot;</span><span class="p">:</span>
+            <span class="n">formatted_message_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;input_text&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">]}],</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;assistant&quot;</span><span class="p">:</span>
+            <span class="n">formatted_message_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;output_text&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">]}],</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;user&quot;</span><span class="p">:</span>
+            <span class="n">formatted_message_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">extract_image_url_from_message</span><span class="p">(</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">]),</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unknown message role: </span><span class="si">{</span><span class="n">message</span><span class="p">[</span><span class="s1">&#39;role&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">. Should be one of these options: &#39;system&#39;, &#39;user&#39;, &#39;assistant&#39;.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">formatted_message_history</span></div>
+
+
+<div class="viewcode-block" id="query_open_ai"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.llm.query_open_ai">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">query_open_ai</span><span class="p">(</span>
+    <span class="n">llm_client</span><span class="p">:</span> <span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">,</span>
+    <span class="n">model_info</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">message_history</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Query OpenAI API with the provided prompt.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        llm_client (openai.OpenAI): The LLM client.</span>
+<span class="sd">        model_info (str): Information about the model.</span>
+<span class="sd">        message_history (List[dict]): Contains the history of message exchanged between user and assistant.</span>
+<span class="sd">        temperature (float): The model temperature setting for the LLM.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Any: Response from the LLM.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">formatted_message_history</span> <span class="o">=</span> <span class="n">format_message_history_for_response_api</span><span class="p">(</span><span class="n">message_history</span><span class="p">)</span>
+
+    <span class="n">attempt</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">MAX_RETRIES</span><span class="p">:</span>
+        <span class="n">attempt</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">model_info</span> <span class="ow">in</span> <span class="n">NO_TEMPERATURE_MODELS</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">llm_client</span><span class="o">.</span><span class="n">responses</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+                    <span class="n">model</span><span class="o">=</span><span class="n">model_info</span><span class="p">,</span>
+                    <span class="nb">input</span><span class="o">=</span><span class="n">formatted_message_history</span><span class="p">,</span>
+                    <span class="n">stream</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">llm_client</span><span class="o">.</span><span class="n">responses</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+                    <span class="n">model</span><span class="o">=</span><span class="n">model_info</span><span class="p">,</span>
+                    <span class="nb">input</span><span class="o">=</span><span class="n">formatted_message_history</span><span class="p">,</span>
+                    <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+                    <span class="n">stream</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">output_text</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Log the exception</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Error during OpenAI API call: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Retrying in </span><span class="si">{</span><span class="n">RETRY_DELAY</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="mi">60</span><span class="si">}</span><span class="s2"> mins...&quot;</span>
+            <span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">RETRY_DELAY</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="query_hugging_face"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.llm.query_hugging_face">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">query_hugging_face</span><span class="p">(</span>
+    <span class="n">llm_client</span><span class="p">:</span> <span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">,</span> <span class="n">message_history</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Query Hugging Face&#39;s dedicated inference API end point with the provided prompt.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        llm_client (openai.OpenAI): The LLM client from OpenAI class.</span>
+<span class="sd">        message_history (List[dict]): Contains the history of message exchanged between user and assistant.</span>
+<span class="sd">        temperature (float): The model temperature setting for the LLM.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Any: Response from the LLM.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">attempt</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">MAX_RETRIES</span><span class="p">:</span>
+        <span class="n">attempt</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">llm_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">=</span><span class="s2">&quot;tgi&quot;</span><span class="p">,</span>
+                <span class="n">messages</span><span class="o">=</span><span class="n">message_history</span><span class="p">,</span>
+                <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+                <span class="n">stream</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">formatted_response</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="k">return</span> <span class="n">formatted_response</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Log the exception</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Error during Hugging Face API call: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Retrying in </span><span class="si">{</span><span class="n">RETRY_DELAY</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="mi">60</span><span class="si">}</span><span class="s2"> mins...&quot;</span>
+            <span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">RETRY_DELAY</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="query_openrouter_ai"><a class="viewcode-back" href="../../../talkingtomachines.generative.html#talkingtomachines.generative.llm.query_openrouter_ai">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">query_openrouter_ai</span><span class="p">(</span>
+    <span class="n">llm_client</span><span class="p">:</span> <span class="n">openai</span><span class="o">.</span><span class="n">OpenAI</span><span class="p">,</span>
+    <span class="n">model_info</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">message_history</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Queries the OpenRouter AI API using the provided LLM client and parameters.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        llm_client (openai.OpenAI): The OpenAI client instance to interact with the API.</span>
+<span class="sd">        model_info (str): The identifier of the language model to use for the query.</span>
+<span class="sd">        message_history (List[dict]): A list of dictionaries representing the message history</span>
+<span class="sd">            for the conversation. Each dictionary should contain keys like &quot;role&quot; and &quot;content&quot;.</span>
+<span class="sd">        temperature (float): The sampling temperature to use for the response generation.</span>
+<span class="sd">            Higher values result in more randomness, while lower values make the output more deterministic.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Any: The content of the response message from the OpenRouter AI API.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: If the API call fails after the maximum number of retries.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">attempt</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">MAX_RETRIES</span><span class="p">:</span>
+        <span class="n">attempt</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">llm_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">=</span><span class="n">model_info</span><span class="p">,</span>
+                <span class="n">messages</span><span class="o">=</span><span class="n">message_history</span><span class="p">,</span>
+                <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+                <span class="n">stream</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">llm_client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+                    <span class="n">model</span><span class="o">=</span><span class="n">model_info</span><span class="p">,</span>
+                    <span class="n">messages</span><span class="o">=</span><span class="n">message_history</span><span class="p">,</span>
+                    <span class="n">stream</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Error during OpenAI API call: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Retrying in </span><span class="si">{</span><span class="n">RETRY_DELAY</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="mi">60</span><span class="si">}</span><span class="s2"> mins...&quot;</span>
+                <span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">RETRY_DELAY</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="s2">&quot;&quot;</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

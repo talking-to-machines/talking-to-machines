@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.authoring.parsers.settings_parser &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.authoring.parsers.settings_parser</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.authoring.parsers.settings_parser</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Settings worksheet parser.</span>
+
+<span class="sd">Converts the two-column (name / value) Settings sheet into a</span>
+<span class="sd">``SettingsConfig`` dataclass. Unknown keys are accepted with a warning</span>
+<span class="sd">and type coercion is applied per field.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">talkingtomachines.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SettingsConfig</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Expected settings keys and their Python types</span>
+<span class="n">_FIELD_TYPES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;EXPERIMENT_ID&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="s2">&quot;HF_INFERENCE_ENDPOINT&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="s2">&quot;TEMPERATURE&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="s2">&quot;RANDOM_SEED&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="s2">&quot;PROFILE_FIELDS&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="s2">&quot;BUILD_PROFILE_QA&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="s2">&quot;BUILD_PROFILE_BACKSTORIES&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="s2">&quot;NUM_AGENTS_PER_SESSION&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="s2">&quot;MODULE_SEQUENCE&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>  <span class="c1"># parsed further below</span>
+    <span class="s2">&quot;CONTEXT_OVERFLOW_POLICY&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>  <span class="c1"># terminate | summarize | truncate</span>
+<span class="p">}</span>
+
+<span class="n">_OVERFLOW_POLICIES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;terminate&quot;</span><span class="p">,</span> <span class="s2">&quot;summarize&quot;</span><span class="p">,</span> <span class="s2">&quot;truncate&quot;</span><span class="p">}</span>
+
+<span class="n">_REQUIRED</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;EXPERIMENT_ID&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;RANDOM_SEED&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NUM_AGENTS_PER_SESSION&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;MODULE_SEQUENCE&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">_BOOL_MAP</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;true&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s2">&quot;false&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s2">&quot;1&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s2">&quot;0&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s2">&quot;yes&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s2">&quot;no&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_coerce</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">raw_value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply type coercion for a known settings key.</span>
+
+<span class="sd">    Looks up the expected Python type in ``_FIELD_TYPES`` and attempts</span>
+<span class="sd">    to cast *raw_value* accordingly. Boolean values are resolved via</span>
+<span class="sd">    ``_BOOL_MAP`` for common string representations.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        key: Upper-cased settings key (e.g. ``&quot;RANDOM_SEED&quot;``).</span>
+<span class="sd">        raw_value: The raw cell value read from the worksheet.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The coerced value, or ``None`` if the field is optional and</span>
+<span class="sd">        empty.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If a required field is empty or if the value</span>
+<span class="sd">            cannot be cast to the expected type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">_FIELD_TYPES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">raw_value</span>
+    <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">raw_value</span><span class="p">)</span> <span class="ow">or</span> <span class="n">raw_value</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_REQUIRED</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Settings: required field &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; is missing or empty.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw_value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">raw_value</span>
+        <span class="k">return</span> <span class="n">_BOOL_MAP</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">raw_value</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="nb">bool</span><span class="p">(</span><span class="n">raw_value</span><span class="p">))</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dtype</span><span class="p">(</span><span class="n">raw_value</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Settings: cannot coerce &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; value &#39;</span><span class="si">{</span><span class="n">raw_value</span><span class="si">}</span><span class="s2">&#39; to </span><span class="si">{</span><span class="n">dtype</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+
+
+<div class="viewcode-block" id="parse_settings"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.parsers.html#talkingtomachines.authoring.parsers.settings_parser.parse_settings">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">parse_settings</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SettingsConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a two-column DataFrame into a ``SettingsConfig``.</span>
+
+<span class="sd">    The first column is treated as the setting name and the second as</span>
+<span class="sd">    the value, regardless of header labels. Required fields are</span>
+<span class="sd">    enforced and ``MODULE_SEQUENCE`` is split into an ordered list.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        df: A DataFrame with at least two columns where column 0</span>
+<span class="sd">            contains setting names and column 1 contains their values.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A fully populated ``SettingsConfig`` instance.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the sheet has fewer than two columns, a</span>
+<span class="sd">            required field is missing, or ``CONTEXT_OVERFLOW_POLICY``</span>
+<span class="sd">            contains an invalid value.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Settings sheet must have at least two columns.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Normalise: use first two columns regardless of header names</span>
+    <span class="n">name_col</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">value_col</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">settings_raw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">name_col</span><span class="p">])</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">value_col</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span> <span class="ow">or</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;NAN&quot;</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_FIELD_TYPES</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Settings: unknown key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; — accepted but ignored.&quot;</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span>
+            <span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">settings_raw</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">_coerce</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="c1"># Check required fields</span>
+    <span class="n">missing</span> <span class="o">=</span> <span class="n">_REQUIRED</span> <span class="o">-</span> <span class="n">settings_raw</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Settings: missing required field(s): </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Parse MODULE_SEQUENCE from comma-separated string</span>
+    <span class="n">module_seq_raw</span> <span class="o">=</span> <span class="n">settings_raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;MODULE_SEQUENCE&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">module_sequence</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">module_seq_raw</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+        <span class="k">if</span> <span class="n">module_seq_raw</span>
+        <span class="k">else</span> <span class="p">[]</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Validate CONTEXT_OVERFLOW_POLICY</span>
+    <span class="n">overflow_policy</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">settings_raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;CONTEXT_OVERFLOW_POLICY&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;terminate&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">overflow_policy</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_OVERFLOW_POLICIES</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Settings: CONTEXT_OVERFLOW_POLICY must be one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_OVERFLOW_POLICIES</span><span class="p">)</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;got &#39;</span><span class="si">{</span><span class="n">overflow_policy</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">SettingsConfig</span><span class="p">(</span>
+        <span class="n">experiment_id</span><span class="o">=</span><span class="n">settings_raw</span><span class="p">[</span><span class="s2">&quot;EXPERIMENT_ID&quot;</span><span class="p">],</span>
+        <span class="n">model_name</span><span class="o">=</span><span class="n">settings_raw</span><span class="p">[</span><span class="s2">&quot;MODEL_NAME&quot;</span><span class="p">],</span>
+        <span class="n">hf_inference_endpoint</span><span class="o">=</span><span class="n">settings_raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;HF_INFERENCE_ENDPOINT&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="o">=</span><span class="n">settings_raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;TEMPERATURE&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> <span class="ow">or</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">random_seed</span><span class="o">=</span><span class="n">settings_raw</span><span class="p">[</span><span class="s2">&quot;RANDOM_SEED&quot;</span><span class="p">],</span>
+        <span class="n">profile_fields</span><span class="o">=</span><span class="n">settings_raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;PROFILE_FIELDS&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;ALL&quot;</span><span class="p">,</span>
+        <span class="n">build_profile_qa</span><span class="o">=</span><span class="n">settings_raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;BUILD_PROFILE_QA&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">build_profile_backstories</span><span class="o">=</span><span class="n">settings_raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;BUILD_PROFILE_BACKSTORIES&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">num_agents_per_session</span><span class="o">=</span><span class="n">settings_raw</span><span class="p">[</span><span class="s2">&quot;NUM_AGENTS_PER_SESSION&quot;</span><span class="p">],</span>
+        <span class="n">module_sequence</span><span class="o">=</span><span class="n">module_sequence</span><span class="p">,</span>
+        <span class="n">context_overflow_policy</span><span class="o">=</span><span class="n">overflow_policy</span><span class="p">,</span>
+    <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.authoring.validators.reference_validator &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">talkingtomachines</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.authoring.validators.reference_validator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for talkingtomachines.authoring.validators.reference_validator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Cross-sheet Jinja reference validator for experiment templates.</span>
+
+<span class="sd">This module validates that every Jinja2 variable reference found in the</span>
+<span class="sd">Prompts sheet resolves to a known definition in the workbook. It</span>
+<span class="sd">supports the following reference patterns:</span>
+
+<span class="sd">    - ``{{ C.&lt;module&gt;.&lt;name&gt; }}`` — Constant references, resolved against</span>
+<span class="sd">      the Constants sheet.</span>
+<span class="sd">    - ``{{ &lt;module&gt;.&lt;class&gt;.&lt;name&gt; }}`` — Field references, resolved</span>
+<span class="sd">      against the Fields sheet index.</span>
+<span class="sd">    - ``{{ player.&lt;field&gt; }}`` / ``{{ agent.&lt;field&gt; }}`` — Profile</span>
+<span class="sd">      attribute references, resolved against Profiles short names,</span>
+<span class="sd">      Fields definitions, and ``Manual_`` variable names.</span>
+<span class="sd">    - ``{{ group.&lt;field&gt; }}`` / ``{{ session.&lt;field&gt; }}`` — Scoped</span>
+<span class="sd">      runtime fields, resolved against Fields definitions, ``Manual_``</span>
+<span class="sd">      variable names, and built-in attributes.</span>
+<span class="sd">    - ``{{ round_number }}``, ``{{ group_id }}``, etc. — Built-in</span>
+<span class="sd">      runtime variables that are always valid.</span>
+
+<span class="sd">Unresolved references are collected as ``ValidationError`` instances</span>
+<span class="sd">and returned to the caller for reporting.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.schema_validator</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValidationError</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Matches {{ C.module.name }} or {{ module.Class.name }} or {{ player.field }}</span>
+<span class="n">_JINJA_VAR</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\{\{\s*([\w.]+)\s*\}\}&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_jinja_refs</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract all Jinja2 variable references from a text string.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        text: The string to scan for ``{{ ... }}`` expressions.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of dotted reference strings (e.g. ``[&#39;C.pgg.ENDOWMENT&#39;]``).</span>
+<span class="sd">        Returns an empty list if *text* is falsy or not a string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="n">_JINJA_VAR</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ReferenceValidator"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.validators.html#talkingtomachines.authoring.validators.reference_validator.ReferenceValidator">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ReferenceValidator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that Jinja2 references in Prompts and Facilitator sheets resolve to known definitions.</span>
+
+<span class="sd">    The validator scans the ``llm_text`` column of the Prompts sheet and</span>
+<span class="sd">    the ``definition`` column of the Facilitator sheet for ``{{ ... }}``</span>
+<span class="sd">    expressions and checks each one against the constants, fields,</span>
+<span class="sd">    profile columns, and built-in runtime variables registered at</span>
+<span class="sd">    construction time. Unresolvable references are collected as</span>
+<span class="sd">    ``ValidationError`` instances.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        _sheets: Mapping of sheet names to their raw ``DataFrame`` contents.</span>
+<span class="sd">        _constants: Nested mapping ``{module_name: {constant_name: value}}``.</span>
+<span class="sd">        _field_index: Set-like mapping of ``(module, class, name)`` tuples</span>
+<span class="sd">            parsed from the Fields sheet.</span>
+<span class="sd">        _module_names: Known module names from the workbook.</span>
+<span class="sd">        _profile_cols: Short-name column headers from the Profiles sheet.</span>
+<span class="sd">        _facilitator_names: Facilitator identifiers defined in the workbook.</span>
+<span class="sd">        _errors: Accumulated validation errors from the most recent run.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sheets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+        <span class="n">constants</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+        <span class="n">field_index</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">module_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">profile_short_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">facilitator_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">manual_names_by_class</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the validator with parsed workbook data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sheets: Mapping of sheet names to their raw ``DataFrame``</span>
+<span class="sd">                contents.</span>
+<span class="sd">            constants: Nested mapping of</span>
+<span class="sd">                ``{module_name: {constant_name: value}}`` from the</span>
+<span class="sd">                Constants sheet.</span>
+<span class="sd">            field_index: Mapping of ``(module, class, name)`` tuples from</span>
+<span class="sd">                the Fields sheet.</span>
+<span class="sd">            module_names: List of module names defined in the workbook.</span>
+<span class="sd">            profile_short_names: Short-name column headers from the</span>
+<span class="sd">                Profiles sheet.</span>
+<span class="sd">            facilitator_names: Facilitator identifiers defined in the</span>
+<span class="sd">                workbook.</span>
+<span class="sd">            manual_names_by_class: Variable names from the ``Manual_``</span>
+<span class="sd">                sheet(s) grouped by class (e.g. ``{&quot;Player&quot;: {&quot;treatment&quot;}}``).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span> <span class="o">=</span> <span class="n">sheets</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_constants</span> <span class="o">=</span> <span class="n">constants</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_field_index</span> <span class="o">=</span> <span class="n">field_index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_module_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">module_names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_profile_cols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">profile_short_names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_facilitator_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">facilitator_names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_manual_names_by_class</span> <span class="o">=</span> <span class="n">manual_names_by_class</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ValidationError</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Collect all field names from the Fields worksheet keyed by scope</span>
+        <span class="c1"># so that runtime fields are recognised during validation.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_field_names_by_class</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">module</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field_index</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_field_names_by_class</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ReferenceValidator.validate"><a class="viewcode-back" href="../../../../talkingtomachines.authoring.validators.html#talkingtomachines.authoring.validators.reference_validator.ReferenceValidator.validate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ValidationError</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run validation on all Jinja2 references in the Prompts and Facilitator sheets.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of ``ValidationError`` instances for references that</span>
+<span class="sd">            could not be resolved. An empty list indicates all</span>
+<span class="sd">            references are valid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Validate Prompts sheet — llm_text column</span>
+        <span class="n">prompts_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Prompts&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">prompts_df</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">prompts_df</span> <span class="o">=</span> <span class="n">prompts_df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">prompts_df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">prompts_df</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">row_num</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">prompts_df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+                <span class="n">row_type</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+                <span class="n">llm_text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;llm_text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+                <span class="c1"># FACILITATOR rows: llm_text must be a defined function name</span>
+                <span class="k">if</span> <span class="n">row_type</span> <span class="o">==</span> <span class="s2">&quot;FACILITATOR&quot;</span><span class="p">:</span>
+                    <span class="n">func_name</span> <span class="o">=</span> <span class="n">llm_text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">func_name</span> <span class="ow">and</span> <span class="n">func_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_facilitator_names</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                            <span class="s2">&quot;Prompts&quot;</span><span class="p">,</span>
+                            <span class="n">row_num</span><span class="p">,</span>
+                            <span class="s2">&quot;llm_text&quot;</span><span class="p">,</span>
+                            <span class="sa">f</span><span class="s2">&quot;Facilitator function &#39;</span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s2">&#39; is not defined &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;in the Facilitator worksheet.&quot;</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="k">for</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">_extract_jinja_refs</span><span class="p">(</span><span class="n">llm_text</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_check_ref</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">&quot;Prompts&quot;</span><span class="p">,</span> <span class="n">row_num</span><span class="p">,</span> <span class="s2">&quot;llm_text&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Validate Facilitator sheet — definition column</span>
+        <span class="n">facilitator_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sheets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Facilitator&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">facilitator_df</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">facilitator_df</span> <span class="o">=</span> <span class="n">facilitator_df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">facilitator_df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">facilitator_df</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">row_num</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">facilitator_df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+                <span class="n">definition</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;definition&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">_extract_jinja_refs</span><span class="p">(</span><span class="n">definition</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_check_ref</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">&quot;Facilitator&quot;</span><span class="p">,</span> <span class="n">row_num</span><span class="p">,</span> <span class="s2">&quot;definition&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sheet</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">col</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check a single Jinja2 reference against known definitions.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ref: Dotted reference string (e.g. ``&quot;C.pgg.ENDOWMENT&quot;``).</span>
+<span class="sd">            sheet: Name of the sheet where the reference was found.</span>
+<span class="sd">            row: Row index within the sheet.</span>
+<span class="sd">            col: Column name within the sheet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># {{ C.module.name }} — constant reference</span>
+        <span class="k">if</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span><span class="n">sheet</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Malformed constant ref &#39;</span><span class="se">{{{{</span><span class="s2"> </span><span class="si">{</span><span class="n">ref</span><span class="si">}</span><span class="s2"> </span><span class="se">}}}}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="n">module</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">parts</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">module</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constants</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span><span class="n">sheet</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Constant ref: unknown module &#39;</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constants</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="p">{}):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span>
+                    <span class="n">sheet</span><span class="p">,</span>
+                    <span class="n">row</span><span class="p">,</span>
+                    <span class="n">col</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Constant ref: unknown constant &#39;</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># {{ player.field }} / {{ agent.field }} — profile or runtime field</span>
+        <span class="k">if</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;player&quot;</span><span class="p">,</span> <span class="s2">&quot;agent&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">field_name</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="c1"># Accept profile columns, built-in attributes, field names</span>
+                <span class="c1"># from the Fields worksheet, and Manual_ variable names.</span>
+                <span class="n">_BUILTIN_ATTRS</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;treatment&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;role&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;agent_id&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;agent_instance_id&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;player_id&quot;</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="n">all_field_names</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="nb">set</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_field_names_by_class</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field_names_by_class</span>
+                    <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
+                <span class="p">)</span>
+                <span class="n">all_manual_names</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="nb">set</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_manual_names_by_class</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_manual_names_by_class</span>
+                    <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">field_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_profile_cols</span>
+                    <span class="ow">and</span> <span class="n">field_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_BUILTIN_ATTRS</span>
+                    <span class="ow">and</span> <span class="n">field_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">all_field_names</span>
+                    <span class="ow">and</span> <span class="n">field_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">all_manual_names</span>
+                <span class="p">):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s2">&quot;Reference &#39;{{ </span><span class="si">%s</span><span class="s2"> }}&#39; not found in Profiles short_names, &quot;</span>
+                        <span class="s2">&quot;Fields worksheet, Manual_ worksheet, or built-in &quot;</span>
+                        <span class="s2">&quot;attributes — possible typo (known columns: </span><span class="si">%s</span><span class="s2">).&quot;</span><span class="p">,</span>
+                        <span class="n">ref</span><span class="p">,</span>
+                        <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_profile_cols</span><span class="p">),</span>
+                    <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># {{ group.field }} / {{ session.field }} — runtime scoped fields</span>
+        <span class="k">if</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="s2">&quot;session&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">field_name</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">_BUILTIN_GROUP_ATTRS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;group_id&quot;</span><span class="p">,</span> <span class="s2">&quot;num_players&quot;</span><span class="p">}</span>
+                <span class="n">_BUILTIN_SESSION_ATTRS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">,</span> <span class="s2">&quot;run_id&quot;</span><span class="p">,</span> <span class="s2">&quot;experiment_id&quot;</span><span class="p">}</span>
+                <span class="n">builtin_attrs</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">_BUILTIN_GROUP_ATTRS</span>
+                    <span class="k">if</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;group&quot;</span>
+                    <span class="k">else</span> <span class="n">_BUILTIN_SESSION_ATTRS</span>
+                <span class="p">)</span>
+                <span class="n">all_field_names</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="nb">set</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_field_names_by_class</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field_names_by_class</span>
+                    <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
+                <span class="p">)</span>
+                <span class="n">manual_class</span> <span class="o">=</span> <span class="s2">&quot;Group&quot;</span> <span class="k">if</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;group&quot;</span> <span class="k">else</span> <span class="s2">&quot;Session&quot;</span>
+                <span class="n">manual_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_manual_names_by_class</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">manual_class</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">field_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">builtin_attrs</span>
+                    <span class="ow">and</span> <span class="n">field_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">all_field_names</span>
+                    <span class="ow">and</span> <span class="n">field_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">manual_names</span>
+                <span class="p">):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s2">&quot;Reference &#39;{{ </span><span class="si">%s</span><span class="s2"> }}&#39; not found in Fields worksheet, &quot;</span>
+                        <span class="s2">&quot;Manual_ worksheet, or built-in attributes — &quot;</span>
+                        <span class="s2">&quot;possible typo.&quot;</span><span class="p">,</span>
+                        <span class="n">ref</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># {{ round_number }} — runtime reference, always valid</span>
+        <span class="k">if</span> <span class="n">ref</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;round_number&quot;</span><span class="p">,</span> <span class="s2">&quot;group_id&quot;</span><span class="p">,</span> <span class="s2">&quot;session_id&quot;</span><span class="p">,</span> <span class="s2">&quot;run_id&quot;</span><span class="p">,</span> <span class="s2">&quot;treatment&quot;</span><span class="p">):</span>
+            <span class="k">return</span>
+
+        <span class="c1"># {{ module.Class.name }} — field reference</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">module</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">parts</span>
+            <span class="k">if</span> <span class="n">module</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_module_names</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_err</span><span class="p">(</span><span class="n">sheet</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Field ref: unknown module &#39;</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field_index</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s2">&quot;Field ref &#39;</span><span class="si">%s</span><span class="s2">&#39; not found in Fields sheet — may be valid runtime field.&quot;</span><span class="p">,</span>
+                    <span class="n">ref</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Unrecognised Jinja ref pattern: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">ref</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_err</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sheet</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Record a validation error.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sheet: Name of the sheet containing the error.</span>
+<span class="sd">            row: Row index where the error was found.</span>
+<span class="sd">            col: Column name where the error was found.</span>
+<span class="sd">            message: Human-readable description of the validation failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">ValidationError</span><span class="p">(</span><span class="n">sheet</span><span class="o">=</span><span class="n">sheet</span><span class="p">,</span> <span class="n">row</span><span class="o">=</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>
+        <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

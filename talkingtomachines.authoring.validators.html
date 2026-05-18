@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.authoring.validators package &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="talkingtomachines.compiler package" href="talkingtomachines.compiler.html" />
+    <link rel="prev" title="talkingtomachines.authoring.parsers package" href="talkingtomachines.authoring.parsers.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">talkingtomachines</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.agents.html">talkingtomachines.agents package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.analytics.html">talkingtomachines.analytics package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="talkingtomachines.authoring.html">talkingtomachines.authoring package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="talkingtomachines.authoring.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="talkingtomachines.authoring.parsers.html">talkingtomachines.authoring.parsers package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">talkingtomachines.authoring.validators package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="talkingtomachines.authoring.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="talkingtomachines.authoring.html#module-talkingtomachines.authoring.template_generator">talkingtomachines.authoring.template_generator module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.compiler.html">talkingtomachines.compiler package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.core.html">talkingtomachines.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.gateway.html">talkingtomachines.gateway package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.generative.html">talkingtomachines.generative package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.interface.html">talkingtomachines.interface package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.management.html">talkingtomachines.management package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.orchestrator.html">talkingtomachines.orchestrator package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.storage.html">talkingtomachines.storage package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">talkingtomachines</a></li>
+          <li class="breadcrumb-item"><a href="talkingtomachines.authoring.html">talkingtomachines.authoring package</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.authoring.validators package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/talkingtomachines.authoring.validators.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="talkingtomachines-authoring-validators-package">
+<h1>talkingtomachines.authoring.validators package<a class="headerlink" href="#talkingtomachines-authoring-validators-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-talkingtomachines.authoring.validators.context_window_validator">
+<span id="talkingtomachines-authoring-validators-context-window-validator-module"></span><h2>talkingtomachines.authoring.validators.context_window_validator module<a class="headerlink" href="#module-talkingtomachines.authoring.validators.context_window_validator" title="Permalink to this heading"></a></h2>
+<p>Context window validator (compile-time estimation).</p>
+<p>Estimates worst-case context window usage for each module in an
+experiment and warns or errors when the estimate approaches or
+exceeds the model’s context window limit.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.context_window_validator.ContextWindowValidator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.context_window_validator.</span></span><span class="sig-name descname"><span class="pre">ContextWindowValidator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constants</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module_sequence</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_agents_per_session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/authoring/validators/context_window_validator.html#ContextWindowValidator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.validators.context_window_validator.ContextWindowValidator" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Estimates worst-case context window usage at compile time.</p>
+<p>For each module, computes a conservative upper-bound token estimate
+based on prompt lengths, number of rounds, and players per group.
+Emits a <code class="docutils literal notranslate"><span class="pre">ValidationError</span></code> when the estimate exceeds the model’s
+context window, or logs a warning when utilisation passes
+<code class="docutils literal notranslate"><span class="pre">WARNING_THRESHOLD</span></code>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.context_window_validator.ContextWindowValidator.get_summary">
+<span class="sig-name descname"><span class="pre">get_summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/authoring/validators/context_window_validator.html#ContextWindowValidator.get_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.validators.context_window_validator.ContextWindowValidator.get_summary" title="Permalink to this definition"></a></dt>
+<dd><p>Return a summary dictionary of model context limits.</p>
+<p>Intended for CLI display so users can see the model’s token
+constraints at a glance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary with keys <code class="docutils literal notranslate"><span class="pre">&quot;model_name&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;max_context_tokens&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;max_output_tokens&quot;</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.context_window_validator.ContextWindowValidator.validate">
+<span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#talkingtomachines.authoring.validators.schema_validator.ValidationError" title="talkingtomachines.authoring.validators.schema_validator.ValidationError"><span class="pre">talkingtomachines.authoring.validators.schema_validator.ValidationError</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/authoring/validators/context_window_validator.html#ContextWindowValidator.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.validators.context_window_validator.ContextWindowValidator.validate" title="Permalink to this definition"></a></dt>
+<dd><p>Run context window estimation for each module and return errors.</p>
+<p>Computes worst-case token usage assuming all prompts are
+displayed, all agents respond every round, and all rounds
+execute. Emits an error if the estimate exceeds the model’s
+context limit, or a warning if it exceeds
+<code class="docutils literal notranslate"><span class="pre">WARNING_THRESHOLD</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of <code class="docutils literal notranslate"><span class="pre">ValidationError</span></code> instances. An empty list
+indicates that all modules are within safe limits.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.authoring.validators.flow_validator">
+<span id="talkingtomachines-authoring-validators-flow-validator-module"></span><h2>talkingtomachines.authoring.validators.flow_validator module<a class="headerlink" href="#module-talkingtomachines.authoring.validators.flow_validator" title="Permalink to this heading"></a></h2>
+<p>Flow validator for prompt template workbooks.</p>
+<p>Validates module-level structural and logical constraints:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">is_displayed</span></code> expression syntax (via Jinja2 sandbox).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MAX_NUM_ROUNDS</span></code> and <code class="docutils literal notranslate"><span class="pre">PLAYERS_PER_GROUP</span></code> present in Constants
+for each module.</p></li>
+<li><p>Warns when <code class="docutils literal notranslate"><span class="pre">PRIVATE_QUESTION</span></code> prompts write to Group/Session-scoped
+fields.</p></li>
+<li><p>Cross-references <code class="docutils literal notranslate"><span class="pre">field_class</span></code>/<code class="docutils literal notranslate"><span class="pre">field_name</span></code> in prompts against
+the Fields worksheet.</p></li>
+</ul>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.flow_validator.FlowValidator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.flow_validator.</span></span><span class="sig-name descname"><span class="pre">FlowValidator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constants</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/authoring/validators/flow_validator.html#FlowValidator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.validators.flow_validator.FlowValidator" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Validates conditional display logic and module structure.</p>
+<p>Checks that each module in the experiment has the required constants,
+valid <code class="docutils literal notranslate"><span class="pre">is_displayed</span></code> Jinja expressions, and correct field
+references.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.flow_validator.FlowValidator._prompts">
+<span class="sig-name descname"><span class="pre">_prompts</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.flow_validator.FlowValidator._prompts" title="Permalink to this definition"></a></dt>
+<dd><p>Mapping of module names to their prompt definitions.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.flow_validator.FlowValidator._constants">
+<span class="sig-name descname"><span class="pre">_constants</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.flow_validator.FlowValidator._constants" title="Permalink to this definition"></a></dt>
+<dd><p>Nested dictionary of constants per module.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.flow_validator.FlowValidator._module_names">
+<span class="sig-name descname"><span class="pre">_module_names</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.flow_validator.FlowValidator._module_names" title="Permalink to this definition"></a></dt>
+<dd><p>Ordered list of module names from
+<code class="docutils literal notranslate"><span class="pre">MODULE_SEQUENCE</span></code>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.flow_validator.FlowValidator._field_index">
+<span class="sig-name descname"><span class="pre">_field_index</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.flow_validator.FlowValidator._field_index" title="Permalink to this definition"></a></dt>
+<dd><p>Lookup dictionary keyed by
+<code class="docutils literal notranslate"><span class="pre">(module,</span> <span class="pre">field_class,</span> <span class="pre">name)</span></code> for cross-referencing.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.flow_validator.FlowValidator._errors">
+<span class="sig-name descname"><span class="pre">_errors</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.flow_validator.FlowValidator._errors" title="Permalink to this definition"></a></dt>
+<dd><p>Accumulated validation errors.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.flow_validator.FlowValidator.validate">
+<span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#talkingtomachines.authoring.validators.schema_validator.ValidationError" title="talkingtomachines.authoring.validators.schema_validator.ValidationError"><span class="pre">talkingtomachines.authoring.validators.schema_validator.ValidationError</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/authoring/validators/flow_validator.html#FlowValidator.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.validators.flow_validator.FlowValidator.validate" title="Permalink to this definition"></a></dt>
+<dd><p>Run all flow validations and return accumulated errors.</p>
+<p>Iterates over each module in <code class="docutils literal notranslate"><span class="pre">MODULE_SEQUENCE</span></code> and checks
+required constants, prompt availability, <code class="docutils literal notranslate"><span class="pre">is_displayed</span></code>
+syntax, scope warnings for <code class="docutils literal notranslate"><span class="pre">PRIVATE_QUESTION</span></code>, and field
+cross-references.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of <code class="docutils literal notranslate"><span class="pre">ValidationError</span></code> instances. An empty list
+indicates that all checks passed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.authoring.validators.provider_validator">
+<span id="talkingtomachines-authoring-validators-provider-validator-module"></span><h2>talkingtomachines.authoring.validators.provider_validator module<a class="headerlink" href="#module-talkingtomachines.authoring.validators.provider_validator" title="Permalink to this heading"></a></h2>
+<p>Provider validator for LLM model names and modality support.</p>
+<p>Checks that a given <code class="docutils literal notranslate"><span class="pre">model_name</span></code> is recognised by the built-in provider
+registry and that the requested modalities (text, audio, video) and features
+(RAG) are compatible with the detected provider.</p>
+<dl class="simple">
+<dt>Validations performed:</dt><dd><ul class="simple">
+<li><p>The model name matches at least one known provider prefix or is
+listed explicitly in a provider model set.</p></li>
+<li><p>If the experiment uses RAG, the model must belong to an OpenAI
+provider (current limitation).</p></li>
+<li><p>If the experiment includes video or audio prompts, the model must
+appear in the corresponding capability set.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator._OPENAI_MODELS">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.provider_validator.</span></span><span class="sig-name descname"><span class="pre">_OPENAI_MODELS</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator._OPENAI_MODELS" title="Permalink to this definition"></a></dt>
+<dd><p>Explicit set of recognised OpenAI model
+identifiers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)">set</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator._ANTHROPIC_PREFIXES">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.provider_validator.</span></span><span class="sig-name descname"><span class="pre">_ANTHROPIC_PREFIXES</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator._ANTHROPIC_PREFIXES" title="Permalink to this definition"></a></dt>
+<dd><p>Name prefixes for Anthropic
+models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator._GOOGLE_PREFIXES">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.provider_validator.</span></span><span class="sig-name descname"><span class="pre">_GOOGLE_PREFIXES</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator._GOOGLE_PREFIXES" title="Permalink to this definition"></a></dt>
+<dd><p>Name prefixes for Google models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator._MISTRAL_PREFIXES">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.provider_validator.</span></span><span class="sig-name descname"><span class="pre">_MISTRAL_PREFIXES</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator._MISTRAL_PREFIXES" title="Permalink to this definition"></a></dt>
+<dd><p>Name prefixes for Mistral AI
+models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator._GROK_PREFIXES">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.provider_validator.</span></span><span class="sig-name descname"><span class="pre">_GROK_PREFIXES</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator._GROK_PREFIXES" title="Permalink to this definition"></a></dt>
+<dd><p>Name prefixes for xAI Grok models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator._DEEPSEEK_PREFIXES">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.provider_validator.</span></span><span class="sig-name descname"><span class="pre">_DEEPSEEK_PREFIXES</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator._DEEPSEEK_PREFIXES" title="Permalink to this definition"></a></dt>
+<dd><p>Name prefixes for DeepSeek
+models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator._HF_PREFIXES">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.provider_validator.</span></span><span class="sig-name descname"><span class="pre">_HF_PREFIXES</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator._HF_PREFIXES" title="Permalink to this definition"></a></dt>
+<dd><p>Name prefixes for Hugging Face
+models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator._VIDEO_CAPABLE">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.provider_validator.</span></span><span class="sig-name descname"><span class="pre">_VIDEO_CAPABLE</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator._VIDEO_CAPABLE" title="Permalink to this definition"></a></dt>
+<dd><p>Model-name prefixes that support video
+inputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)">set</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator._AUDIO_CAPABLE">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.provider_validator.</span></span><span class="sig-name descname"><span class="pre">_AUDIO_CAPABLE</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator._AUDIO_CAPABLE" title="Permalink to this definition"></a></dt>
+<dd><p>Model-name prefixes that support audio
+inputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)">set</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator.ProviderValidator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.provider_validator.</span></span><span class="sig-name descname"><span class="pre">ProviderValidator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">has_rag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has_video</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has_audio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/authoring/validators/provider_validator.html#ProviderValidator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator.ProviderValidator" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Validate a model name against the provider registry.</p>
+<p>Ensures the specified model is recognised, and that any requested
+modalities or features (RAG, video, audio) are supported by the
+detected provider.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_name</strong> – The LLM model identifier to validate.</p></li>
+<li><p><strong>has_rag</strong> – Whether the experiment uses retrieval-augmented
+generation.</p></li>
+<li><p><strong>has_video</strong> – Whether the experiment includes video prompt
+inputs.</p></li>
+<li><p><strong>has_audio</strong> – Whether the experiment includes audio prompt
+inputs.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator.ProviderValidator._model_name">
+<span class="sig-name descname"><span class="pre">_model_name</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator.ProviderValidator._model_name" title="Permalink to this definition"></a></dt>
+<dd><p>The model identifier under validation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator.ProviderValidator._has_rag">
+<span class="sig-name descname"><span class="pre">_has_rag</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator.ProviderValidator._has_rag" title="Permalink to this definition"></a></dt>
+<dd><p>RAG flag.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator.ProviderValidator._has_video">
+<span class="sig-name descname"><span class="pre">_has_video</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator.ProviderValidator._has_video" title="Permalink to this definition"></a></dt>
+<dd><p>Video-input flag.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator.ProviderValidator._has_audio">
+<span class="sig-name descname"><span class="pre">_has_audio</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator.ProviderValidator._has_audio" title="Permalink to this definition"></a></dt>
+<dd><p>Audio-input flag.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator.ProviderValidator._errors">
+<span class="sig-name descname"><span class="pre">_errors</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator.ProviderValidator._errors" title="Permalink to this definition"></a></dt>
+<dd><p>Accumulated validation errors
+populated during <a class="reference internal" href="#talkingtomachines.authoring.validators.provider_validator.ProviderValidator.validate" title="talkingtomachines.authoring.validators.provider_validator.ProviderValidator.validate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">validate()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>[<a class="reference internal" href="#talkingtomachines.authoring.validators.schema_validator.ValidationError" title="talkingtomachines.authoring.validators.schema_validator.ValidationError">ValidationError</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.provider_validator.ProviderValidator.validate">
+<span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#talkingtomachines.authoring.validators.schema_validator.ValidationError" title="talkingtomachines.authoring.validators.schema_validator.ValidationError"><span class="pre">talkingtomachines.authoring.validators.schema_validator.ValidationError</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/authoring/validators/provider_validator.html#ProviderValidator.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.validators.provider_validator.ProviderValidator.validate" title="Permalink to this definition"></a></dt>
+<dd><p>Run all provider and modality checks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of <code class="xref py py-class docutils literal notranslate"><span class="pre">ValidationError</span></code> instances. An empty list
+indicates the model passed all checks.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.authoring.validators.reference_validator">
+<span id="talkingtomachines-authoring-validators-reference-validator-module"></span><h2>talkingtomachines.authoring.validators.reference_validator module<a class="headerlink" href="#module-talkingtomachines.authoring.validators.reference_validator" title="Permalink to this heading"></a></h2>
+<p>Cross-sheet Jinja reference validator for experiment templates.</p>
+<p>This module validates that every Jinja2 variable reference found in the
+Prompts sheet resolves to a known definition in the workbook. It
+supports the following reference patterns:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">C.&lt;module&gt;.&lt;name&gt;</span> <span class="pre">}}</span></code> — Constant references, resolved against
+the Constants sheet.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">&lt;module&gt;.&lt;class&gt;.&lt;name&gt;</span> <span class="pre">}}</span></code> — Field references, resolved
+against the Fields sheet index.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">player.&lt;field&gt;</span> <span class="pre">}}</span></code> / <code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">agent.&lt;field&gt;</span> <span class="pre">}}</span></code> — Profile
+attribute references, resolved against Profiles short names,
+Fields definitions, and <code class="docutils literal notranslate"><span class="pre">Manual_</span></code> variable names.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">group.&lt;field&gt;</span> <span class="pre">}}</span></code> / <code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">session.&lt;field&gt;</span> <span class="pre">}}</span></code> — Scoped
+runtime fields, resolved against Fields definitions, <code class="docutils literal notranslate"><span class="pre">Manual_</span></code>
+variable names, and built-in attributes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">round_number</span> <span class="pre">}}</span></code>, <code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">group_id</span> <span class="pre">}}</span></code>, etc. — Built-in
+runtime variables that are always valid.</p></li>
+</ul>
+</div></blockquote>
+<p>Unresolved references are collected as <code class="docutils literal notranslate"><span class="pre">ValidationError</span></code> instances
+and returned to the caller for reporting.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.reference_validator.ReferenceValidator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.reference_validator.</span></span><span class="sig-name descname"><span class="pre">ReferenceValidator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sheets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pandas.DataFrame</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constants</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile_short_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">facilitator_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manual_names_by_class</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)"><span class="pre">set</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/authoring/validators/reference_validator.html#ReferenceValidator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.validators.reference_validator.ReferenceValidator" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Validate that Jinja2 references in Prompts and Facilitator sheets resolve to known definitions.</p>
+<p>The validator scans the <code class="docutils literal notranslate"><span class="pre">llm_text</span></code> column of the Prompts sheet and
+the <code class="docutils literal notranslate"><span class="pre">definition</span></code> column of the Facilitator sheet for <code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">...</span> <span class="pre">}}</span></code>
+expressions and checks each one against the constants, fields,
+profile columns, and built-in runtime variables registered at
+construction time. Unresolvable references are collected as
+<code class="docutils literal notranslate"><span class="pre">ValidationError</span></code> instances.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.reference_validator.ReferenceValidator._sheets">
+<span class="sig-name descname"><span class="pre">_sheets</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.reference_validator.ReferenceValidator._sheets" title="Permalink to this definition"></a></dt>
+<dd><p>Mapping of sheet names to their raw <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> contents.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.reference_validator.ReferenceValidator._constants">
+<span class="sig-name descname"><span class="pre">_constants</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.reference_validator.ReferenceValidator._constants" title="Permalink to this definition"></a></dt>
+<dd><p>Nested mapping <code class="docutils literal notranslate"><span class="pre">{module_name:</span> <span class="pre">{constant_name:</span> <span class="pre">value}}</span></code>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.reference_validator.ReferenceValidator._field_index">
+<span class="sig-name descname"><span class="pre">_field_index</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.reference_validator.ReferenceValidator._field_index" title="Permalink to this definition"></a></dt>
+<dd><p>Set-like mapping of <code class="docutils literal notranslate"><span class="pre">(module,</span> <span class="pre">class,</span> <span class="pre">name)</span></code> tuples
+parsed from the Fields sheet.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.reference_validator.ReferenceValidator._module_names">
+<span class="sig-name descname"><span class="pre">_module_names</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.reference_validator.ReferenceValidator._module_names" title="Permalink to this definition"></a></dt>
+<dd><p>Known module names from the workbook.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.reference_validator.ReferenceValidator._profile_cols">
+<span class="sig-name descname"><span class="pre">_profile_cols</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.reference_validator.ReferenceValidator._profile_cols" title="Permalink to this definition"></a></dt>
+<dd><p>Short-name column headers from the Profiles sheet.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.reference_validator.ReferenceValidator._facilitator_names">
+<span class="sig-name descname"><span class="pre">_facilitator_names</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.reference_validator.ReferenceValidator._facilitator_names" title="Permalink to this definition"></a></dt>
+<dd><p>Facilitator identifiers defined in the workbook.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.reference_validator.ReferenceValidator._errors">
+<span class="sig-name descname"><span class="pre">_errors</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.reference_validator.ReferenceValidator._errors" title="Permalink to this definition"></a></dt>
+<dd><p>Accumulated validation errors from the most recent run.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.reference_validator.ReferenceValidator.validate">
+<span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#talkingtomachines.authoring.validators.schema_validator.ValidationError" title="talkingtomachines.authoring.validators.schema_validator.ValidationError"><span class="pre">talkingtomachines.authoring.validators.schema_validator.ValidationError</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/authoring/validators/reference_validator.html#ReferenceValidator.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.validators.reference_validator.ReferenceValidator.validate" title="Permalink to this definition"></a></dt>
+<dd><p>Run validation on all Jinja2 references in the Prompts and Facilitator sheets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of <code class="docutils literal notranslate"><span class="pre">ValidationError</span></code> instances for references that
+could not be resolved. An empty list indicates all
+references are valid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.authoring.validators.schema_validator">
+<span id="talkingtomachines-authoring-validators-schema-validator-module"></span><h2>talkingtomachines.authoring.validators.schema_validator module<a class="headerlink" href="#module-talkingtomachines.authoring.validators.schema_validator" title="Permalink to this heading"></a></h2>
+<p>Schema validator for prompt template workbooks.</p>
+<p>Performs full column, field, and enum validation for every worksheet
+in a prompt template. Collects all errors and never fails fast, so
+that users receive a complete diagnostic report in a single pass.</p>
+<dl class="simple">
+<dt>Error format:</dt><dd><p><code class="docutils literal notranslate"><span class="pre">ValidationError(sheet,</span> <span class="pre">row,</span> <span class="pre">col,</span> <span class="pre">message)</span></code></p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.schema_validator.SchemaValidator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.schema_validator.</span></span><span class="sig-name descname"><span class="pre">SchemaValidator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sheets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pandas.DataFrame</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/authoring/validators/schema_validator.html#SchemaValidator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.validators.schema_validator.SchemaValidator" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Validates the structure of each worksheet in a prompt template.</p>
+<p>Checks that every required sheet is present, that each sheet contains
+the expected columns, and that cell values conform to their allowed
+enumerations (e.g. field types, prompt types, constant types).</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">validator</span> <span class="o">=</span> <span class="n">SchemaValidator</span><span class="p">(</span><span class="n">sheets</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">errors</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">for</span> <span class="n">err</span> <span class="ow">in</span> <span class="n">errors</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.schema_validator.SchemaValidator._SHEET_REQUIRED_COLS">
+<span class="sig-name descname"><span class="pre">_SHEET_REQUIRED_COLS</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.schema_validator.SchemaValidator._SHEET_REQUIRED_COLS" title="Permalink to this definition"></a></dt>
+<dd><p>Mapping of sheet names to their required
+column names (lower-cased).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)">set</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.schema_validator.SchemaValidator._VALID_FIELD_CLASSES">
+<span class="sig-name descname"><span class="pre">_VALID_FIELD_CLASSES</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.schema_validator.SchemaValidator._VALID_FIELD_CLASSES" title="Permalink to this definition"></a></dt>
+<dd><p>Allowed values for the <code class="docutils literal notranslate"><span class="pre">class</span></code> column
+in the Fields sheet.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.schema_validator.SchemaValidator._VALID_FIELD_TYPES">
+<span class="sig-name descname"><span class="pre">_VALID_FIELD_TYPES</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.schema_validator.SchemaValidator._VALID_FIELD_TYPES" title="Permalink to this definition"></a></dt>
+<dd><p>Allowed values for the <code class="docutils literal notranslate"><span class="pre">type</span></code> column in
+the Fields sheet.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.schema_validator.SchemaValidator._VALID_PROMPT_TYPES">
+<span class="sig-name descname"><span class="pre">_VALID_PROMPT_TYPES</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.schema_validator.SchemaValidator._VALID_PROMPT_TYPES" title="Permalink to this definition"></a></dt>
+<dd><p>Allowed values for the <code class="docutils literal notranslate"><span class="pre">type</span></code> column in
+the Prompts sheet.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.schema_validator.SchemaValidator._VALID_CONST_TYPES">
+<span class="sig-name descname"><span class="pre">_VALID_CONST_TYPES</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.schema_validator.SchemaValidator._VALID_CONST_TYPES" title="Permalink to this definition"></a></dt>
+<dd><p>Allowed values for the <code class="docutils literal notranslate"><span class="pre">type</span></code> column in
+the C (constants) sheet.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.schema_validator.SchemaValidator.validate">
+<span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#talkingtomachines.authoring.validators.schema_validator.ValidationError" title="talkingtomachines.authoring.validators.schema_validator.ValidationError"><span class="pre">talkingtomachines.authoring.validators.schema_validator.ValidationError</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/authoring/validators/schema_validator.html#SchemaValidator.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.validators.schema_validator.SchemaValidator.validate" title="Permalink to this definition"></a></dt>
+<dd><p>Run all structural validations and return accumulated errors.</p>
+<p>Checks required sheets, required columns, and per-sheet content
+rules. Also auto-discovers and validates any <code class="docutils literal notranslate"><span class="pre">Manual_*</span></code> sheets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of <code class="docutils literal notranslate"><span class="pre">ValidationError</span></code> instances. An empty list
+indicates that the template passed all checks.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.schema_validator.ValidationError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.authoring.validators.schema_validator.</span></span><span class="sig-name descname"><span class="pre">ValidationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sheet</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">row</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/authoring/validators/schema_validator.html#ValidationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.authoring.validators.schema_validator.ValidationError" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Represents a single validation failure tied to a sheet location.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.schema_validator.ValidationError.sheet">
+<span class="sig-name descname"><span class="pre">sheet</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.schema_validator.ValidationError.sheet" title="Permalink to this definition"></a></dt>
+<dd><p>Name of the worksheet where the error occurred.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.schema_validator.ValidationError.row">
+<span class="sig-name descname"><span class="pre">row</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.schema_validator.ValidationError.row" title="Permalink to this definition"></a></dt>
+<dd><p>Zero-based row index of the error, or <code class="docutils literal notranslate"><span class="pre">None</span></code> for
+sheet-level errors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.schema_validator.ValidationError.col">
+<span class="sig-name descname"><span class="pre">col</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.schema_validator.ValidationError.col" title="Permalink to this definition"></a></dt>
+<dd><p>Column name associated with the error, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when
+not applicable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.authoring.validators.schema_validator.ValidationError.message">
+<span class="sig-name descname"><span class="pre">message</span></span><a class="headerlink" href="#talkingtomachines.authoring.validators.schema_validator.ValidationError.message" title="Permalink to this definition"></a></dt>
+<dd><p>Human-readable description of the validation failure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">col</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">message</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#id1" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">row</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id2" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id3">
+<span class="sig-name descname"><span class="pre">sheet</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#id3" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="talkingtomachines.authoring.parsers.html" class="btn btn-neutral float-left" title="talkingtomachines.authoring.parsers package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="talkingtomachines.compiler.html" class="btn btn-neutral float-right" title="talkingtomachines.compiler package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

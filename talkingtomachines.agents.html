@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talkingtomachines.agents package &mdash; talking-to-machines 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="talkingtomachines.analytics package" href="talkingtomachines.analytics.html" />
+    <link rel="prev" title="talkingtomachines" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            talking-to-machines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">talkingtomachines</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">talkingtomachines.agents package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.agents.context_builder">talkingtomachines.agents.context_builder module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.agents.prompt_builder">talkingtomachines.agents.prompt_builder module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-talkingtomachines.agents.synthetic_subject">talkingtomachines.agents.synthetic_subject module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.analytics.html">talkingtomachines.analytics package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.authoring.html">talkingtomachines.authoring package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.compiler.html">talkingtomachines.compiler package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.core.html">talkingtomachines.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.gateway.html">talkingtomachines.gateway package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.generative.html">talkingtomachines.generative package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.interface.html">talkingtomachines.interface package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.management.html">talkingtomachines.management package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.orchestrator.html">talkingtomachines.orchestrator package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="talkingtomachines.storage.html">talkingtomachines.storage package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">talking-to-machines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">talkingtomachines</a></li>
+      <li class="breadcrumb-item active">talkingtomachines.agents package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/talkingtomachines.agents.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="talkingtomachines-agents-package">
+<h1>talkingtomachines.agents package<a class="headerlink" href="#talkingtomachines-agents-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-talkingtomachines.agents.context_builder">
+<span id="talkingtomachines-agents-context-builder-module"></span><h2>talkingtomachines.agents.context_builder module<a class="headerlink" href="#module-talkingtomachines.agents.context_builder" title="Permalink to this heading"></a></h2>
+<p>Context builder for constructing LLM message lists.</p>
+<p>Assembles the full, normalised message list that is sent to
+<code class="docutils literal notranslate"><span class="pre">LLMProvider.generate()</span></code> for a single agent turn. The pipeline
+proceeds through the following stages:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Inject the system message (persona derived from the profile prompt).</p></li>
+<li><p>Apply the visibility filter to the group’s shared turn history so
+the agent only sees messages it is permitted to observe.</p></li>
+<li><p>Render the current prompt’s <code class="docutils literal notranslate"><span class="pre">llm_text</span></code> via Jinja using the
+experiment state context.</p></li>
+<li><p>Optionally prepend RAG-retrieved chunks to the rendered prompt.</p></li>
+<li><p>Optionally shuffle and inject response options into the prompt.</p></li>
+<li><p>Append formatting instructions (JSON schema, speculation score).</p></li>
+<li><p>Detect <code class="docutils literal notranslate"><span class="pre">[IMAGE:]</span></code>, <code class="docutils literal notranslate"><span class="pre">[VIDEO:]</span></code>, <code class="docutils literal notranslate"><span class="pre">[AUDIO:]</span></code> media tags and
+convert the prompt into provider-compatible multimodal content
+blocks.</p></li>
+<li><p>Return the normalised <code class="docutils literal notranslate"><span class="pre">[{&quot;role&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;content&quot;:</span> <span class="pre">...},</span> <span class="pre">...]</span></code> list.</p></li>
+</ol>
+</div></blockquote>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.agents.context_builder.ContextBuilder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.agents.context_builder.</span></span><span class="sig-name descname"><span class="pre">ContextBuilder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState" title="talkingtomachines.core.fields.ExperimentState"><span class="pre">ExperimentState</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">jinja_env</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conjoint_designer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/agents/context_builder.html#ContextBuilder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.agents.context_builder.ContextBuilder" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Builds the full message history for a single LLM call.</p>
+<p>Combines the system message, visibility-filtered conversation history,
+Jinja-rendered prompt text, optional RAG augmentation, response-option
+injection, formatting instructions, and multimodal media blocks into a
+normalised message list.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.agents.context_builder.ContextBuilder._state">
+<span class="sig-name descname"><span class="pre">_state</span></span><a class="headerlink" href="#talkingtomachines.agents.context_builder.ContextBuilder._state" title="Permalink to this definition"></a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">ExperimentState</span></code> used to resolve Jinja template
+variables across all scopes (player, agent, group, session).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.agents.context_builder.ContextBuilder._env">
+<span class="sig-name descname"><span class="pre">_env</span></span><a class="headerlink" href="#talkingtomachines.agents.context_builder.ContextBuilder._env" title="Permalink to this definition"></a></dt>
+<dd><p>A Jinja2 <code class="docutils literal notranslate"><span class="pre">SandboxedEnvironment</span></code> for safe template rendering.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.agents.context_builder.ContextBuilder._conjoint_designer">
+<span class="sig-name descname"><span class="pre">_conjoint_designer</span></span><a class="headerlink" href="#talkingtomachines.agents.context_builder.ContextBuilder._conjoint_designer" title="Permalink to this definition"></a></dt>
+<dd><p>Optional conjoint-experiment table designer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.agents.context_builder.ContextBuilder.build">
+<span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Agent" title="talkingtomachines.core.models.Agent"><span class="pre">Agent</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">player</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Player" title="talkingtomachines.core.models.Player"><span class="pre">Player</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Group" title="talkingtomachines.core.models.Group"><span class="pre">Group</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Session" title="talkingtomachines.core.models.Session"><span class="pre">Session</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.PromptDefinition" title="talkingtomachines.core.models.PromptDefinition"><span class="pre">PromptDefinition</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">system_message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_def</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'FieldDefinition'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constants</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/random.html#random.Random" title="(in Python v3.14)"><span class="pre">random.Random</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/agents/context_builder.html#ContextBuilder.build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.agents.context_builder.ContextBuilder.build" title="Permalink to this definition"></a></dt>
+<dd><p>Build the normalised message list for a single LLM turn.</p>
+<p>Executes the full context-building pipeline: system message,
+visibility filtering, Jinja rendering, RAG augmentation,
+response-option injection, formatting instructions, and
+multimodal content conversion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>agent</strong> – The <code class="docutils literal notranslate"><span class="pre">Agent</span></code> model for the current participant.</p></li>
+<li><p><strong>player</strong> – The <code class="docutils literal notranslate"><span class="pre">Player</span></code> model for the current participant.</p></li>
+<li><p><strong>group</strong> – The <code class="docutils literal notranslate"><span class="pre">Group</span></code> the player belongs to.</p></li>
+<li><p><strong>session</strong> – The current <code class="docutils literal notranslate"><span class="pre">Session</span></code>.</p></li>
+<li><p><strong>module</strong> – Module identifier (e.g., oTree app name).</p></li>
+<li><p><strong>round_number</strong> – Current round number within the module.</p></li>
+<li><p><strong>prompt</strong> – <code class="docutils literal notranslate"><span class="pre">PromptDefinition</span></code> containing the Jinja template text.</p></li>
+<li><p><strong>system_message</strong> – Pre-built system message (profile prompt).</p></li>
+<li><p><strong>field_def</strong> – Optional <code class="docutils literal notranslate"><span class="pre">FieldDefinition</span></code> controlling response
+options, formatting, and validation metadata.</p></li>
+<li><p><strong>constants</strong> – Experiment-level constants for the Jinja context.</p></li>
+<li><p><strong>rng</strong> – Seeded <code class="docutils literal notranslate"><span class="pre">random.Random</span></code> for reproducible option shuffling.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of <code class="docutils literal notranslate"><span class="pre">{&quot;role&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;content&quot;:</span> <span class="pre">...}</span></code> dicts ready for
+<code class="docutils literal notranslate"><span class="pre">LLMProvider.generate()</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.agents.prompt_builder">
+<span id="talkingtomachines-agents-prompt-builder-module"></span><h2>talkingtomachines.agents.prompt_builder module<a class="headerlink" href="#module-talkingtomachines.agents.prompt_builder" title="Permalink to this heading"></a></h2>
+<p>Prompt builder for synthetic subject profile construction.</p>
+<p>Generates profile prompts and system messages for synthetic subjects by
+transforming tabular profile data into textual representations suitable
+for LLM system messages.</p>
+<dl class="simple">
+<dt>Strategies:</dt><dd><dl class="simple">
+<dt>QA strategy:</dt><dd><p>Interview Q&amp;A format using full question names (row-1 headers).</p>
+</dd>
+<dt>Backstory strategy:</dt><dd><p>LLM-generated first-person narrative paragraph (requires QA as base).</p>
+</dd>
+<dt>Neither:</dt><dd><p>No profile information provided (warning logged).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.agents.prompt_builder.build_profile_prompt">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.agents.prompt_builder.</span></span><span class="sig-name descname"><span class="pre">build_profile_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile_row</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">short_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_profile_qa</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_profile_backstories</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">router</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'LLMRouter'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/agents/prompt_builder.html#build_profile_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.agents.prompt_builder.build_profile_prompt" title="Permalink to this definition"></a></dt>
+<dd><p>Build a profile prompt string for injection into the system message.</p>
+<p>Constructs a textual representation of an agent’s profile data. The
+output format depends on which strategy flags are enabled.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>profile_row</strong> – Dictionary mapping short column names to values for
+one profile row (e.g., <code class="docutils literal notranslate"><span class="pre">{&quot;age&quot;:</span> <span class="pre">30,</span> <span class="pre">&quot;gender&quot;:</span> <span class="pre">&quot;F&quot;}</span></code>).</p></li>
+<li><p><strong>short_names</strong> – Ordered list of short (column-header) field names.</p></li>
+<li><p><strong>full_names</strong> – Ordered list of full question wordings, aligned with
+<code class="docutils literal notranslate"><span class="pre">short_names</span></code> by index.</p></li>
+<li><p><strong>build_profile_qa</strong> – If True, produce an interview Q&amp;A-format prompt.</p></li>
+<li><p><strong>build_profile_backstories</strong> – If True, use an LLM to generate a
+first-person narrative backstory appended to the Q&amp;A prompt.</p></li>
+<li><p><strong>router</strong> – LLM router instance used for backstory generation. Required
+when <code class="docutils literal notranslate"><span class="pre">build_profile_backstories</span></code> is True.</p></li>
+<li><p><strong>model_name</strong> – Model identifier passed to the router for backstory
+generation.</p></li>
+<li><p><strong>temperature</strong> – Sampling temperature for the backstory LLM call.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A string containing the formatted profile prompt, or an empty
+string if both strategy flags are False.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="talkingtomachines.agents.prompt_builder.build_system_message">
+<span class="sig-prename descclassname"><span class="pre">talkingtomachines.agents.prompt_builder.</span></span><span class="sig-name descname"><span class="pre">build_system_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile_prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/agents/prompt_builder.html#build_system_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.agents.prompt_builder.build_system_message" title="Permalink to this definition"></a></dt>
+<dd><p>Build the system message from the profile prompt.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>profile_prompt</strong> – Pre-rendered profile text (Q&amp;A and/or backstory).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The system message string to prepend to the LLM conversation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-talkingtomachines.agents.synthetic_subject">
+<span id="talkingtomachines-agents-synthetic-subject-module"></span><h2>talkingtomachines.agents.synthetic_subject module<a class="headerlink" href="#module-talkingtomachines.agents.synthetic_subject" title="Permalink to this heading"></a></h2>
+<p>Synthetic subject agent for AI-driven experiment participation.</p>
+<p>Provides the <code class="docutils literal notranslate"><span class="pre">ConversationalSyntheticSubject</span></code> class, which wraps an
+<code class="docutils literal notranslate"><span class="pre">Agent</span></code>/<code class="docutils literal notranslate"><span class="pre">Player</span></code> pair and orchestrates LLM-based response generation
+within the experiment hierarchy.</p>
+<dl class="simple">
+<dt>Key design points:</dt><dd><ul class="simple">
+<li><p>Constructor accepts <code class="docutils literal notranslate"><span class="pre">Agent</span></code> and <code class="docutils literal notranslate"><span class="pre">Player</span></code> model objects rather
+than loose parameters.</p></li>
+<li><p>Prompt rendering is delegated to <code class="docutils literal notranslate"><span class="pre">ContextBuilder.build()</span></code>.</p></li>
+<li><p>Response storage writes to <code class="docutils literal notranslate"><span class="pre">Player.state</span></code>, <code class="docutils literal notranslate"><span class="pre">Agent.state</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Group.state</span></code>, or <code class="docutils literal notranslate"><span class="pre">Session.state</span></code> via <code class="docutils literal notranslate"><span class="pre">ExperimentState</span></code>.</p></li>
+<li><p>All LLM calls are routed through <code class="docutils literal notranslate"><span class="pre">LLMRouter</span></code>, supporting
+multiple providers.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">talkingtomachines.agents.synthetic_subject.</span></span><span class="sig-name descname"><span class="pre">ConversationalSyntheticSubject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Agent" title="talkingtomachines.core.models.Agent"><span class="pre">Agent</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">player</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Player" title="talkingtomachines.core.models.Player"><span class="pre">Player</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Group" title="talkingtomachines.core.models.Group"><span class="pre">Group</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.Session" title="talkingtomachines.core.models.Session"><span class="pre">Session</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.fields.ExperimentState" title="talkingtomachines.core.fields.ExperimentState"><span class="pre">ExperimentState</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">router</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.gateway.html#talkingtomachines.gateway.router.LLMRouter" title="talkingtomachines.gateway.router.LLMRouter"><span class="pre">LLMRouter</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profiles_meta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_profile_qa</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_profile_backstories</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constants</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/random.html#random.Random" title="(in Python v3.14)"><span class="pre">random.Random</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_guard</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/talkingtomachines/agents/synthetic_subject.html#ConversationalSyntheticSubject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A synthetic (AI) participant in an experiment.</p>
+<p>Wraps one <code class="docutils literal notranslate"><span class="pre">Agent</span></code> / <code class="docutils literal notranslate"><span class="pre">Player</span></code> pair and provides system message
+construction, visibility-filtered context building, LLM generation
+with optional response validation and retry logic, and state
+persistence via <code class="docutils literal notranslate"><span class="pre">ExperimentState</span></code>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject.agent">
+<span class="sig-name descname"><span class="pre">agent</span></span><a class="headerlink" href="#talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject.agent" title="Permalink to this definition"></a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">Agent</span></code> model object representing this participant’s
+persistent identity across rounds.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject.player">
+<span class="sig-name descname"><span class="pre">player</span></span><a class="headerlink" href="#talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject.player" title="Permalink to this definition"></a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">Player</span></code> model object representing this participant’s
+round-specific state within a group.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject.group">
+<span class="sig-name descname"><span class="pre">group</span></span><a class="headerlink" href="#talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject.group" title="Permalink to this definition"></a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">Group</span></code> this player belongs to in the current session.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject.session">
+<span class="sig-name descname"><span class="pre">session</span></span><a class="headerlink" href="#talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject.session" title="Permalink to this definition"></a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">Session</span></code> this player is participating in.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject.get_system_message">
+<span class="sig-name descname"><span class="pre">get_system_message</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="_modules/talkingtomachines/agents/synthetic_subject.html#ConversationalSyntheticSubject.get_system_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject.get_system_message" title="Permalink to this definition"></a></dt>
+<dd><p>Return the pre-built system message for this subject.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The system message string containing the profile prompt.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject.respond">
+<span class="sig-name descname"><span class="pre">respond</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.PromptDefinition" title="talkingtomachines.core.models.PromptDefinition"><span class="pre">PromptDefinition</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_def</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="talkingtomachines.core.html#talkingtomachines.core.models.FieldDefinition" title="talkingtomachines.core.models.FieldDefinition"><span class="pre">FieldDefinition</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/talkingtomachines/agents/synthetic_subject.html#ConversationalSyntheticSubject.respond"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#talkingtomachines.agents.synthetic_subject.ConversationalSyntheticSubject.respond" title="Permalink to this definition"></a></dt>
+<dd><p>Generate a response to the given prompt.</p>
+<p>Builds the full message context, optionally applies a context-window
+guard, sends the messages to the LLM, validates the response if
+required, and persists the result to the appropriate state scope.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>module</strong> – The module identifier (e.g., app name in oTree terms).</p></li>
+<li><p><strong>round_number</strong> – The current round number within the module.</p></li>
+<li><p><strong>prompt</strong> – The <code class="docutils literal notranslate"><span class="pre">PromptDefinition</span></code> containing the LLM text template
+and prompt metadata.</p></li>
+<li><p><strong>field_def</strong> – Optional <code class="docutils literal notranslate"><span class="pre">FieldDefinition</span></code> describing the expected
+response format, validation rules, and storage scope.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tuple of <code class="docutils literal notranslate"><span class="pre">(content,</span> <span class="pre">rendered_prompt)</span></code> where <em>content</em> is the
+raw LLM response string and <em>rendered_prompt</em> is the final user
+message sent to the LLM.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="talkingtomachines" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="talkingtomachines.analytics.html" class="btn btn-neutral float-right" title="talkingtomachines.analytics package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Raymond Low, Tommaso Batistoni, Ray Duch.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
