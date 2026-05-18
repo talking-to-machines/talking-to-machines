@@ -1,2 +1,0 @@
-run_id,session_id,experiment_id,config_hash,cep_hash,start_time,end_time,total_cost_usd,run_time_sec,stop_reason
-conjoint_manual_experiment_20260405T113845Z_bdod6b,conjoint_manual_experiment_20260405T113845Z_bdod6b_s1,conjoint_manual_experiment,f04bb4d137e06bd1,db6f815b0fc3f182ecd77aeaadf78e7184ec9c355c9f1a48b1b0d95eb081d9e3,2026-04-05T11:38:45.488995+00:00,2026-04-05T11:48:56.401426+00:00,0.5945219999999999,610.91,completed

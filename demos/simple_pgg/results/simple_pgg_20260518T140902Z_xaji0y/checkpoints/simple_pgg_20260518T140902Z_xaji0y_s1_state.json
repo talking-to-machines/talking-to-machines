@@ -1,0 +1,271 @@
+{
+  "session": {},
+  "agent": {
+    "1": {
+      "task1": {
+        "1": {
+          "treatment": "control",
+          "decision": 5,
+          "decision_speculation_score": 0.3,
+          "public_account_earnings": "10",
+          "private_account_remaining": "5",
+          "total_earnings": "15"
+        },
+        "2": {
+          "treatment": "control",
+          "decision": 4,
+          "decision_speculation_score": 0.4,
+          "public_account_earnings": "10",
+          "private_account_remaining": "6",
+          "total_earnings": "16"
+        },
+        "3": {
+          "treatment": "control",
+          "decision": 6,
+          "decision_speculation_score": 0.3,
+          "public_account_earnings": "10",
+          "private_account_remaining": "4",
+          "total_earnings": "14"
+        }
+      }
+    },
+    "2": {
+      "task1": {
+        "1": {
+          "treatment": "treatment_A",
+          "decision": 5,
+          "decision_speculation_score": 0.3,
+          "public_account_earnings": "10",
+          "private_account_remaining": "5",
+          "total_earnings": "15"
+        },
+        "2": {
+          "treatment": "treatment_A",
+          "decision": 6,
+          "decision_speculation_score": 0.4,
+          "public_account_earnings": "10",
+          "private_account_remaining": "4",
+          "total_earnings": "14"
+        },
+        "3": {
+          "treatment": "treatment_A",
+          "decision": 5,
+          "decision_speculation_score": 0.3,
+          "public_account_earnings": "11",
+          "private_account_remaining": "5",
+          "total_earnings": "16"
+        }
+      }
+    },
+    "3": {
+      "task1": {
+        "1": {
+          "treatment": "control",
+          "decision": 5,
+          "decision_speculation_score": 0.3,
+          "public_account_earnings": "10",
+          "private_account_remaining": "5",
+          "total_earnings": "15"
+        },
+        "2": {
+          "treatment": "control",
+          "decision": 6,
+          "decision_speculation_score": 0.4,
+          "public_account_earnings": "10",
+          "private_account_remaining": "4",
+          "total_earnings": "14"
+        },
+        "3": {
+          "treatment": "control",
+          "decision": 4,
+          "decision_speculation_score": 0.3,
+          "public_account_earnings": "10",
+          "private_account_remaining": "6",
+          "total_earnings": "16"
+        }
+      }
+    },
+    "4": {
+      "task1": {
+        "1": {
+          "treatment": "treatment_A",
+          "decision": 5,
+          "decision_speculation_score": 0.3,
+          "public_account_earnings": "10",
+          "private_account_remaining": "5",
+          "total_earnings": "15"
+        },
+        "2": {
+          "treatment": "treatment_A",
+          "decision": 4,
+          "decision_speculation_score": 0.4,
+          "public_account_earnings": "10",
+          "private_account_remaining": "6",
+          "total_earnings": "16"
+        },
+        "3": {
+          "treatment": "treatment_A",
+          "decision": 6,
+          "decision_speculation_score": 0.5,
+          "public_account_earnings": "11",
+          "private_account_remaining": "4",
+          "total_earnings": "15"
+        }
+      }
+    }
+  },
+  "group": {
+    "simple_pgg_20260518T140902Z_xaji0y_s1_task1_r1_g1": {
+      "task1": {
+        "total_contribution": "10"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_s1_task1_r1_g2": {
+      "task1": {
+        "total_contribution": "10"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_s1_task1_r2_g1": {
+      "task1": {
+        "total_contribution": "10"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_s1_task1_r2_g2": {
+      "task1": {
+        "total_contribution": "10"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_s1_task1_r3_g1": {
+      "task1": {
+        "total_contribution": "10"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_s1_task1_r3_g2": {
+      "task1": {
+        "total_contribution": "11"
+      }
+    }
+  },
+  "player": {
+    "simple_pgg_20260518T140902Z_xaji0y_1_simple_pgg_20260518T140902Z_xaji0y_s1_task1_r1": {
+      "task1": {
+        "treatment": "control",
+        "decision": 5,
+        "decision_speculation_score": 0.3,
+        "public_account_earnings": "10",
+        "private_account_remaining": "5",
+        "total_earnings": "15"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_2_simple_pgg_20260518T140902Z_xaji0y_s1_task1_r1": {
+      "task1": {
+        "treatment": "treatment_A",
+        "decision": 5,
+        "decision_speculation_score": 0.3,
+        "public_account_earnings": "10",
+        "private_account_remaining": "5",
+        "total_earnings": "15"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_3_simple_pgg_20260518T140902Z_xaji0y_s1_task1_r1": {
+      "task1": {
+        "treatment": "control",
+        "decision": 5,
+        "decision_speculation_score": 0.3,
+        "public_account_earnings": "10",
+        "private_account_remaining": "5",
+        "total_earnings": "15"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_4_simple_pgg_20260518T140902Z_xaji0y_s1_task1_r1": {
+      "task1": {
+        "treatment": "treatment_A",
+        "decision": 5,
+        "decision_speculation_score": 0.3,
+        "public_account_earnings": "10",
+        "private_account_remaining": "5",
+        "total_earnings": "15"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_1_simple_pgg_20260518T140902Z_xaji0y_s1_task1_r2": {
+      "task1": {
+        "treatment": "control",
+        "decision": 4,
+        "decision_speculation_score": 0.4,
+        "public_account_earnings": "10",
+        "private_account_remaining": "6",
+        "total_earnings": "16"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_2_simple_pgg_20260518T140902Z_xaji0y_s1_task1_r2": {
+      "task1": {
+        "treatment": "treatment_A",
+        "decision": 6,
+        "decision_speculation_score": 0.4,
+        "public_account_earnings": "10",
+        "private_account_remaining": "4",
+        "total_earnings": "14"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_3_simple_pgg_20260518T140902Z_xaji0y_s1_task1_r2": {
+      "task1": {
+        "treatment": "control",
+        "decision": 6,
+        "decision_speculation_score": 0.4,
+        "public_account_earnings": "10",
+        "private_account_remaining": "4",
+        "total_earnings": "14"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_4_simple_pgg_20260518T140902Z_xaji0y_s1_task1_r2": {
+      "task1": {
+        "treatment": "treatment_A",
+        "decision": 4,
+        "decision_speculation_score": 0.4,
+        "public_account_earnings": "10",
+        "private_account_remaining": "6",
+        "total_earnings": "16"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_1_simple_pgg_20260518T140902Z_xaji0y_s1_task1_r3": {
+      "task1": {
+        "treatment": "control",
+        "decision": 6,
+        "decision_speculation_score": 0.3,
+        "public_account_earnings": "10",
+        "private_account_remaining": "4",
+        "total_earnings": "14"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_2_simple_pgg_20260518T140902Z_xaji0y_s1_task1_r3": {
+      "task1": {
+        "treatment": "treatment_A",
+        "decision": 5,
+        "decision_speculation_score": 0.3,
+        "public_account_earnings": "11",
+        "private_account_remaining": "5",
+        "total_earnings": "16"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_3_simple_pgg_20260518T140902Z_xaji0y_s1_task1_r3": {
+      "task1": {
+        "treatment": "control",
+        "decision": 4,
+        "decision_speculation_score": 0.3,
+        "public_account_earnings": "10",
+        "private_account_remaining": "6",
+        "total_earnings": "16"
+      }
+    },
+    "simple_pgg_20260518T140902Z_xaji0y_4_simple_pgg_20260518T140902Z_xaji0y_s1_task1_r3": {
+      "task1": {
+        "treatment": "treatment_A",
+        "decision": 6,
+        "decision_speculation_score": 0.5,
+        "public_account_earnings": "11",
+        "private_account_remaining": "4",
+        "total_earnings": "15"
+      }
+    }
+  }
+}

@@ -1,0 +1,2 @@
+run_id,session_id,experiment_id,config_hash,cep_hash,start_time,end_time,total_cost_usd,run_time_sec,stop_reason
+conjoint_manual_experiment_20260518T134405Z_bdod6b,conjoint_manual_experiment_20260518T134405Z_bdod6b_s1,conjoint_manual_experiment,f04bb4d137e06bd1,4ca01834f34574f1d04aa7988d3af966c4660dbbecad37a8b9684f9cc8f7cd7d,2026-05-18T13:44:05.780918+00:00,2026-05-18T13:59:30.443336+00:00,0.6032720000000003,924.66,completed

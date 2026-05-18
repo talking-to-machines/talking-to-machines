@@ -33,7 +33,7 @@ _SHEETS: dict[str, dict] = {
     "Settings": {
         "columns": ["name", "value"],
         "rows": [
-            ["EXPERIMENT_ID", "my_experiment"],
+            ["EXPERIMENT_ID", "simple_pgg"],
             ["MODEL_NAME", "gpt-4.1-mini"],
             ["HF_INFERENCE_ENDPOINT", ""],
             ["TEMPERATURE", 0.0],
@@ -51,7 +51,6 @@ _SHEETS: dict[str, dict] = {
         "rows": [
             ["task1", "MAX_NUM_ROUNDS", 3, "integer"],
             ["task1", "PLAYERS_PER_GROUP", 2, "integer"],
-            ["task1", "MIN_ENDOWMENT", 0, "integer"],
             ["task1", "MAX_ENDOWMENT", 10, "integer"],
         ],
     },
@@ -198,7 +197,7 @@ Respond with only the resulting number without any explanations.""",
                 None,
                 True,
                 "How much will you contribute?",
-                "How many tokens would you contribute to the group fund? Tokens in the public account will be multiplied by a factor of 2 and distributed equally among all players. Tokens kept in your private account will not be shared and remain yours. Choose a value between {{ C.task1.MIN_ENDOWMENT }} and {{ C.task1.MAX_ENDOWMENT }}.",
+                "How many tokens would you contribute to the group fund? Tokens in the public account will be multiplied by a factor of 2 and distributed equally among all players. Tokens kept in your private account will not be shared and remain yours. Choose a value between 0 and {{ C.task1.MAX_ENDOWMENT }}.",
                 None,
                 "Player",
                 "decision",
@@ -307,7 +306,7 @@ Respond with only the resulting number without any explanations.""",
 
 def generate_template(
     output_dir: str = ".",
-    project_name: str = "my_experiment",
+    project_name: str = "simple_pgg",
     fmt: Literal["xlsx", "csv"] = "xlsx",
 ) -> list[str]:
     """Create template files in a project subdirectory.
@@ -342,7 +341,7 @@ def generate_template(
 # ---------------------------------------------------------------------------
 
 
-def _make_df(sheet_name: str, project_name: str = "my_experiment") -> pd.DataFrame:
+def _make_df(sheet_name: str, project_name: str = "simple_pgg") -> pd.DataFrame:
     """Build a DataFrame for a single sheet definition.
 
     Args:
@@ -395,7 +394,7 @@ def _write_xlsx(out: Path, project_name: str) -> str:
     return file_path
 
 
-def _write_csvs(out: Path, project_name: str = "my_experiment") -> list[str]:
+def _write_csvs(out: Path, project_name: str = "simple_pgg") -> list[str]:
     """Write each sheet as an individual CSV file.
 
     Args:

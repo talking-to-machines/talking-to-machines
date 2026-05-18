@@ -1,0 +1,2 @@
+run_id,session_id,experiment_id,config_hash,cep_hash,start_time,end_time,total_cost_usd,run_time_sec,stop_reason
+conjoint_policy_experiment_20260518T134252Z_bdod6b,conjoint_policy_experiment_20260518T134252Z_bdod6b_s1,conjoint_policy_experiment,b79435734c1fd668,3b58c761c633166e2544f2cb82e8f689682a23e08777700901141deb788a6d0c,2026-05-18T13:42:52.910074+00:00,2026-05-18T14:21:53.290062+00:00,1.7678239999999998,2340.38,completed

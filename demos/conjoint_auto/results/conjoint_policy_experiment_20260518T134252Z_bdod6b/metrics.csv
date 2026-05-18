@@ -1,0 +1,2 @@
+session_id,run_id,experiment_id,num_agents,num_modules,num_rounds_total,num_groups_total,num_players_total,num_messages_total,total_cost_usd,run_time_sec,start_time,end_time
+conjoint_policy_experiment_20260518T134252Z_bdod6b_s1,conjoint_policy_experiment_20260518T134252Z_bdod6b,conjoint_policy_experiment,8,2,6,48,48,552,1.7678239999999998,2340.38,2026-05-18T13:42:52.910074+00:00,2026-05-18T14:21:53.290062+00:00

@@ -42,7 +42,7 @@ def main():
     # ------------------------------------------------------------------
 
     @cli.command()
-    @click.argument("project_name", default="my_experiment")
+    @click.argument("project_name", default="simple_pgg")
     @click.option(
         "--format",
         "fmt",
@@ -57,7 +57,7 @@ def main():
         """Create a blank project folder with template files.
 
         Args:
-            project_name: Name of the new project. Defaults to ``"my_experiment"``.
+            project_name: Name of the new project. Defaults to ``"simple_pgg"``.
             fmt: Template format, either ``"xlsx"`` or ``"csv"``.
             output: Output directory for the generated project folder.
         """

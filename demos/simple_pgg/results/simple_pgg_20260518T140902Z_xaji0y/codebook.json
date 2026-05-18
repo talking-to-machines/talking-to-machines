@@ -1,0 +1,176 @@
+{
+  "experiment_id": "simple_pgg",
+  "cep_hash": "f8905a37a9332f1c8fce46141588aaedc40c438256555ba852ec4e3a26519845",
+  "schema_version": "1.0",
+  "tables": {
+    "player": {
+      "task1.decision": {
+        "field": "decision",
+        "module": "task1",
+        "scope": "Player",
+        "type": "integer",
+        "response_options": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "response_options_intro": "Please choose one of the following:",
+        "validate": true,
+        "format_response": true,
+        "generate_speculation_score": true,
+        "randomise_options_order": false
+      },
+      "task1.public_account_earnings": {
+        "field": "public_account_earnings",
+        "module": "task1",
+        "scope": "Player",
+        "type": "integer",
+        "response_options": null,
+        "response_options_intro": "nan",
+        "validate": false,
+        "format_response": true,
+        "generate_speculation_score": false,
+        "randomise_options_order": false
+      },
+      "task1.private_account_remaining": {
+        "field": "private_account_remaining",
+        "module": "task1",
+        "scope": "Player",
+        "type": "integer",
+        "response_options": null,
+        "response_options_intro": "nan",
+        "validate": false,
+        "format_response": true,
+        "generate_speculation_score": false,
+        "randomise_options_order": false
+      },
+      "task1.total_earnings": {
+        "field": "total_earnings",
+        "module": "task1",
+        "scope": "Player",
+        "type": "integer",
+        "response_options": null,
+        "response_options_intro": "nan",
+        "validate": false,
+        "format_response": true,
+        "generate_speculation_score": false,
+        "randomise_options_order": false
+      }
+    },
+    "group_table": {
+      "task1.total_contribution": {
+        "field": "total_contribution",
+        "module": "task1",
+        "scope": "Group",
+        "type": "integer",
+        "response_options": null,
+        "response_options_intro": "nan",
+        "validate": false,
+        "format_response": true,
+        "generate_speculation_score": false,
+        "randomise_options_order": false
+      }
+    }
+  },
+  "prompts": {
+    "task1": [
+      {
+        "module": "task1",
+        "sequence": 0,
+        "type": "CONTEXT",
+        "is_displayed": "round_number == 1",
+        "field_class": null,
+        "field_name": null,
+        "llm_text": "You are participating in a decision-making experiment. Your endowment is 10 tokens.",
+        "human_text": "Introduction context.",
+        "is_adapted": true,
+        "kwargs": {}
+      },
+      {
+        "module": "task1",
+        "sequence": 1,
+        "type": "PRIVATE_QUESTION",
+        "is_displayed": null,
+        "field_class": "Player",
+        "field_name": "decision",
+        "llm_text": "How many tokens would you contribute to the group fund? Tokens in the public account will be multiplied by a factor of 2 and distributed equally among all players. Tokens kept in your private account will not be shared and remain yours. Choose a value between 0 and 10.",
+        "human_text": "How much will you contribute?",
+        "is_adapted": true,
+        "kwargs": {}
+      },
+      {
+        "module": "task1",
+        "sequence": 2,
+        "type": "FACILITATOR",
+        "is_displayed": null,
+        "field_class": "Group",
+        "field_name": "total_contribution",
+        "llm_text": "calculate_total_contribution",
+        "human_text": "nan",
+        "is_adapted": false,
+        "kwargs": {}
+      },
+      {
+        "module": "task1",
+        "sequence": 3,
+        "type": "FACILITATOR",
+        "is_displayed": null,
+        "field_class": "Player",
+        "field_name": "public_account_earnings",
+        "llm_text": "calculate_public_account_earnings",
+        "human_text": "nan",
+        "is_adapted": false,
+        "kwargs": {}
+      },
+      {
+        "module": "task1",
+        "sequence": 4,
+        "type": "FACILITATOR",
+        "is_displayed": null,
+        "field_class": "Player",
+        "field_name": "private_account_remaining",
+        "llm_text": "calculate_private_account_remaining",
+        "human_text": "nan",
+        "is_adapted": false,
+        "kwargs": {}
+      },
+      {
+        "module": "task1",
+        "sequence": 5,
+        "type": "FACILITATOR",
+        "is_displayed": null,
+        "field_class": "Player",
+        "field_name": "total_earnings",
+        "llm_text": "calculate_total_earnings",
+        "human_text": "nan",
+        "is_adapted": false,
+        "kwargs": {}
+      },
+      {
+        "module": "task1",
+        "sequence": 6,
+        "type": "CONTEXT",
+        "is_displayed": null,
+        "field_class": null,
+        "field_name": null,
+        "llm_text": "The total contribution for this round is {{ group.total_contribution }} tokens. Your total earnings for this round is {{ player.total_earnings }} tokens.",
+        "human_text": "nan",
+        "is_adapted": false,
+        "kwargs": {}
+      }
+    ]
+  },
+  "profile_columns": [
+    "ID",
+    "age",
+    "gender"
+  ]
+}

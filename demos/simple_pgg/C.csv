@@ -1,5 +1,4 @@
 module,name,value,type
 task1,MAX_NUM_ROUNDS,3,integer
 task1,PLAYERS_PER_GROUP,2,integer
-task1,MIN_ENDOWMENT,0,integer
 task1,MAX_ENDOWMENT,10,integer

@@ -2,17 +2,17 @@
 
 This document describes how to populate the prompt template workbook (`.xlsx`) for each version of the `talkingtomachines` platform.
 
-- [v0.3.1 Prompt Template](#v031-prompt-template)
+- [v0.3.2 Prompt Template](#v031-prompt-template)
 - [Demo Examples](#demo-examples)
 - [Video Walkthrough](#-video-walkthrough)
 
 ---
 
-# v0.3.1 Prompt Template
+# v0.3.2 Prompt Template
 
 ## Worksheet Overview
 
-v0.3.1 uses **7 worksheets** that map to the oTree-inspired hierarchy (Session → Module → Subsession → Group → Agent/Player). Use `talkingtomachines init` to generate a blank template with example rows.
+v0.3.2 uses **7 worksheets** that map to the oTree-inspired hierarchy (Session → Module → Subsession → Group → Agent/Player). Use `talkingtomachines init` to generate a blank template with example rows.
 
 | Worksheet Name | Description |
 | - | - |
@@ -283,7 +283,7 @@ You can use a single worksheet named `Manual_` or multiple worksheets with the p
 
 ---
 
-## Validation Pipeline (v0.3.1)
+## Validation Pipeline (v0.3.2)
 
 When you run `talkingtomachines validate`, the platform executes the following validators in order:
 

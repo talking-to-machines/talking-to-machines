@@ -1,0 +1,2 @@
+run_id,session_id,experiment_id,config_hash,cep_hash,start_time,end_time,total_cost_usd,run_time_sec,stop_reason
+simple_pgg_20260518T140902Z_xaji0y,simple_pgg_20260518T140902Z_xaji0y_s1,simple_pgg,19d45919d7a3ce65,f8905a37a9332f1c8fce46141588aaedc40c438256555ba852ec4e3a26519845,2026-05-18T14:09:02.839957+00:00,2026-05-18T14:10:20.612486+00:00,0.012201599999999996,77.77,completed

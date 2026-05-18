@@ -1,0 +1,2 @@
+run_id,session_id,experiment_id,config_hash,cep_hash,start_time,end_time,total_cost_usd,run_time_sec,stop_reason
+public_good_experiment_20260518T134422Z_xaji0y,public_good_experiment_20260518T134422Z_xaji0y_s1,public_good_experiment,e8f317a936d5952b,24c7bf3218c3a0dae9523899bf742ce97d15051bd7f6589256c8139a1a65c4fb,2026-05-18T13:44:22.423081+00:00,2026-05-18T15:11:09.569898+00:00,11.006631999999994,5207.15,completed

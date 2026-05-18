@@ -22,13 +22,14 @@ The `talkingtomachines` platform facilitates the design, conduct, and analysis o
 
 | Version | Architecture | Status |
 |---------|-------------|--------|
-| **v0.3.1** | oTree-inspired hierarchy (Session → Module → Subsession → Group → Agent/Player). Compiler-based pipeline with validation, checkpointing, and multi-format export. | Development (current branch) |
+| **v0.3.2** | Bumped minimum Python to 3.12. Refreshed multi-provider SDKs (latest `mistralai`, `anthropic`, `google-genai`, `openai`) and relaxed the `httpx<0.28` cap to `httpx>=0.28,<1` to resolve the Python 3.12 dependency conflict between `mistralai` and `httpx`. Regenerated `requirements.txt` lockfile. | Released |
+| **v0.3.1** | oTree-inspired hierarchy (Session → Module → Subsession → Group → Agent/Player). Compiler-based pipeline with validation, checkpointing, and multi-format export. | Released |
 
 ---
 
 ## ⚙️ Requirements
 
-* Python >= 3.10
+* Python >= 3.12
 
 * macOS or Windows 10/11
 
@@ -78,9 +79,9 @@ pip --version
 
 ### 3. Install the `talkingtomachines` package
 
-**v0.3.1:**
+**v0.3.2:**
 ```bash
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple talkingtomachines==0.3.1
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple talkingtomachines==0.3.2
 ```
 
 Verify that the `talkingtomachines` package is properly installed:
@@ -134,9 +135,9 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 ## 🚀 CLI Usage
 
-### v0.3.1
+### v0.3.2
 
-v0.3.1 uses a subcommand-based CLI built on [Click](https://click.palletsprojects.com/).
+v0.3.2 uses a subcommand-based CLI built on [Click](https://click.palletsprojects.com/).
 
 #### `init` — Create a new experiment project
 
@@ -229,11 +230,11 @@ Unrecognised model names default to OpenRouter.
 
 ## 📄 Prompt Template Setup
 
-Detailed instructions on how to populate the prompt template can be found here: [`Prompt Template Instructions`](https://github.com/talking-to-machines/talking-to-machines/tree/main/talkingtomachines/interface/README.md). The experiment is configured through an Excel workbook. Use `talkingtomachines init` (v0.3.1) to generate a blank template with example rows.
+Detailed instructions on how to populate the prompt template can be found here: [`Prompt Template Instructions`](https://github.com/talking-to-machines/talking-to-machines/tree/main/talkingtomachines/interface/README.md). The experiment is configured through an Excel workbook. Use `talkingtomachines init` (v0.3.2) to generate a blank template with example rows.
 
-### v0.3.1 Worksheets
+### v0.3.2 Worksheets
 
-v0.3.1 uses 7 worksheets that map to the oTree-inspired hierarchy.
+v0.3.2 uses 7 worksheets that map to the oTree-inspired hierarchy.
 
 | Worksheet | Purpose |
 |-----------|---------|
@@ -250,7 +251,7 @@ v0.3.1 uses 7 worksheets that map to the oTree-inspired hierarchy.
 ## 📹 Video Walkthrough
 A video walkthrough on how to set up the `talkingtomachines` platform for both macOS and Windows devices can be found here:
 
-### v0.3.1
+### v0.3.2
 macOS: [Video Walkthrough](https://www.loom.com/share/a2c15f1258d5436eaeca197998286cd9?sid=7958bdbe-2f34-4d5f-8d47-49fd49cb315c)
 
 Windows: [Video Walkthrough](https://www.loom.com/share/79969b38be6d4c2387d19ecc3e54ae4d?sid=d372a5e7-6dd5-4923-b838-69eba7dce20a)
